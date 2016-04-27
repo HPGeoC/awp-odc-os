@@ -1,0 +1,32 @@
+AUTHORS
+
+The AWP-ODC-GPU software is a C/CUDA/MPI based seismic wave propagation code, first developed by Jun Zhou and Yifeng Cui in 2013 at High Performance Geocomputing Laboratory (HPGeoC) of University of California, San Diego, its numerical algorithm is based on the work related to the CPU-based AWP-ODC which is an abbreviation of Anelastic Wave Propagation by Olsen, Day & Cui in 2010. The original AWP wave propagation code was developed by Kim Bak Olsen at University of Utah in 1994, then underwent many enhancements and optimizations by Kim Olsen and Steven Day of SDSU, and Yifeng Cui of UCSD etc.
+
+This GPU-based software package is maintained and developed by the HPGeoC development team from University of California, San Diego, authors are in alphabetical order:
+
+Dongju Choi,
+Yifeng Cui,
+Efecan Poyraz,
+Jun Zhou.
+
+For questions, please contact Yifeng Cui at 858-822-0916, or yfcui@sdsc.edu.
+
+REFERENCE
+
+Olsen, K.B., Simulation of three dimensional wave propagation in the Salt Lake Basin, Ph.D. thesis, The University of Utah, Salt Lake City, Utah, 1994.
+
+Day, St., Efficient Simulation of Constant Q Using Coarse-Grained Memory Variables, Bull. Seis. Sco. Am., Vol 88, Nov 4, pp 1051-1062, August 1998.
+
+Cui, Y., K.B. Olsen, T.H. Jordan, K. Lee, J. Zhou,, P. Small, G. Ely, D. Roten, DK Panda, A. Chourasia, J. Levesque, S.M. Day and P. Maechling, "Scalable Earthquake Simulation on Petascale Supercomputers", ACM Gordon Bell Finalist, SC10, New Orleans, Nov, 13-19, 2010.
+
+Zhou, J., U. Didem, D. Choi, C. Guest, and Y. Cui (2012), GPU Accelearation of a 3D Finite Difference Earthquake Code on XSEDE Keeneland, Poster, XSEDE'12, Chicago, July 16-20, 2012.
+
+Zhou, J., Y. Cui, E. Poyraz, D. Choi, C. Guest (2013), Multi-GPU Implementation of a 3D Finite Difference Time Domain Earthquake Code on Heterogeneous Supercomputers, ICCS 2013, Barcelona, June 5-7, 2013.
+
+Cui, Y., Poyraz, E., Zhou, J., Callaghan, S., Maechling, P., Jordan, T., Shih, L. and Chen, P., Accelerating CyberShake Calculations on XE6/XK7 Platforms of Blue Waters, Proceeding of Extreme Scaling Workshop 2013, August 15-16, Boulder, 2013, IEEE Xplore Digital Library.
+
+Cui, Y., E. Poyraz, K.B. Olsen, J. Zhou, K. Withers, S. Callaghan, J. Larkin, C. Guest, D. Choi, A. Chourasia, Z. Shi, S.M. Day, P.J. Maechling, T.H. Jordan (2013), Physics-based seismic hazard analysis on petascale heterogeneous supercomputers, SC13, Denver, CO, November 18-21, 2013.
+
+Zhou, J., Scalable Parallel Programming for High Performance Seismic Simulation on Petascale Heterogeneous Supercomputers, Ph.D. thesis, University of California, San Diego, 2014.
+
+Poyraz, E., H. Xu, and Y. Cui (2014), Application-specific I/O optimizations on petascale supercomputers, Procedia Computer Science vol. 29, pp. 910-923, 2014.
