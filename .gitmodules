@@ -1,0 +1,3 @@
+[submodule "submodules/wiki"]
+	path = submodules/wiki
+	url = https://github.com/HPGeoC/awp-odc-os.wiki.git
