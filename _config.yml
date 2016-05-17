@@ -1,0 +1,13 @@
+# Site settings
+title: awp-odc-os
+github_username: hpgeoc/awp-odc-os
+
+# github defaults
+github: [metadata]
+markdown: kramdown
+kramdown:
+  input: GFM
+  hard_wrap: false
+gems:
+  - jekyll-coffeescript
+  - jekyll-paginate
