@@ -1,7 +1,7 @@
 ---
 layout: page
 title: Documentation
-permalink: /doc/
+permalink: doc/
 ---
 # Table of Contents
 * Do not remove this line (it will not be displayed)
