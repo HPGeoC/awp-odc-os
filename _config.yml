@@ -1,6 +1,7 @@
 # Site settings
 title: awp-odc-os
 github_username: hpgeoc/awp-odc-os
+baseurl: /awp-odc-os
 
 # github defaults
 github: [metadata]
