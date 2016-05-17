@@ -10,7 +10,7 @@ permalink: doc/
 
 # Distribution Contents
 * [src/](https://github.com/HPGeoC/awp-odc-os/tree/master/src) source code and platform dependent makefiles
-* [doc/](https://github.com/HPGeoC/awp-odc-os/tree/master/gh-pages/doc.md) offline access to this documentation
+* [doc/](https://github.com/HPGeoC/awp-odc-os/tree/gh-pages/doc.md) offline access to this documentation
 
 # System Requirements
 * C compiler
