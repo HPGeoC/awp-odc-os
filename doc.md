@@ -79,8 +79,8 @@ To install awp-odc-os, perform the following steps:
 
    this script creates following folders:
 
-   * ```input/```
-   * ```input_rst/```
+   * ```input/``` - single small source and mesh input files (for small scale tests)
+   * ```input_rst/``` - pre-partitioned source and mesh files (for large scale tests, see [Source file processing section](#source-file-processing) and [Mesh file processing section](#mesh-file-processing))
    * ```output_ckp/``` - run statistics and checkpoints if enabled
    * ```output_sfc/```  - output folder striping might be needed for lustre system
 
@@ -134,7 +134,10 @@ To install awp-odc-os, perform the following steps:
 5. Modify ```BLOCK_Z_SIZE``` in [src/pmcl3d_cons.h](https://github.com/HPGeoC/awp-odc-os/tree/master/src/pmcl3d_cons.h) manually parameter ```BLOCK_Z_SIZE``` must be powers of 2 (32, 64 ...) and can be divided by ```NZ BLCOK_SIZE_Z``` is preferred to be as big as possible for better performance.
    Default ```BLOCK_Z_SIZE``` in this version of awp-odc-os is 256.
 
-6. Example Inputs (http://hpgeoc.sdsc.edu/downloads/awp-odc-os-v1.0-example.tar.gz)
+6. Check ```--READ_STEP``` and ```--READ_STEP_GPU``` in input parameters.
+   Current code require ```--READ_STEP``` must equals to ```--READ_STEP_GPU```
+
+7. Example Inputs (http://hpgeoc.sdsc.edu/downloads/awp-odc-os-v1.0-example.tar.gz)
    * ```source```: moment source inputs (6 variables each time step)
                    101 steps source input file (binary)
 
@@ -155,7 +158,7 @@ To install awp-odc-os, perform the following steps:
      | vp, vs, den | vp, vs, den | ... | vp, vs, den | vp, vs, den | ...
      ```
 
-7. Lustre Striping
+8. Lustre Striping
 
    For large scale run using more than tens of GPUs on lustre file system, striping is needed.
    Visit system user guide for more info about striping general information for 320x320x2048, 2x2, ```NTISKP```=20, ```write_step```=100, ```nskpx```=2, ```nskpy```=2 each core holds data size ```(160/2)*(160/2)*1*4_bytes*100_write_steps=2.44MB```
@@ -176,7 +179,7 @@ To install awp-odc-os, perform the following steps:
    lfs getstripe mesh
    ```
 
-8. Result checking
+9. Result checking
 
    Results are generated in ```output_sfc/```. Check ```output_ckp/ckp``` if the results have nan, make sure to meet stability criteria. in ```output_ckp/ckp``` first line:
 
