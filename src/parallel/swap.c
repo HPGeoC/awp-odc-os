@@ -1,16 +1,18 @@
 /**
-@section LICENSE
-Copyright (c) 2013-2016, Regents of the University of California
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
-
-1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
-
-2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
+ @brief Functions to handle MPI and CUDA communication
+ 
+ @section LICENSE
+ Copyright (c) 2013-2016, Regents of the University of California
+ All rights reserved.
+ 
+ Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+ 
+ 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+ 
+ 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+ 
+ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 
 #include <stdio.h>
 #include"pmcl3d.h"
@@ -20,7 +22,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 void update_bound_y_H(float* u1,   float* v1, float* w1, float* f_u1,      float* f_v1,      float* f_w1, float* b_u1, float* b_v1,
                       float* b_w1, int nxt,   int nzt,   cudaStream_t St1, cudaStream_t St2, int rank_f,  int rank_b);
 
-void mediaswap(Grid3D d1, Grid3D mu,     Grid3D lam,    Grid3D qp,     Grid3D qs,
+void mediaswap(Grid3D d1, Grid3D mu,     Grid3D lam,    Grid3D qp,     Grid3D qs, 
                int rank,  int x_rank_L,  int x_rank_R,  int y_rank_F,  int y_rank_B,
                int nxt,   int nyt,       int nzt,       MPI_Comm MCW)
 {
@@ -34,57 +36,57 @@ void mediaswap(Grid3D d1, Grid3D mu,     Grid3D lam,    Grid3D qp,     Grid3D qs
 
 	if(x_rank_L<0 && x_rank_R<0 && y_rank_F<0 && y_rank_B<0)
 		return;
-
+	
 	if(y_rank_F>=0 || y_rank_B>=0)
 	{
-		mediaF_S      = Alloc1D(5*4*loop*(nxt+2)*(nzt+2));
-		mediaB_S      = Alloc1D(5*4*loop*(nxt+2)*(nzt+2));
-                mediaF_R      = Alloc1D(5*4*loop*(nxt+2)*(nzt+2));
-                mediaB_R      = Alloc1D(5*4*loop*(nxt+2)*(nzt+2));
-                media_size_y  = 5*(4*loop)*(nxt+2)*(nzt+2);
+		mediaF_S      = Alloc1D(5*4*LOOP*(nxt+2)*(nzt+2));
+		mediaB_S      = Alloc1D(5*4*LOOP*(nxt+2)*(nzt+2));
+                mediaF_R      = Alloc1D(5*4*LOOP*(nxt+2)*(nzt+2));
+                mediaB_R      = Alloc1D(5*4*LOOP*(nxt+2)*(nzt+2));
+                media_size_y  = 5*(4*LOOP)*(nxt+2)*(nzt+2);
 		media_count_y = 0;
 
                 PostRecvMsg_Y(mediaF_R, mediaB_R, MCW, request_y, &media_count_y, media_size_y, y_rank_F, y_rank_B);
-
+		
 		if(y_rank_F>=0)
 		{
-	        	for(i=1+4*loop;i<nxt+3+4*loop;i++)
-        	  	  for(j=2+4*loop;j<2+8*loop;j++)
-            	    	    for(k=align-1;k<nzt+align+1;k++)
+	        	for(i=1+4*LOOP;i<nxt+3+4*LOOP;i++)
+        	  	  for(j=2+4*LOOP;j<2+8*LOOP;j++)
+            	    	    for(k=ALIGN-1;k<nzt+ALIGN+1;k++)
 			    {
-            			idx = i-1-4*loop;
-            			idy = (j-2-4*loop)*5;
-	            		idz = k-align+1;
-        	    		mediaF_S[idx*5*(4*loop)*(nzt+2)+idy*(nzt+2)+idz] = d1[i][j][k];
+            			idx = i-1-4*LOOP;
+            			idy = (j-2-4*LOOP)*5;
+	            		idz = k-ALIGN+1;
+        	    		mediaF_S[idx*5*(4*LOOP)*(nzt+2)+idy*(nzt+2)+idz] = d1[i][j][k];
             			idy++;
-            			mediaF_S[idx*5*(4*loop)*(nzt+2)+idy*(nzt+2)+idz] = mu[i][j][k];
+            			mediaF_S[idx*5*(4*LOOP)*(nzt+2)+idy*(nzt+2)+idz] = mu[i][j][k];
             			idy++;
-            			mediaF_S[idx*5*(4*loop)*(nzt+2)+idy*(nzt+2)+idz] = lam[i][j][k];
+            			mediaF_S[idx*5*(4*LOOP)*(nzt+2)+idy*(nzt+2)+idz] = lam[i][j][k];
             			idy++;
-            			mediaF_S[idx*5*(4*loop)*(nzt+2)+idy*(nzt+2)+idz] = qp[i][j][k];
+            			mediaF_S[idx*5*(4*LOOP)*(nzt+2)+idy*(nzt+2)+idz] = qp[i][j][k];
             			idy++;
-            			mediaF_S[idx*5*(4*loop)*(nzt+2)+idy*(nzt+2)+idz] = qs[i][j][k];
+            			mediaF_S[idx*5*(4*LOOP)*(nzt+2)+idy*(nzt+2)+idz] = qs[i][j][k];            
             	    	    }
 		}
 
 		if(y_rank_B>=0)
 		{
-        		for(i=1+4*loop;i<nxt+3+4*loop;i++)
-          	  	  for(j=nyt+2;j<nyt+2+4*loop;j++)
-            	    	    for(k=align-1;k<nzt+align+1;k++)
+        		for(i=1+4*LOOP;i<nxt+3+4*LOOP;i++)
+          	  	  for(j=nyt+2;j<nyt+2+4*LOOP;j++)
+            	    	    for(k=ALIGN-1;k<nzt+ALIGN+1;k++)
 			    {
-                		idx = i-1-4*loop;
+                		idx = i-1-4*LOOP;
 	                	idy = (j-nyt-2)*5;
-        	        	idz = k-align+1;
-                		mediaB_S[idx*5*(4*loop)*(nzt+2)+idy*(nzt+2)+idz] = d1[i][j][k];
+        	        	idz = k-ALIGN+1;
+                		mediaB_S[idx*5*(4*LOOP)*(nzt+2)+idy*(nzt+2)+idz] = d1[i][j][k];
                 		idy++;
-                		mediaB_S[idx*5*(4*loop)*(nzt+2)+idy*(nzt+2)+idz] = mu[i][j][k];
+                		mediaB_S[idx*5*(4*LOOP)*(nzt+2)+idy*(nzt+2)+idz] = mu[i][j][k];
                 		idy++;
-                		mediaB_S[idx*5*(4*loop)*(nzt+2)+idy*(nzt+2)+idz] = lam[i][j][k];
+                		mediaB_S[idx*5*(4*LOOP)*(nzt+2)+idy*(nzt+2)+idz] = lam[i][j][k];
                 		idy++;
-                		mediaB_S[idx*5*(4*loop)*(nzt+2)+idy*(nzt+2)+idz] = qp[i][j][k];
+                		mediaB_S[idx*5*(4*LOOP)*(nzt+2)+idy*(nzt+2)+idz] = qp[i][j][k];
                 		idy++;
-                		mediaB_S[idx*5*(4*loop)*(nzt+2)+idy*(nzt+2)+idz] = qs[i][j][k];
+                		mediaB_S[idx*5*(4*LOOP)*(nzt+2)+idy*(nzt+2)+idz] = qs[i][j][k];
             	    	     }
 		}
 
@@ -93,101 +95,101 @@ void mediaswap(Grid3D d1, Grid3D mu,     Grid3D lam,    Grid3D qp,     Grid3D qs
 
 		if(y_rank_F>=0)
 		{
-                	for(i=1+4*loop;i<nxt+3+4*loop;i++)
-                  	  for(j=2;j<2+4*loop;j++)
-                    	    for(k=align-1;k<nzt+align+1;k++)
+                	for(i=1+4*LOOP;i<nxt+3+4*LOOP;i++)
+                  	  for(j=2;j<2+4*LOOP;j++)
+                    	    for(k=ALIGN-1;k<nzt+ALIGN+1;k++)
 		    	    {
-                        	idx = i-1-4*loop;
+                        	idx = i-1-4*LOOP;
                         	idy = (j-2)*5;
-                        	idz = k-align+1;
-                        	d1[i][j][k]  = mediaF_R[idx*5*(4*loop)*(nzt+2)+idy*(nzt+2)+idz];
+                        	idz = k-ALIGN+1;
+                        	d1[i][j][k]  = mediaF_R[idx*5*(4*LOOP)*(nzt+2)+idy*(nzt+2)+idz];
                         	idy++;
-                        	mu[i][j][k]  = mediaF_R[idx*5*(4*loop)*(nzt+2)+idy*(nzt+2)+idz];
+                        	mu[i][j][k]  = mediaF_R[idx*5*(4*LOOP)*(nzt+2)+idy*(nzt+2)+idz];
                         	idy++;
-                        	lam[i][j][k] = mediaF_R[idx*5*(4*loop)*(nzt+2)+idy*(nzt+2)+idz];
+                        	lam[i][j][k] = mediaF_R[idx*5*(4*LOOP)*(nzt+2)+idy*(nzt+2)+idz];
                         	idy++;
-                        	qp[i][j][k]  = mediaF_R[idx*5*(4*loop)*(nzt+2)+idy*(nzt+2)+idz];
+                        	qp[i][j][k]  = mediaF_R[idx*5*(4*LOOP)*(nzt+2)+idy*(nzt+2)+idz];
                         	idy++;
-                        	qs[i][j][k]  = mediaF_R[idx*5*(4*loop)*(nzt+2)+idy*(nzt+2)+idz];
+                        	qs[i][j][k]  = mediaF_R[idx*5*(4*LOOP)*(nzt+2)+idy*(nzt+2)+idz];
                     	    }
 		}
-
+		
 		if(y_rank_B>=0)
 		{
-                        for(i=1+4*loop;i<nxt+3+4*loop;i++)
-                          for(j=nyt+2+4*loop;j<nyt+2+8*loop;j++)
-                            for(k=align-1;k<nzt+align+1;k++)
-                            {
-                                idx = i-1-4*loop;
-                                idy = (j-nyt-2-4*loop)*5;
-                                idz = k-align+1;
-                                d1[i][j][k]  = mediaB_R[idx*5*(4*loop)*(nzt+2)+idy*(nzt+2)+idz];
+                        for(i=1+4*LOOP;i<nxt+3+4*LOOP;i++)
+                          for(j=nyt+2+4*LOOP;j<nyt+2+8*LOOP;j++)
+                            for(k=ALIGN-1;k<nzt+ALIGN+1;k++)
+                            {   
+                                idx = i-1-4*LOOP;
+                                idy = (j-nyt-2-4*LOOP)*5;
+                                idz = k-ALIGN+1;
+                                d1[i][j][k]  = mediaB_R[idx*5*(4*LOOP)*(nzt+2)+idy*(nzt+2)+idz];
                                 idy++;
-                                mu[i][j][k]  = mediaB_R[idx*5*(4*loop)*(nzt+2)+idy*(nzt+2)+idz];
+                                mu[i][j][k]  = mediaB_R[idx*5*(4*LOOP)*(nzt+2)+idy*(nzt+2)+idz];
                                 idy++;
-                                lam[i][j][k] = mediaB_R[idx*5*(4*loop)*(nzt+2)+idy*(nzt+2)+idz];
+                                lam[i][j][k] = mediaB_R[idx*5*(4*LOOP)*(nzt+2)+idy*(nzt+2)+idz];
                                 idy++;
-                                qp[i][j][k]  = mediaB_R[idx*5*(4*loop)*(nzt+2)+idy*(nzt+2)+idz];
+                                qp[i][j][k]  = mediaB_R[idx*5*(4*LOOP)*(nzt+2)+idy*(nzt+2)+idz];
                                 idy++;
-                                qs[i][j][k]  = mediaB_R[idx*5*(4*loop)*(nzt+2)+idy*(nzt+2)+idz];
+                                qs[i][j][k]  = mediaB_R[idx*5*(4*LOOP)*(nzt+2)+idy*(nzt+2)+idz];
                             }
 		}
-
+		
 		Delloc1D(mediaF_S);
 		Delloc1D(mediaB_S);
 		Delloc1D(mediaF_R);
-		Delloc1D(mediaB_R);
+		Delloc1D(mediaB_R);		
 	}
 
 	if(x_rank_L>=0 || x_rank_R>=0)
 	{
-                mediaL_S      = Alloc1D(5*4*loop*(nyt+8*loop)*(nzt+2));
-                mediaR_S      = Alloc1D(5*4*loop*(nyt+8*loop)*(nzt+2));
-                mediaL_R      = Alloc1D(5*4*loop*(nyt+8*loop)*(nzt+2));
-                mediaR_R      = Alloc1D(5*4*loop*(nyt+8*loop)*(nzt+2));
-                media_size_x  = 5*(4*loop)*(nyt+8*loop)*(nzt+2);
+                mediaL_S      = Alloc1D(5*4*LOOP*(nyt+8*LOOP)*(nzt+2));
+                mediaR_S      = Alloc1D(5*4*LOOP*(nyt+8*LOOP)*(nzt+2));
+                mediaL_R      = Alloc1D(5*4*LOOP*(nyt+8*LOOP)*(nzt+2));
+                mediaR_R      = Alloc1D(5*4*LOOP*(nyt+8*LOOP)*(nzt+2));
+                media_size_x  = 5*(4*LOOP)*(nyt+8*LOOP)*(nzt+2);
                 media_count_x = 0;
 
 		PostRecvMsg_X(mediaL_R, mediaR_R, MCW, request_x, &media_count_x, media_size_x, x_rank_L, x_rank_R);
                 if(x_rank_L>=0)
                 {
-                        for(i=2+4*loop;i<2+8*loop;i++)
-                          for(j=2;j<nyt+2+8*loop;j++)
-                            for(k=align-1;k<nzt+align+1;k++)
+                        for(i=2+4*LOOP;i<2+8*LOOP;i++)
+                          for(j=2;j<nyt+2+8*LOOP;j++)
+                            for(k=ALIGN-1;k<nzt+ALIGN+1;k++)
                             {
-                                idx = (i-2-4*loop)*5;
+                                idx = (i-2-4*LOOP)*5;
                                 idy = j-2;
-                                idz = k-align+1;
-                                mediaL_S[idx*(nyt+8*loop)*(nzt+2)+idy*(nzt+2)+idz] = d1[i][j][k];
+                                idz = k-ALIGN+1;
+                                mediaL_S[idx*(nyt+8*LOOP)*(nzt+2)+idy*(nzt+2)+idz] = d1[i][j][k];
                                 idx++;
-                                mediaL_S[idx*(nyt+8*loop)*(nzt+2)+idy*(nzt+2)+idz] = mu[i][j][k];
+                                mediaL_S[idx*(nyt+8*LOOP)*(nzt+2)+idy*(nzt+2)+idz] = mu[i][j][k];
                                 idx++;
-                                mediaL_S[idx*(nyt+8*loop)*(nzt+2)+idy*(nzt+2)+idz] = lam[i][j][k];
+                                mediaL_S[idx*(nyt+8*LOOP)*(nzt+2)+idy*(nzt+2)+idz] = lam[i][j][k];
                                 idx++;
-                                mediaL_S[idx*(nyt+8*loop)*(nzt+2)+idy*(nzt+2)+idz] = qp[i][j][k];
+                                mediaL_S[idx*(nyt+8*LOOP)*(nzt+2)+idy*(nzt+2)+idz] = qp[i][j][k];
                                 idx++;
-                                mediaL_S[idx*(nyt+8*loop)*(nzt+2)+idy*(nzt+2)+idz] = qs[i][j][k];
+                                mediaL_S[idx*(nyt+8*LOOP)*(nzt+2)+idy*(nzt+2)+idz] = qs[i][j][k];
                             }
                 }
 
                 if(x_rank_R>=0)
                 {
-                        for(i=nxt+2;i<nxt+2+4*loop;i++)
-                          for(j=2;j<nyt+2+8*loop;j++)
-                            for(k=align-1;k<nzt+align+1;k++)
+                        for(i=nxt+2;i<nxt+2+4*LOOP;i++)
+                          for(j=2;j<nyt+2+8*LOOP;j++)
+                            for(k=ALIGN-1;k<nzt+ALIGN+1;k++)
                             {
                                 idx = (i-nxt-2)*5;
                                 idy = j-2;
-                                idz = k-align+1;
-                                mediaR_S[idx*(nyt+8*loop)*(nzt+2)+idy*(nzt+2)+idz] = d1[i][j][k];
+                                idz = k-ALIGN+1;
+                                mediaR_S[idx*(nyt+8*LOOP)*(nzt+2)+idy*(nzt+2)+idz] = d1[i][j][k];
                                 idx++;
-                                mediaR_S[idx*(nyt+8*loop)*(nzt+2)+idy*(nzt+2)+idz] = mu[i][j][k];
+                                mediaR_S[idx*(nyt+8*LOOP)*(nzt+2)+idy*(nzt+2)+idz] = mu[i][j][k];
                                 idx++;
-                                mediaR_S[idx*(nyt+8*loop)*(nzt+2)+idy*(nzt+2)+idz] = lam[i][j][k];
+                                mediaR_S[idx*(nyt+8*LOOP)*(nzt+2)+idy*(nzt+2)+idz] = lam[i][j][k];
                                 idx++;
-                                mediaR_S[idx*(nyt+8*loop)*(nzt+2)+idy*(nzt+2)+idz] = qp[i][j][k];
+                                mediaR_S[idx*(nyt+8*LOOP)*(nzt+2)+idy*(nzt+2)+idz] = qp[i][j][k];
                                 idx++;
-                                mediaR_S[idx*(nyt+8*loop)*(nzt+2)+idy*(nzt+2)+idz] = qs[i][j][k];
+                                mediaR_S[idx*(nyt+8*LOOP)*(nzt+2)+idy*(nzt+2)+idz] = qs[i][j][k];
                             }
                 }
 
@@ -196,43 +198,43 @@ void mediaswap(Grid3D d1, Grid3D mu,     Grid3D lam,    Grid3D qp,     Grid3D qs
 
                 if(x_rank_L>=0)
                 {
-                        for(i=2;i<2+4*loop;i++)
-                          for(j=2;j<nyt+2+8*loop;j++)
-                            for(k=align-1;k<nzt+align+1;k++)
+                        for(i=2;i<2+4*LOOP;i++)
+                          for(j=2;j<nyt+2+8*LOOP;j++)
+                            for(k=ALIGN-1;k<nzt+ALIGN+1;k++)
                             {
                                 idx = (i-2)*5;
                                 idy = j-2;
-                                idz = k-align+1;
-                                d1[i][j][k]  = mediaL_R[idx*(nyt+8*loop)*(nzt+2)+idy*(nzt+2)+idz];
+                                idz = k-ALIGN+1;
+                                d1[i][j][k]  = mediaL_R[idx*(nyt+8*LOOP)*(nzt+2)+idy*(nzt+2)+idz];
                                 idx++;
-                                mu[i][j][k]  = mediaL_R[idx*(nyt+8*loop)*(nzt+2)+idy*(nzt+2)+idz];
+                                mu[i][j][k]  = mediaL_R[idx*(nyt+8*LOOP)*(nzt+2)+idy*(nzt+2)+idz];
                                 idx++;
-                                lam[i][j][k] = mediaL_R[idx*(nyt+8*loop)*(nzt+2)+idy*(nzt+2)+idz];
+                                lam[i][j][k] = mediaL_R[idx*(nyt+8*LOOP)*(nzt+2)+idy*(nzt+2)+idz];
                                 idx++;
-                                qp[i][j][k]  = mediaL_R[idx*(nyt+8*loop)*(nzt+2)+idy*(nzt+2)+idz];
+                                qp[i][j][k]  = mediaL_R[idx*(nyt+8*LOOP)*(nzt+2)+idy*(nzt+2)+idz];
                                 idx++;
-                                qs[i][j][k]  = mediaL_R[idx*(nyt+8*loop)*(nzt+2)+idy*(nzt+2)+idz];
+                                qs[i][j][k]  = mediaL_R[idx*(nyt+8*LOOP)*(nzt+2)+idy*(nzt+2)+idz];
                             }
                 }
 
                 if(x_rank_R>=0)
                 {
-                        for(i=nxt+2+4*loop;i<nxt+2+8*loop;i++)
-                          for(j=2;j<nyt+2+8*loop;j++)
-                            for(k=align-1;k<nzt+align+1;k++)
+                        for(i=nxt+2+4*LOOP;i<nxt+2+8*LOOP;i++)
+                          for(j=2;j<nyt+2+8*LOOP;j++)
+                            for(k=ALIGN-1;k<nzt+ALIGN+1;k++)
                             {
-                                idx = (i-nxt-2-4*loop)*5;
+                                idx = (i-nxt-2-4*LOOP)*5;
                                 idy = j-2;
-                                idz = k-align+1;
-                                d1[i][j][k]  = mediaR_R[idx*(nyt+8*loop)*(nzt+2)+idy*(nzt+2)+idz];
+                                idz = k-ALIGN+1;
+                                d1[i][j][k]  = mediaR_R[idx*(nyt+8*LOOP)*(nzt+2)+idy*(nzt+2)+idz];
                                 idx++;
-                                mu[i][j][k]  = mediaR_R[idx*(nyt+8*loop)*(nzt+2)+idy*(nzt+2)+idz];
+                                mu[i][j][k]  = mediaR_R[idx*(nyt+8*LOOP)*(nzt+2)+idy*(nzt+2)+idz];
                                 idx++;
-                                lam[i][j][k] = mediaR_R[idx*(nyt+8*loop)*(nzt+2)+idy*(nzt+2)+idz];
+                                lam[i][j][k] = mediaR_R[idx*(nyt+8*LOOP)*(nzt+2)+idy*(nzt+2)+idz];
                                 idx++;
-                                qp[i][j][k]  = mediaR_R[idx*(nyt+8*loop)*(nzt+2)+idy*(nzt+2)+idz];
+                                qp[i][j][k]  = mediaR_R[idx*(nyt+8*LOOP)*(nzt+2)+idy*(nzt+2)+idz];
                                 idx++;
-                                qs[i][j][k]  = mediaR_R[idx*(nyt+8*loop)*(nzt+2)+idy*(nzt+2)+idz];
+                                qs[i][j][k]  = mediaR_R[idx*(nyt+8*LOOP)*(nzt+2)+idy*(nzt+2)+idz];
                             }
                 }
 
@@ -248,7 +250,7 @@ void mediaswap(Grid3D d1, Grid3D mu,     Grid3D lam,    Grid3D qp,     Grid3D qs
 void PostRecvMsg_X(float* RL_M, float* RR_M, MPI_Comm MCW, MPI_Request* request, int* count, int msg_size, int rank_L, int rank_R)
 {
 	int temp_count = 0;
-
+       
 	if(rank_L>=0){
 		MPI_Irecv(RL_M, msg_size, MPI_FLOAT, rank_L, MPIRANKX+rank_L, MCW, &request[temp_count]);
 		++temp_count;
@@ -363,11 +365,11 @@ void Cpy2Host_VX(float* u1, float* v1, float* w1, float* h_m, int nxt, int nyt, 
         if(rank<0 || flag<1 || flag>2)
 	        return;
 
-	if(flag==Left)	d_offset = (2+4*loop)*(nyt+4+8*loop)*(nzt+2*align);
-	if(flag==Right)	d_offset = (nxt+2)*(nyt+4+8*loop)*(nzt+2*align);
-
-        h_offset = (4*loop)*(nyt+4+8*loop)*(nzt+2*align);
-        msg_size = sizeof(float)*(4*loop)*(nyt+4+8*loop)*(nzt+2*align);
+	if(flag==Left)	d_offset = (2+4*LOOP)*(nyt+4+8*LOOP)*(nzt+2*ALIGN); 
+	if(flag==Right)	d_offset = (nxt+2)*(nyt+4+8*LOOP)*(nzt+2*ALIGN);
+	
+        h_offset = (4*LOOP)*(nyt+4+8*LOOP)*(nzt+2*ALIGN);
+        msg_size = sizeof(float)*(4*LOOP)*(nyt+4+8*LOOP)*(nzt+2*ALIGN);
         cudaMemcpyAsync(h_m,            u1+d_offset, msg_size, cudaMemcpyDeviceToHost, St);
         cudaMemcpyAsync(h_m+h_offset,   v1+d_offset, msg_size, cudaMemcpyDeviceToHost, St);
         cudaMemcpyAsync(h_m+h_offset*2, w1+d_offset, msg_size, cudaMemcpyDeviceToHost, St);
@@ -380,8 +382,8 @@ void Cpy2Host_VY(float* s_u1, float* s_v1, float* s_w1, float* h_m, int nxt, int
         if(rank<0)
                 return;
 
-        h_offset = (4*loop)*(nxt+4+8*loop)*(nzt+2*align);
-        msg_size = sizeof(float)*(4*loop)*(nxt+4+8*loop)*(nzt+2*align);
+        h_offset = (4*LOOP)*(nxt+4+8*LOOP)*(nzt+2*ALIGN);
+        msg_size = sizeof(float)*(4*LOOP)*(nxt+4+8*LOOP)*(nzt+2*ALIGN);
         cudaMemcpyAsync(h_m,            s_u1, msg_size, cudaMemcpyDeviceToHost, St);
         cudaMemcpyAsync(h_m+h_offset,   s_v1, msg_size, cudaMemcpyDeviceToHost, St);
         cudaMemcpyAsync(h_m+h_offset*2, s_w1, msg_size, cudaMemcpyDeviceToHost, St);
@@ -393,18 +395,18 @@ void Cpy2Device_VX(float* u1, float* v1, float* w1,        float* L_m,       flo
 {
         int d_offset, h_offset, msg_size;
 
-        h_offset = (4*loop)*(nyt+4+8*loop)*(nzt+2*align);
-        msg_size = sizeof(float)*(4*loop)*(nyt+4+8*loop)*(nzt+2*align);
+        h_offset = (4*LOOP)*(nyt+4+8*LOOP)*(nzt+2*ALIGN);
+        msg_size = sizeof(float)*(4*LOOP)*(nyt+4+8*LOOP)*(nzt+2*ALIGN);
 
         if(rank_L>=0){
-		d_offset = 2*(nyt+4+8*loop)*(nzt+2*align);
+		d_offset = 2*(nyt+4+8*LOOP)*(nzt+2*ALIGN);
                 cudaMemcpyAsync(u1+d_offset, L_m,            msg_size, cudaMemcpyHostToDevice, St1);
                 cudaMemcpyAsync(v1+d_offset, L_m+h_offset,   msg_size, cudaMemcpyHostToDevice, St1);
                 cudaMemcpyAsync(w1+d_offset, L_m+h_offset*2, msg_size, cudaMemcpyHostToDevice, St1);
 	}
 
         if(rank_R>=0){
-		d_offset = (nxt+4*loop+2)*(nyt+4+8*loop)*(nzt+2*align);
+		d_offset = (nxt+4*LOOP+2)*(nyt+4+8*LOOP)*(nzt+2*ALIGN);
         	cudaMemcpyAsync(u1+d_offset, R_m,            msg_size, cudaMemcpyHostToDevice, St2);
         	cudaMemcpyAsync(v1+d_offset, R_m+h_offset,   msg_size, cudaMemcpyHostToDevice, St2);
         	cudaMemcpyAsync(w1+d_offset, R_m+h_offset*2, msg_size, cudaMemcpyHostToDevice, St2);
@@ -412,14 +414,14 @@ void Cpy2Device_VX(float* u1, float* v1, float* w1,        float* L_m,       flo
         return;
 }
 
-void Cpy2Device_VY(float* u1,   float *v1,  float *w1,  float* f_u1, float* f_v1, float* f_w1, float* b_u1,      float* b_v1,
-                   float* b_w1, float* F_m, float* B_m, int nxt,     int nyt,     int nzt,     cudaStream_t St1, cudaStream_t St2,
+void Cpy2Device_VY(float* u1,   float *v1,  float *w1,  float* f_u1, float* f_v1, float* f_w1, float* b_u1,      float* b_v1, 
+                   float* b_w1, float* F_m, float* B_m, int nxt,     int nyt,     int nzt,     cudaStream_t St1, cudaStream_t St2, 
                    int rank_F,  int rank_B)
 {
         int h_offset, msg_size;
 
-        h_offset = (4*loop)*(nxt+4+8*loop)*(nzt+2*align);
-        msg_size = sizeof(float)*(4*loop)*(nxt+4+8*loop)*(nzt+2*align);
+        h_offset = (4*LOOP)*(nxt+4+8*LOOP)*(nzt+2*ALIGN);
+        msg_size = sizeof(float)*(4*LOOP)*(nxt+4+8*LOOP)*(nzt+2*ALIGN);
         if(rank_F>=0){
                 cudaMemcpyAsync(f_u1, F_m,            msg_size, cudaMemcpyHostToDevice, St1);
                 cudaMemcpyAsync(f_v1, F_m+h_offset,   msg_size, cudaMemcpyHostToDevice, St1);
@@ -435,3 +437,4 @@ void Cpy2Device_VY(float* u1,   float *v1,  float *w1,  float* f_u1, float* f_v1
         update_bound_y_H(u1, v1, w1, f_u1, f_v1, f_w1, b_u1, b_v1, b_w1, nxt, nzt, St1, St2, rank_F, rank_B);
         return;
 }
+
