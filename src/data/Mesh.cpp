@@ -135,6 +135,7 @@ void odc::data::Mesh::inimesh(int MEDIASTART, Grid3D d1, Grid3D mu, Grid3D lam, 
     MPI_File     fh;
     char mpiErrStr[100];
     int mpiErrStrLen;
+    int_pt num_pts = (int_pt) nxt * (int_pt) nyt * (int_pt) nzt;
     
     
     pi      = 4.*atan(1.);
@@ -238,7 +239,7 @@ void odc::data::Mesh::inimesh(int MEDIASTART, Grid3D d1, Grid3D mu, Grid3D lam, 
                 sprintf(filename,"input_rst/mediapart/media%07d.bin",rank);
                 if(rank%100==0) printf("Rank=%d, reading file=%s\n",rank,filename);
             }
-            Grid1D tmpta = Alloc1D(nvar*nxt*nyt*nzt);
+            Grid1D tmpta = Alloc1D(nvar*num_pts);
             if(MEDIASTART==3 || (PX==1 && PY==1))
             {
                 FILE   *file;
@@ -248,7 +249,7 @@ void odc::data::Mesh::inimesh(int MEDIASTART, Grid3D d1, Grid3D mu, Grid3D lam, 
                     printf("can't open file %s", filename);
                     return;
                 }
-                if(!fread(tmpta,sizeof(float),nvar*nxt*nyt*nzt,file))
+                if(!fread(tmpta,sizeof(float),nvar*num_pts,file))
                 {
                     printf("can't read file %s", filename);
                     return;
