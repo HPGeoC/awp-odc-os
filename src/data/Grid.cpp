@@ -467,3 +467,66 @@ void odc::data::Delloc1P(PosInf U)
     return;
 }
 
+
+/**
+ Copies data from YASK RealvGrid to Grid3D data structure. Both structures must already
+ be allocated and have sufficient space for the respective read/write operations, since it
+ is expected that both grids are of the same size.
+
+ @param[in] grid Pointer to Grid3D data structure
+ @param[in,out] yaskGrid RealvGrid allocated by YASK
+ @param[in] xStart Starting index in x dimension (same for both grids)
+ @param[in] yStart Starting index in y dimension (same for both grids)
+ @param[in] zStart Starting index in z dimension (same for both grids)
+ @param[in] nx Number of grid points to copy in x dimension
+ @param[in] ny Number of grid points to copy in y dimension
+ @param[in] nz Number of grid points to copy in z dimension
+
+ @warning This copy operation uses scalar read/writes, so it will be SLOW. Only use
+ for validation and testing!!
+ */
+void odc::data::CopyFromYASKGrid(Grid3D grid, RealvGridBase* yaskGrid,
+int_pt xStart, int_pt yStart, int_pt zStart,
+int_pt nx, int_pt ny, int_pt nz) {
+
+    for (int_pt i=xStart; i<xStart+nx; i++) {
+        for (int_pt j=yStart, j<yStart+ny; j++) {
+            for (int_pt k=zStart; k<zStart+nz; k++) {
+                grid[i][j][k] = yaskGrid->readElem(i, j, k, 0);
+            }
+        }
+    }
+}
+
+/**
+ Writes data from Grid3D data structure to a YASK RealvGrid. Both structures must already
+ be allocated and have sufficient space for the respective read/write operations, since it
+ is expected that both grids are of the same size.
+
+ @param[in] grid Pointer to Grid3D data structure
+ @param[in,out] yaskGrid RealvGrid allocated by YASK
+ @param[in] xStart Starting index in x dimension (same for both grids)
+ @param[in] yStart Starting index in y dimension (same for both grids)
+ @param[in] zStart Starting index in z dimension (same for both grids)
+ @param[in] nx Number of grid points to write in x dimension
+ @param[in] ny Number of grid points to write in y dimension
+ @param[in] nz Number of grid points to write in z dimension
+
+ @warning This copy operation uses scalar read/writes, so it will be SLOW. Only use
+ for validation and testing!!
+ */
+void odc::data::WriteToYASKGrid(Grid3D grid, RealvGridBase* yaskGrid,
+                                 int_pt xStart, int_pt yStart, int_pt zStart,
+                                 int_pt nx, int_pt ny, int_pt nz) {
+
+    for (int_pt i=xStart; i<xStart+nx; i++) {
+        for (int_pt j=yStart, j<yStart+ny; j++) {
+            for (int_pt k=zStart; k<zStart+nz; k++) {
+                yaskGrid->writeElem(grid[i][j][k], i, j, k, 0);
+            }
+        }
+    }
+}
+
+
+
