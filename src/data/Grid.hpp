@@ -47,6 +47,8 @@ namespace odc {
         void Delloc1D(Grid1D U);
         void Delloc1P(PosInf U);
 
+
+#ifdef USING_YASK
         void CopyFromYASKGrid(Grid3D grid, RealvGridBase* yaskGrid,
                               int_pt xStart, int_pt yStart, int_pt zStart,
                               int_pt nx, int_pt ny, int_pt nz);
@@ -56,6 +58,8 @@ namespace odc {
 
     }
 }
+
+#endif
 
 
 

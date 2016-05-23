@@ -485,6 +485,8 @@ void odc::data::Delloc1P(PosInf U)
  @warning This copy operation uses scalar read/writes, so it will be SLOW. Only use
  for validation and testing!!
  */
+
+#ifdef USING_YASK
 void odc::data::CopyFromYASKGrid(Grid3D grid, RealvGridBase* yaskGrid,
 int_pt xStart, int_pt yStart, int_pt zStart,
 int_pt nx, int_pt ny, int_pt nz) {
@@ -527,6 +529,8 @@ void odc::data::WriteToYASKGrid(Grid3D grid, RealvGridBase* yaskGrid,
         }
     }
 }
+
+#endif
 
 
 
