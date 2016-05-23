@@ -228,7 +228,7 @@ void odc::io::OutputWriter::update(int_pt i_timestep, Grid3D velocityX, Grid3D v
             MPI_Status filestatus;
             
             // Write x velocity data
-            snprintf(filename, sizeof(filename), "%s%07ld", m_filenamebasex, i_timestep);
+            snprintf(filename, sizeof(filename), "%s%07" AWP_PT_FORMAT_STRING, m_filenamebasex, i_timestep);
             int err = MPI_File_open(MPI_COMM_WORLD, filename,
                                 MPI_MODE_CREATE|MPI_MODE_WRONLY,
                                 MPI_INFO_NULL, &file);
@@ -238,7 +238,7 @@ void odc::io::OutputWriter::update(int_pt i_timestep, Grid3D velocityX, Grid3D v
             err = MPI_File_close(&file);
             
             // Write y velocity data
-            snprintf(filename, sizeof(filename), "%s%07ld", m_filenamebasey, i_timestep);
+            snprintf(filename, sizeof(filename), "%s%07" AWP_PT_FORMAT_STRING, m_filenamebasey, i_timestep);
             err = MPI_File_open(MPI_COMM_WORLD, filename,
                                     MPI_MODE_CREATE|MPI_MODE_WRONLY,
                                     MPI_INFO_NULL, &file);
@@ -248,7 +248,7 @@ void odc::io::OutputWriter::update(int_pt i_timestep, Grid3D velocityX, Grid3D v
             err = MPI_File_close(&file);
             
             // Write z velocity data
-            snprintf(filename, sizeof(filename), "%s%07ld", m_filenamebasez, i_timestep);
+            snprintf(filename, sizeof(filename), "%s%07" AWP_PT_FORMAT_STRING, m_filenamebasez, i_timestep);
             err = MPI_File_open(MPI_COMM_WORLD, filename,
                                 MPI_MODE_CREATE|MPI_MODE_WRONLY,
                                 MPI_INFO_NULL, &file);
@@ -288,7 +288,7 @@ void odc::io::CheckpointWriter::writeUpdatedStats(int_pt currentTimeStep, Grid3D
         int_pt i = m_nd;
         int_pt j = i;
         int_pt k = m_numZGridPoints-1-m_nd;
-        fprintf(m_checkPointFile,"%ld :\t%e\t%e\t%e\n", currentTimeStep,
+        fprintf(m_checkPointFile,"%" AWP_PT_FORMAT_STRING " :\t%e\t%e\t%e\n", currentTimeStep,
                 velocityX[i][j][k], velocityY[i][j][k], velocityZ[i][j][k]);
         
         fflush(m_checkPointFile);
@@ -305,8 +305,8 @@ void odc::io::CheckpointWriter::writeInitialStats(int_pt ntiskp, real dt, real d
     
     fchk = std::fopen(m_checkPointFileName,"w");
     fprintf(fchk,"STABILITY CRITERIA .5 > CMAX*DT/DX:\t%f\n",vpe[1]*dt/dh);
-    fprintf(fchk,"# OF X,Y,Z NODES PER PROC:\t%d, %d, %d\n",nxt,nyt,nzt);
-    fprintf(fchk,"# OF TIME STEPS:\t%d\n",nt);
+    fprintf(fchk,"# OF X,Y,Z NODES PER PROC:\t%" AWP_PT_FORMAT_STRING ", %" AWP_PT_FORMAT_STRING ", %" AWP_PT_FORMAT_STRING "\n",nxt,nyt,nzt);
+    fprintf(fchk,"# OF TIME STEPS:\t%" AWP_PT_FORMAT_STRING "\n",nt);
     fprintf(fchk,"DISCRETIZATION IN SPACE:\t%f\n",dh);
     fprintf(fchk,"DISCRETIZATION IN TIME:\t%f\n",dt);
     fprintf(fchk,"PML REFLECTION COEFFICIENT:\t%f\n",arbc);
@@ -316,9 +316,9 @@ void odc::io::CheckpointWriter::writeInitialStats(int_pt ntiskp, real dt, real d
     fprintf(fchk,"LOWEST S-VELOCITY ENCOUNTERED:\t%f\n",vse[0]);
     fprintf(fchk,"HIGHEST DENSITY ENCOUNTERED:\t%f\n",dde[1]);
     fprintf(fchk,"LOWEST  DENSITY ENCOUNTERED:\t%f\n",dde[0]);
-    fprintf(fchk,"SKIP OF SEISMOGRAMS IN TIME (LOOP COUNTER):\t%d\n",ntiskp);
-    fprintf(fchk,"ABC CONDITION, PML=1 OR CERJAN=0:\t%d\n",npc);
-    fprintf(fchk,"FD SCHEME, VISCO=1 OR ELASTIC=0:\t%d\n",nve);
+    fprintf(fchk,"SKIP OF SEISMOGRAMS IN TIME (LOOP COUNTER):\t%" AWP_PT_FORMAT_STRING "\n",ntiskp);
+    fprintf(fchk,"ABC CONDITION, PML=1 OR CERJAN=0:\t%" AWP_PT_FORMAT_STRING "\n",npc);
+    fprintf(fchk,"FD SCHEME, VISCO=1 OR ELASTIC=0:\t%" AWP_PT_FORMAT_STRING "\n",nve);
     fprintf(fchk,"Q, FAC,Q0,EX,FP:\t%f, %f, %f, %f\n",fac,q0,ex,fp);
     fclose(fchk);
     

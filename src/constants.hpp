@@ -45,6 +45,7 @@ typedef float real;
 
 // int for grid points
 typedef long long int_pt;
+#define AWP_PT_FORMAT_STRING "lld"
 
 #ifdef __cplusplus
 namespace odc {
