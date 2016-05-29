@@ -176,7 +176,7 @@ void inimesh(int MEDIASTART, Grid3D d1, Grid3D mu, Grid3D lam, Grid3D qp, Grid3D
       if(MEDIASTART>=1 && MEDIASTART<=3)
       {
           char filename[200];
-          if(MEDIASTART<3) sprintf(filename,INVEL);
+          if(MEDIASTART<3) sprintf(filename,"%s",INVEL);
           else if(MEDIASTART==3){
             sprintf(filename,"input_rst/mediapart/media%07d.bin",rank);
             if(rank%100==0) printf("Rank=%d, reading file=%s\n",rank,filename);

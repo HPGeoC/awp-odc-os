@@ -125,7 +125,7 @@ real calculate_anelastic_coeff(real q, int_pt weight_index, real weight, real *c
 // Reference implementation (No anelastic attenuation)
 
 void update_stress_elastic( real   *velocity_x, real   *velocity_y, real   *velocity_z,
-                           int     dim_x,      int     dim_y,      int     dim_z,
+                           int_pt     dim_x,      int_pt     dim_y,      int_pt     dim_z,
                            int_pt  xstep,      int_pt  ystep,      int_pt  zstep,
                            real   *stress_xx,  real   *stress_xy,  real   *stress_xz, real *stress_yy, real *stress_yz, real *stress_zz,
                            real   *coeff,
