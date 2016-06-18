@@ -57,4 +57,4 @@ script:
 
   - scons parallelization=mpi_omp
 
-  - scons parallelization=mpi_omp arch=knl
+  - scons parallelization=mpi_omp cpu_arch=knl
