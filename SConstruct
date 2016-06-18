@@ -27,6 +27,11 @@ vars.AddVariables(
                 'parallelization',
                 'mpi_cuda',
                  allowed_values=('mpi_cuda', 'mpi_omp')
+              ),
+  EnumVariable( 'cpu_arch',
+                'CPU architecture to compile for',
+                'host',
+                 allowed_values=('host', 'snb', 'hsw', 'knl')
               )
 )
 
@@ -42,6 +47,25 @@ Help( vars.GenerateHelpText(env) )
 
 # setup environment
 env['ENV'] = os.environ
+
+# forward compiler
+if 'CC' in env['ENV'].keys():
+  env['CC'] = env['ENV']['CC']
+if 'CXX' in env['ENV'].keys():
+  env['CXX'] = env['ENV']['CXX']
+
+# set CPU architecture and alignment
+if env['cpu_arch'] == 'host':
+  if env['CXX'] == 'icpc':
+    env.Append( CPPFLAGS = ['-xHost'] )
+  elif 'g++' in env['CXX']:
+    env.Append( CPPFLAGS = ['-march=native'] )
+if env['cpu_arch'] == 'snb':
+  env.Append( CPPFLAGS = ['-mavx'] )
+elif env['cpu_arch'] == 'hsw':
+  env.Append( CPPFLAGS = ['-mavx2'] )
+elif env['cpu_arch'] == 'knl':
+  env.Append( CPPFLAGS = ['-mavx512f', '-mavx512cd', '-mavx512er', '-mavx512pf'] )
 
 # add cuda support if requested
 if env['parallelization'] in ['cuda', 'mpi_cuda' ]:
