@@ -29,22 +29,6 @@ language: cpp
 matrix:
   include:
     - os: linux
-      compiler: clang
-      addons:
-        apt:
-          sources: ['ubuntu-toolchain-r-test', 'llvm-toolchain-precise-3.5']
-          packages: ['clang-3.5']
-      env: OMPI_CXX=clang++
-
-    - os: linux
-      compiler: clang
-      addons:
-        apt:
-          sources: ['ubuntu-toolchain-r-test', 'llvm-toolchain-precise-3.6']
-          packages: ['clang-3.6']
-      env: OMPI_CXX=clang++
-
-    - os: linux
       compiler: gcc
       addons:
         apt:
