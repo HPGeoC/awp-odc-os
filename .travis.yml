@@ -34,7 +34,9 @@ matrix:
         apt:
           sources: ['ubuntu-toolchain-r-test']
           packages: ['g++-4.9']
-      env: OMPI_CXX=g++-4.9
+      env:
+      - OMPI_CC=gcc-4.9
+      - OMPI_CXX=g++-4.9
 
     - os: linux
       compiler: gcc
@@ -42,7 +44,9 @@ matrix:
         apt:
           sources: ['ubuntu-toolchain-r-test']
           packages: ['g++-5']
-      env: OMPI_CXX=g++-5
+      env:
+      - OMPI_CC=gcc-5
+      - OMPI_CXX=g++-5
 
 before_install:
   - sudo apt-get update -qq
@@ -52,3 +56,5 @@ script:
   - ${OMPI_CXX} --version
 
   - scons parallelization=mpi_omp
+
+  - scons parallelization=mpi_omp arch=knl
