@@ -40,7 +40,7 @@ vars.AddVariables(
 )
 
 # include environment
-env = Environment( variables = vars, tools=['default', 'intelc'] )
+env = Environment( variables = vars )
 
 # generate help message
 Help( vars.GenerateHelpText(env) )
@@ -53,6 +53,14 @@ if 'CC' in env['ENV'].keys():
   env['CC'] = env['ENV']['CC']
 if 'CXX' in env['ENV'].keys():
   env['CXX'] = env['ENV']['CXX']
+
+# forward flags
+if 'CFLAGS' in env['ENV'].keys():
+  env['CFLAGS'] = env['ENV']['CFLAGS']
+if 'CXXFLAGS' in env['ENV'].keys():
+  env['CXXFLAGS'] = env['ENV']['CXXFLAGS']
+if 'LINKFLAGS' in env['ENV'].keys():
+  env['LINKFLAGS'] = env['ENV']['LINKFLAGS']
 
 # set CPU architecture and alignment
 if env['cpu_arch'] == 'host':
