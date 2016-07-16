@@ -23,6 +23,7 @@
 // TODO: Required for sources
 #include <mpi.h>
 
+#include "data/PatchDecomp.hpp"
 #include "constants.hpp"
 
 extern "C" int inisource( int      rank,    int     IFAULT, int     NSRC,   int     READ_STEP, int     NST,     int     *SRCPROC, int    NZ, 
@@ -73,8 +74,7 @@ class odc::io::Sources {
             char *i_inSrcI2 );
     
     
-    void addsrc(int_pt i, float DH,   float DT,   int NST,  int READ_STEP, int dim,
-                Grid3D xx,  Grid3D yy,  Grid3D zz,  Grid3D xy,  Grid3D yz,  Grid3D xz);
+    void addsrc(int_pt i, float DH,   float DT,   int NST,  int READ_STEP, int dim, PatchDecomp& pd);
     
 };
 

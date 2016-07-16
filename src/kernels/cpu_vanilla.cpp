@@ -123,7 +123,6 @@ real calculate_anelastic_coeff(real q, int_pt weight_index, real weight, real *c
 
 
 // Reference implementation (No anelastic attenuation)
-
 void update_stress_elastic( real   *velocity_x, real   *velocity_y, real   *velocity_z,
                            int_pt     dim_x,      int_pt     dim_y,      int_pt     dim_z,
                            int_pt  xstep,      int_pt  ystep,      int_pt  zstep,
@@ -231,14 +230,13 @@ void update_stress_elastic( real   *velocity_x, real   *velocity_y, real   *velo
 } // end function update_stress_elastic
 
 
-
-
 // Reference implementation (replaces dstrqc)
 
 void update_free_surface_boundary_velocity(real *velocity_x, real *velocity_y, real *velocity_z,
                                            int_pt xstep, int_pt ystep, int_pt zstep,
                                            int_pt dim_x, int_pt dim_y, int_pt dim_z,
-                                           real *lam_mu, int_pt lam_mu_xstep, int_pt lam_mu_ystep) {
+                                           real *lam_mu, int_pt lam_mu_xstep,
+                                           bool on_x_max_bdry, bool on_y_zero_bdry) {
     
     
     for (int_pt ix=HALF_STEP; ix < dim_x-HALF_STEP; ix++) {
@@ -261,16 +259,17 @@ void update_free_surface_boundary_velocity(real *velocity_x, real *velocity_y, r
             real dvx = 0.0;
             real dvy = 0.0;
             // TODO: For MPI, this should check to see if this is the last x point on the GLOBAL grid
-            if (ix < dim_x-HALF_STEP-1) {
+            if (!on_x_max_bdry || ix < dim_x-HALF_STEP-1) {
                 dvx = velocity_x[pos_xp1] - (velocity_z[pos_xp1] - velocity_z[pos]);
             }
             
             // TODO: For MPI, this should check to see if this is the first y point on the GLOBAL grid
-            if (iy > 0) {
+            if (!on_y_zero_bdry || iy > 0) {
                 dvy = velocity_y[pos_ym1] - (velocity_z[pos] - velocity_z[pos_ym1]);
             }
             
-            velocity_z[pos_zp1] = velocity_z[pos_zm1] - lam_mu[ix*lam_mu_xstep + iy*lam_mu_ystep]*
+            // TODO(Josh): Remove hardcoded '5' in the following (comes from 2*bdry+1 I think)
+            velocity_z[pos_zp1] = velocity_z[pos_zm1] - lam_mu[ix*lam_mu_xstep*5 + iy*5]* 
             ((dvx - velocity_x[pos_zp1]) + (velocity_x[pos_xp1] - velocity_x[pos]) +
              (velocity_y[pos_zp1] - dvy) + (velocity_y[pos] - velocity_y[pos_ym1]));
             
@@ -487,28 +486,50 @@ void update_stress_from_fault_sources(int_pt source_timestep, int READ_STEP, int
                                       int *fault_nodes, int num_fault_nodes, int_pt dim_x, int_pt dim_y, int_pt dim_z,
                                       int_pt  xstep, int_pt ystep, int_pt zstep,
                                       real *stress_xx_update, real *stress_xy_update, real *stress_xz_update, real *stress_yy_update,
-                                      real *stress_yz_update, real *stress_zz_update, real *stress_xx, real *stress_xy,
-                                      real *stress_xz, real *stress_yy, real *stress_yz, real *stress_zz, real dt, real dh) {
+                                      real *stress_yz_update, real *stress_zz_update, real dt, real dh,
+                                      PatchDecomp& pd, int_pt start_x, int_pt start_y, int_pt start_z,
+                                      int_pt size_x, int_pt size_y, int_pt size_z, int_pt ptch) {
     
     real coeff = dt/(dh*dh*dh);
     
     for (int_pt j=0; j < num_fault_nodes; j++) {
-        
+      
         // Find index (idx, idy, idz) of fault node
         int_pt idx = fault_nodes[j*num_model_dimensions]-1;
         int_pt idy = fault_nodes[j*num_model_dimensions+1]-1;
         int_pt idz = fault_nodes[j*num_model_dimensions+2]-1;
+
+      if(source_timestep==1)
+      {
+        //std::cout << idx << ' ' << idy << ' ' << idz << std::endl; 
+      }
         
         // Index of source node at position (idx,idy,idz)
         int_pt pos = idx*xstep + idy*ystep + idz*zstep;
+
+        int_pt patch_id = pd.globalToPatch(idx,idy,idz);
+        int_pt x = pd.globalToLocalX(idx,idy,idz);
+        int_pt y = pd.globalToLocalY(idx,idy,idz);
+        int_pt z = pd.globalToLocalZ(idx,idy,idz);
+
+        if(ptch != patch_id)
+          continue;
+        
+        if(x < start_x || x >= start_x + size_x)
+          continue;
+        if(y < start_y || y >= start_y + size_y)
+          continue;
+        if(z < start_z || z >= start_z + size_z)
+        continue;
+
         
         // Calculate stress updates
-        stress_xx[pos] -= coeff*stress_xx_update[j*READ_STEP+source_timestep];
-        stress_xy[pos] -= coeff*stress_xy_update[j*READ_STEP+source_timestep];
-        stress_xz[pos] -= coeff*stress_xz_update[j*READ_STEP+source_timestep];
-        stress_yy[pos] -= coeff*stress_yy_update[j*READ_STEP+source_timestep];
-        stress_yz[pos] -= coeff*stress_yz_update[j*READ_STEP+source_timestep];
-        stress_zz[pos] -= coeff*stress_zz_update[j*READ_STEP+source_timestep];
+        pd.m_patches[patch_id].soa.m_stressXX[x][y][z] -= coeff*stress_xx_update[j*READ_STEP+source_timestep];
+        pd.m_patches[patch_id].soa.m_stressXY[x][y][z] -= coeff*stress_xy_update[j*READ_STEP+source_timestep];
+        pd.m_patches[patch_id].soa.m_stressXZ[x][y][z] -= coeff*stress_xz_update[j*READ_STEP+source_timestep];
+        pd.m_patches[patch_id].soa.m_stressYY[x][y][z] -= coeff*stress_yy_update[j*READ_STEP+source_timestep];
+        pd.m_patches[patch_id].soa.m_stressYZ[x][y][z] -= coeff*stress_yz_update[j*READ_STEP+source_timestep];
+        pd.m_patches[patch_id].soa.m_stressZZ[x][y][z] -= coeff*stress_zz_update[j*READ_STEP+source_timestep];
         
     }
 }

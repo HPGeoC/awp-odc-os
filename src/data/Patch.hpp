@@ -1,11 +1,11 @@
 /**
- @author Gautam Wilkins
+ @author Josh Tobin (rjtobin AT ucsd.edu)
  
  @section DESCRIPTION
- Main file.
+ Patch data structure for mcdram blocking.
  
  @section LICENSE
- Copyright (c) 2016, Regents of the University of California
+ Copyright (c) 2015-2016, Regents of the University of California
  All rights reserved.
  
  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -18,45 +18,42 @@
  */
 
 
-#ifndef AWP_ODC_OS_CERJAN_HPP
-#define AWP_ODC_OS_CERJAN_HPP
+#if !defined(PATCH_H)
 
 #include "constants.hpp"
 #include "io/OptionParser.h"
+#include "data/Grid.hpp"
 #include "data/SoA.hpp"
+#include "data/Mesh.hpp"
+#include "data/Cerjan.hpp"
 
-
-namespace odc {
-    namespace data {
-        class Cerjan;
-    }
-}
-
-
-class odc::data::Cerjan {
-    
+class Patch
+{
 public:
-    Grid1D m_spongeCoeffX;
-    Grid1D m_spongeCoeffY;
-    Grid1D m_spongeCoeffZ;
+  Patch();
+  Patch(int_pt _nx, int_pt _ny, int_pt _nz, int_pt _bw);
+  ~Patch();
 
-    Cerjan() {};
-    Cerjan(io::OptionParser i_options, SoA i_data);
+  void initialize(odc::io::OptionParser i_options, int_pt _nx, int_pt _ny, int_pt _nz, int_pt _bw,
+                  int_pt i_globalX, int_pt i_globalY, int_pt i_globalZ, Grid1D i_inputBuffer);
+  
+  int_pt nx, ny, nz;
+  int_pt bdry_width;
 
-    void initialize(io::OptionParser i_options, int_pt nx, int_pt ny, int_pt nz, int_pt bdry_width, int_pt *coords);
-    void finalize();
-    
-private:
-    void inicrj(float ARBC, int_pt *coords, int_pt nxt, int_pt nyt, int_pt nzt, int_pt NX, int_pt NY, int_pt ND, Grid1D dcrjx, Grid1D dcrjy, Grid1D dcrjz);
-    
-    
-    
-    
-    
+  int_pt strideX, strideY, strideZ;
+  int_pt lamMuStrideX; 
+  
+  int_pt size_x, size_y, size_z;
+
+  void synchronize(bool allGrids);
+  void synchronize(int dir_x, int dir_y, int dir_z , bool allGrids);  
+
+  Patch* neighbors[3][3][3];
+  
+  odc::data::SoA soa;
+  odc::data::Mesh mesh;
+  odc::data::Cerjan cerjan;
 };
 
-
-
-
-
-#endif /* Cerjan_hpp */
+#define PATCH_H
+#endif

@@ -195,7 +195,79 @@ odc::io::OutputWriter::OutputWriter(odc::io::OptionParser i_options) {
     
 }
 
-void odc::io::OutputWriter::update(int_pt i_timestep, Grid3D velocityX, Grid3D velocityY, Grid3D velocityZ, int_pt dimZ) {
+void odc::io::OutputWriter::update(int_pt i_timestep, PatchDecomp& i_ptchDec, int_pt dimZ) {
+    
+    if (i_timestep % m_numTimestepsToSkip == 0) {
+        
+        int bufInd = (i_timestep/m_numTimestepsToSkip + m_writeStep-1) % m_writeStep;
+        bufInd *= m_numGridPointsToRecord;
+
+        /*
+        // record node data into buffers
+        for (int_pt iz = dimZ - m_firstZNodeToRecord - 1; iz >= dimZ - m_lastZNodeToRecord; iz -= m_numZNodesToSkip) {
+            for (int_pt iy = m_firstYNodeToRecord; iy <= m_lastYNodeToRecord; iy += m_numYNodesToSkip) {
+                for (int_pt ix = m_firstXNodeToRecord; ix <= m_lastXNodeToRecord; ix += m_numXNodesToSkip) {
+                    
+                  m_velocityXWriteBuffer[bufInd] = velocityX[ix][iy][iz];
+                    m_velocityYWriteBuffer[bufInd] = velocityY[ix][iy][iz];
+                    m_velocityZWriteBuffer[bufInd] = velocityZ[ix][iy][iz];
+                    
+                    bufInd++;
+                }
+            }
+            }*/
+        i_ptchDec.copyVelToBuffer(m_velocityXWriteBuffer + bufInd, m_velocityYWriteBuffer + bufInd,
+                                  m_velocityZWriteBuffer + bufInd,
+                                  m_firstXNodeToRecord, m_lastXNodeToRecord, m_numXNodesToSkip,
+                                  m_firstYNodeToRecord, m_lastYNodeToRecord, m_numYNodesToSkip,
+                                  m_firstZNodeToRecord, m_lastZNodeToRecord, m_numZNodesToSkip);
+        
+        if ((i_timestep/m_numTimestepsToSkip) % m_writeStep == 0) {
+            
+            std::cout << "Writing to file" << std::endl;
+            
+            char filename[256];
+            MPI_File file;
+            
+            // TODO: calculate this through calcRecordingPoints to respect MPI topology
+            MPI_Offset displacement = 0;
+            MPI_Status filestatus;
+            
+            // Write x velocity data
+            snprintf(filename, sizeof(filename), "%s%07" AWP_PT_FORMAT_STRING, m_filenamebasex, i_timestep);
+            int err = MPI_File_open(MPI_COMM_WORLD, filename,
+                                MPI_MODE_CREATE|MPI_MODE_WRONLY,
+                                MPI_INFO_NULL, &file);
+            
+            err = MPI_File_set_view(file, displacement, AWP_MPI_REAL, m_filetype, "native", MPI_INFO_NULL);
+            err = MPI_File_write_all(file, m_velocityXWriteBuffer, m_numGridPointsToRecord*m_writeStep, AWP_MPI_REAL, &filestatus);
+            err = MPI_File_close(&file);
+            
+            // Write y velocity data
+            snprintf(filename, sizeof(filename), "%s%07" AWP_PT_FORMAT_STRING, m_filenamebasey, i_timestep);
+            err = MPI_File_open(MPI_COMM_WORLD, filename,
+                                    MPI_MODE_CREATE|MPI_MODE_WRONLY,
+                                    MPI_INFO_NULL, &file);
+            
+            err = MPI_File_set_view(file, displacement, AWP_MPI_REAL, m_filetype, "native", MPI_INFO_NULL);
+            err = MPI_File_write_all(file, m_velocityYWriteBuffer, m_numGridPointsToRecord*m_writeStep, AWP_MPI_REAL, &filestatus);
+            err = MPI_File_close(&file);
+            
+            // Write z velocity data
+            snprintf(filename, sizeof(filename), "%s%07" AWP_PT_FORMAT_STRING, m_filenamebasez, i_timestep);
+            err = MPI_File_open(MPI_COMM_WORLD, filename,
+                                MPI_MODE_CREATE|MPI_MODE_WRONLY,
+                                MPI_INFO_NULL, &file);
+            
+            err = MPI_File_set_view(file, displacement, AWP_MPI_REAL, m_filetype, "native", MPI_INFO_NULL);
+            err = MPI_File_write_all(file, m_velocityZWriteBuffer, m_numGridPointsToRecord*m_writeStep, AWP_MPI_REAL, &filestatus);
+            err = MPI_File_close(&file);
+        }
+             
+    }
+}
+
+void odc::io::OutputWriter::oldUpdate(int_pt i_timestep, Grid3D velocityX, Grid3D velocityY, Grid3D velocityZ, int_pt dimZ) {
     
     if (i_timestep % m_numTimestepsToSkip == 0) {
         
@@ -277,7 +349,26 @@ odc::io::CheckpointWriter::CheckpointWriter(char *chkfile, int_pt nd, int_pt tim
     std::strncpy(m_checkPointFileName, chkfile, sizeof(m_checkPointFileName));
 }
 
-void odc::io::CheckpointWriter::writeUpdatedStats(int_pt currentTimeStep, Grid3D velocityX, Grid3D velocityY,
+void odc::io::CheckpointWriter::writeUpdatedStats(int_pt currentTimeStep, PatchDecomp& i_ptchDec) {
+    
+    if (currentTimeStep % m_numTimestepsToSkip == 0) {
+        if (!m_checkPointFile) {
+            m_checkPointFile = std::fopen(m_checkPointFileName,"a+");
+        }
+        
+        int_pt i = m_nd;
+        int_pt j = i;
+        int_pt k = m_numZGridPoints-1-m_nd;
+        fprintf(m_checkPointFile,"%" AWP_PT_FORMAT_STRING " :\t%e\t%e\t%e\n", currentTimeStep,
+                i_ptchDec.getVelX(i,j,k), i_ptchDec.getVelY(i,j,k), i_ptchDec.getVelZ(i,j,k));
+        
+        fflush(m_checkPointFile);
+        
+    }
+    
+}
+
+void odc::io::CheckpointWriter::oldWriteUpdatedStats(int_pt currentTimeStep, Grid3D velocityX, Grid3D velocityY,
                                                   Grid3D velocityZ) {
     
     if (currentTimeStep % m_numTimestepsToSkip == 0) {
@@ -299,23 +390,24 @@ void odc::io::CheckpointWriter::writeUpdatedStats(int_pt currentTimeStep, Grid3D
 
 void odc::io::CheckpointWriter::writeInitialStats(int_pt ntiskp, real dt, real dh, int_pt nxt, int_pt nyt, int_pt nzt,
                                                   int_pt nt, real arbc, int_pt npc, int_pt nve, real fac, real q0, real ex, real fp,
-                                                  real *vse, real *vpe, real *dde) {
+                                                  real vse_min, real vse_max, real vpe_min, real vpe_max,
+                                                  real dde_min, real dde_max) {
     
     FILE *fchk;
     
     fchk = std::fopen(m_checkPointFileName,"w");
-    fprintf(fchk,"STABILITY CRITERIA .5 > CMAX*DT/DX:\t%f\n",vpe[1]*dt/dh);
+    fprintf(fchk,"STABILITY CRITERIA .5 > CMAX*DT/DX:\t%f\n",vpe_max*dt/dh);
     fprintf(fchk,"# OF X,Y,Z NODES PER PROC:\t%" AWP_PT_FORMAT_STRING ", %" AWP_PT_FORMAT_STRING ", %" AWP_PT_FORMAT_STRING "\n",nxt,nyt,nzt);
     fprintf(fchk,"# OF TIME STEPS:\t%" AWP_PT_FORMAT_STRING "\n",nt);
     fprintf(fchk,"DISCRETIZATION IN SPACE:\t%f\n",dh);
     fprintf(fchk,"DISCRETIZATION IN TIME:\t%f\n",dt);
     fprintf(fchk,"PML REFLECTION COEFFICIENT:\t%f\n",arbc);
-    fprintf(fchk,"HIGHEST P-VELOCITY ENCOUNTERED:\t%f\n",vpe[1]);
-    fprintf(fchk,"LOWEST P-VELOCITY ENCOUNTERED:\t%f\n",vpe[0]);
-    fprintf(fchk,"HIGHEST S-VELOCITY ENCOUNTERED:\t%f\n",vse[1]);
-    fprintf(fchk,"LOWEST S-VELOCITY ENCOUNTERED:\t%f\n",vse[0]);
-    fprintf(fchk,"HIGHEST DENSITY ENCOUNTERED:\t%f\n",dde[1]);
-    fprintf(fchk,"LOWEST  DENSITY ENCOUNTERED:\t%f\n",dde[0]);
+    fprintf(fchk,"HIGHEST P-VELOCITY ENCOUNTERED:\t%f\n",vpe_max);
+    fprintf(fchk,"LOWEST P-VELOCITY ENCOUNTERED:\t%f\n",vpe_min);
+    fprintf(fchk,"HIGHEST S-VELOCITY ENCOUNTERED:\t%f\n",vse_max);
+    fprintf(fchk,"LOWEST S-VELOCITY ENCOUNTERED:\t%f\n",vse_min);
+    fprintf(fchk,"HIGHEST DENSITY ENCOUNTERED:\t%f\n",dde_max);
+    fprintf(fchk,"LOWEST  DENSITY ENCOUNTERED:\t%f\n",dde_min);
     fprintf(fchk,"SKIP OF SEISMOGRAMS IN TIME (LOOP COUNTER):\t%" AWP_PT_FORMAT_STRING "\n",ntiskp);
     fprintf(fchk,"ABC CONDITION, PML=1 OR CERJAN=0:\t%" AWP_PT_FORMAT_STRING "\n",npc);
     fprintf(fchk,"FD SCHEME, VISCO=1 OR ELASTIC=0:\t%" AWP_PT_FORMAT_STRING "\n",nve);

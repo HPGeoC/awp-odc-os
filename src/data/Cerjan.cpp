@@ -25,7 +25,7 @@
 
 int odc::parallel::Mpi::coords[3];
 
-odc::data::Cerjan::Cerjan(io::OptionParser i_options, SoA i_data) {
+odc::data::Cerjan::Cerjan(odc::io::OptionParser i_options, SoA i_data) {
     
     m_spongeCoeffX = Alloc1D(i_data.m_numXGridPoints, odc::constants::boundary);
     m_spongeCoeffY = Alloc1D(i_data.m_numYGridPoints, odc::constants::boundary);
@@ -46,22 +46,51 @@ odc::data::Cerjan::Cerjan(io::OptionParser i_options, SoA i_data) {
     //for (int i=0;i<i_data.m_numXGridPoints;i++) {
      //   printf("%f\n",m_spongeCoeffX[i]);
     //}
-    
-    inicrj(i_options.m_arbc, odc::parallel::Mpi::coords, i_data.m_numXGridPoints,
+
+    int_pt coords[] = {0,0,0}; // in this legacy code, a single node is assumed
+    inicrj(i_options.m_arbc, coords, i_data.m_numXGridPoints,
            i_data.m_numYGridPoints, i_data.m_numZGridPoints, i_data.m_numXGridPoints,
            i_data.m_numYGridPoints, i_options.m_nD, m_spongeCoeffX,
            m_spongeCoeffY, m_spongeCoeffZ);
     
 }
 
+void odc::data::Cerjan::initialize(odc::io::OptionParser i_options, int_pt nx, int_pt ny, int_pt nz,
+                                   int_pt bdry_width, int_pt *coords) {
+    m_spongeCoeffX = Alloc1D(nx + 2*bdry_width, odc::constants::boundary);
+    m_spongeCoeffY = Alloc1D(ny + 2*bdry_width, odc::constants::boundary);
+    m_spongeCoeffZ = Alloc1D(nz + 2*bdry_width, odc::constants::boundary);
 
-void odc::data::Cerjan::inicrj(float ARBC, int *coords, int_pt nxt, int_pt nyt, int_pt nzt, int_pt NX, int_pt NY, int_pt ND, Grid1D dcrjx, Grid1D dcrjy, Grid1D dcrjz) {
+    for(int i=-odc::constants::boundary; i < nx + 2*bdry_width + odc::constants::boundary; i++) {
+        m_spongeCoeffX[i]  = 1.0;
+    }
+    
+    for(int j=-odc::constants::boundary; j < ny + 2*bdry_width + odc::constants::boundary; j++) {
+        m_spongeCoeffY[j]  = 1.0;
+    }
+    
+    for(int k=-odc::constants::boundary; k < nz + 2*bdry_width + odc::constants::boundary; k++) {
+        m_spongeCoeffZ[k]  = 1.0;
+    }
+
+    inicrj(i_options.m_arbc, coords, nx, ny, nz, i_options.m_nX, i_options.m_nY, i_options.m_nD,
+           m_spongeCoeffX + bdry_width, m_spongeCoeffY + bdry_width, m_spongeCoeffZ + bdry_width);
+}
+
+
+void odc::data::Cerjan::inicrj(float ARBC,                               // command line option .m_arbc
+                               int_pt *coords,                              // coordinates of first element in _this_ Cerjan
+                               int_pt nxt, int_pt nyt, int_pt nzt,       // dimensions of _this_ Cerjan object 
+                               int_pt NX, int_pt NY,                     // x,y dimension of whole computational domain
+                               int_pt ND,                                // width for Cerjan (default is 20)
+                               Grid1D dcrjx, Grid1D dcrjy, Grid1D dcrjz  // Cerjan arrays
+                               ) {
     int nxp, nyp, nzp;
     int i,   j,   k;
     float alpha;
     alpha = sqrt(-log(ARBC))/ND;
     
-    nxp   = nxt*coords[0] + 1;
+    nxp   = coords[0] + 1;
     if(nxp <= ND)
     {
         for(i=0;i<ND;i++)
@@ -70,7 +99,7 @@ void odc::data::Cerjan::inicrj(float ARBC, int *coords, int_pt nxt, int_pt nyt, 
             dcrjx[i] = dcrjx[i]*(exp(-((alpha*(ND-nxp+1))*(alpha*(ND-nxp+1)))));
         }
     }
-    nxp   = nxt*coords[0] + 1;
+    nxp   = coords[0] + 1;
     if( (nxp+nxt-1) >= (NX-ND+1))
     {
         for(i=nxt-ND;i<nxt;i++)
@@ -80,7 +109,7 @@ void odc::data::Cerjan::inicrj(float ARBC, int *coords, int_pt nxt, int_pt nyt, 
         }
     }
     
-    nyp   = nyt*coords[1] + 1;
+    nyp   = coords[1] + 1;
     if(nyp <= ND)
     {
         for(j=0;j<ND;j++)
@@ -89,7 +118,7 @@ void odc::data::Cerjan::inicrj(float ARBC, int *coords, int_pt nxt, int_pt nyt, 
             dcrjy[j] = dcrjy[j]*(exp(-((alpha*(ND-nyp+1))*(alpha*(ND-nyp+1)))));
         }
     }
-    nyp   = nyt*coords[1] + 1;
+    nyp   = coords[1] + 1;
     if((nyp+nyt-1) >= (NY-ND+1))
     {
         for(j=nyt-ND;j<nyt;j++)
@@ -112,7 +141,7 @@ void odc::data::Cerjan::inicrj(float ARBC, int *coords, int_pt nxt, int_pt nyt, 
 }
 
 
+// TODO(Josh): looks like Cerjan is never freed?
 void odc::data::Cerjan::finalize() {
-    
-    
+   
 }

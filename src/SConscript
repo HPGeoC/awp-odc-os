@@ -38,5 +38,9 @@ else:
                                     'io/OutputWriter.cpp',
                                     'io/Sources.cpp',
                                     'parallel/Mpi.cpp',
+                                    'parallel/OpenMP.cpp',
                                     'kernels/cpu_vanilla.cpp',
+				    'kernels/cpu_scb.cpp', 
+				    'data/PatchDecomp.cpp',
+				    'data/Patch.cpp'
                                     ] )

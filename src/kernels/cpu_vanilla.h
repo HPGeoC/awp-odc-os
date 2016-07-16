@@ -16,6 +16,7 @@
 #define CPU_VANILLA_H
 
 #include <stdio.h>
+#include "data/PatchDecomp.hpp"
 #include "constants.hpp"
 
 
@@ -51,8 +52,9 @@ void update_stress_from_fault_sources(int_pt source_timestep, int READ_STEP, int
                                       int *fault_nodes, int num_fault_nodes, int_pt dim_x, int_pt dim_y, int_pt dim_z,
                                       int_pt stride_x, int_pt  stride_y, int_pt stride_z,
                                       real *stress_xx_update, real *stress_xy_update, real *stress_xz_update, real *stress_yy_update,
-                                      real *stress_yz_update, real *stress_zz_update, real *stress_xx, real *stress_xy,
-                                      real *stress_xz, real *stress_yy, real *stress_yz, real *stress_zz, real dt, real dh);
+                                      real *stress_yz_update, real *stress_zz_update, real dt, real dh,
+                                      PatchDecomp& pd, int_pt start_x, int_pt start_y, int_pt start_z,
+                                      int_pt size_x, int_pt size_y, int_pt size_z, int_pt ptch);
 
 void update_free_surface_boundary_stress(real *stress_zz, real *stress_xz, real *stress_yz,
                                          int_pt xstep, int_pt ystep, int_pt zstep,
@@ -61,7 +63,8 @@ void update_free_surface_boundary_stress(real *stress_zz, real *stress_xz, real 
 void update_free_surface_boundary_velocity(real *velocity_x, real *velocity_y, real *velocity_z,
                                            int_pt xstep, int_pt ystep, int_pt zstep,
                                            int_pt dim_x, int_pt dim_y, int_pt dim_z,
-                                           real *lam_mu, int_pt lam_mu_xstep, int_pt lam_mu_ystep);
+                                           real *lam_mu, int_pt lam_mu_xstep,
+                                           bool on_x_max_bdry, bool on_y_zero_bdry);
 
 
 

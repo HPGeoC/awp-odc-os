@@ -18,8 +18,11 @@
  */
 
 #include "parallel/Mpi.hpp"
+#include "parallel/OpenMP.h"
 
+#include <algorithm>
 #include <iostream>
+#include <cassert>
 
 #include "io/OptionParser.h"
 #include "io/Sources.hpp"
@@ -29,24 +32,49 @@
 #include "data/common.hpp"
 #include "data/Mesh.hpp"
 #include "data/Cerjan.hpp"
+#include "data/PatchDecomp.hpp"
 
 #include "kernels/cpu_vanilla.h"
+#include "kernels/cpu_scb.h" 
 
 #include "constants.hpp"
 
 #include "data/Grid.hpp"
 
+
+#include <cmath>
+#include <iomanip>
+
+#include <time.h>
+#include <sys/time.h>
+
+double wall_time()
+{
+  struct timeval t;
+  if(gettimeofday(&t, NULL))
+  {
+    return 0;
+  }
+  return (double) t.tv_sec + 0.000001 * (double) t.tv_usec;
+}
+
 // define statics
 int odc::parallel::Mpi::m_rank;
 int odc::parallel::Mpi::m_size;
 
+#define PATCH_X 1024
+#define PATCH_Y 64
+#define PATCH_Z 512
+
+#define BDRY_SIZE 24
+
+// TODO: add logging
+
 int main( int i_argc, char *i_argv[] ) {
-    // TODO: Log
-    std::cout << "welcome to AWP-ODC" << std::endl;
+
+    std::cout << "welcome to AWP-ODC" << std::endl;    
     
     
-    
-    // TODO: Log
     std::cout << "starting MPI" << std::endl;
     // Fire up MPI, dummy call for non-mpi compilation
     odc::parallel::Mpi::initialize( i_argc, i_argv );
@@ -54,47 +82,38 @@ int main( int i_argc, char *i_argv[] ) {
     
     // parse options
     odc::io::OptionParser l_options( i_argc, i_argv );
+
     
-    
-    // TODO: Log
     std::cout << "setting up data structures" << std::endl;
-    
-    // initialize data layout
-    odc::data::SoA l_data;
-    l_data.initialize(l_options.m_nX, l_options.m_nY, l_options.m_nZ);
-    // allocate memory
-    // TODO: Log
-    std::cout << "allocating memory: " << l_data.getSize() << " GiB" << std::endl;
-    l_data.allocate();
-    
-    // set up mesh data structure
-    odc::data::Mesh l_mesh(l_options, l_data);
-    
-    
-    
+
+    // initialize patches
+    PatchDecomp patch_decomp;
+    patch_decomp.initialize(l_options, l_options.m_nX, l_options.m_nY, l_options.m_nZ,
+                            PATCH_X, PATCH_Y, PATCH_Z, BDRY_SIZE);
     
     
     // set up checkpoint writer
     odc::io::CheckpointWriter l_checkpoint(l_options.m_chkFile, l_options.m_nD,
-                                           l_options.m_nTiSkp, l_data.m_numZGridPoints);
+                                           l_options.m_nTiSkp, l_options.m_nZ);
     
     l_checkpoint.writeInitialStats(l_options.m_nTiSkp, l_options.m_dT, l_options.m_dH,
-                                   l_data.m_numXGridPoints, l_data.m_numYGridPoints,
-                                   l_data.m_numZGridPoints, l_options.m_numTimesteps,
+                                   l_options.m_nX, l_options.m_nY,
+                                   l_options.m_nZ, l_options.m_numTimesteps,
                                    l_options.m_arbc, l_options.m_nPc, l_options.m_nVe,
                                    l_options.m_fac, l_options.m_q0, l_options.m_ex, l_options.m_fp,
-                                   l_mesh.m_vse, l_mesh.m_vpe, l_mesh.m_dde);
+                                   patch_decomp.getVse(false), patch_decomp.getVse(true),
+                                   patch_decomp.getVpe(false), patch_decomp.getVpe(true),
+                                   patch_decomp.getDde(false), patch_decomp.getDde(true));
     
 
-    // set up absorbing boundary condition data structure
-    odc::data::Cerjan l_cerjan(l_options, l_data);
+    patch_decomp.synchronize(true);
+    
     
     // set up output writer
     std::cout << "initialized output writer: " << std::endl;
     odc::io::OutputWriter l_output(l_options);
     
     // initialize sources
-    // TODO: Log
     std::cout << "initializing sources" << std::endl;
     
     // TODO: Number of nodes (nx, ny, nz) should be aware of MPI partitioning.
@@ -107,102 +126,189 @@ int main( int i_argc, char *i_argv[] ) {
                                l_options.m_inSrc,
                                l_options.m_inSrcI2 );
     
-    
-    // Source function timestep
-    int_pt source_step = 0;
-    
+        
     // If one or more source fault nodes are owned by this process then call "addsrc" to update the stress tensor values
     std::cout << "Add initial rupture source" << std::endl;
-    l_sources.addsrc(source_step, l_options.m_dH, l_options.m_dT, l_options.m_nSt,
-                     l_options.m_readStep, 3, l_data.m_stressXX, l_data.m_stressYY,
-                     l_data.m_stressZZ, l_data.m_stressXY, l_data.m_stressYZ, l_data.m_stressXZ);
-    source_step++;
+    l_sources.addsrc(0, l_options.m_dH, l_options.m_dT, l_options.m_nSt,
+                     l_options.m_readStep, 3, patch_decomp);
+
+    patch_decomp.synchronize();
     
     // Calculate strides
-    int_pt strideX = (l_data.m_numYGridPoints+2*odc::constants::boundary)*(l_data.m_numZGridPoints+2*odc::constants::boundary);
-    int_pt strideY = l_data.m_numZGridPoints+2*odc::constants::boundary;
+    int_pt strideX = (l_options.m_nY+2*odc::constants::boundary)*(l_options.m_nZ+2*odc::constants::boundary);
+    int_pt strideY = l_options.m_nZ+2*odc::constants::boundary;
     int_pt strideZ = 1;
-
-    int_pt lamMuStrideY = (1 + 2*odc::constants::boundary);
-    int_pt lamMuStrideX = (l_data.m_numYGridPoints+2*odc::constants::boundary) * lamMuStrideY;
     
-        
-    //  Main LOOP Starts
-    for (int_pt tstep=1; tstep<=l_options.m_numTimesteps; tstep++) {
-        
-        std::cout << "Beginning  timestep: " << tstep << std::endl;
-        
-        update_velocity(&l_data.m_velocityX[0][0][0], &l_data.m_velocityY[0][0][0],
-                        &l_data.m_velocityZ[0][0][0], l_data.m_numXGridPoints, l_data.m_numYGridPoints,
-                        l_data.m_numZGridPoints, strideX, strideY, strideZ, &l_data.m_stressXX[0][0][0],
-                        &l_data.m_stressXY[0][0][0], &l_data.m_stressXZ[0][0][0],
-                        &l_data.m_stressYY[0][0][0], &l_data.m_stressYZ[0][0][0],
-                        &l_data.m_stressZZ[0][0][0], &l_cerjan.m_spongeCoeffX[0],
-                        &l_cerjan.m_spongeCoeffY[0], &l_cerjan.m_spongeCoeffZ[0],
-                        &l_mesh.m_density[0][0][0], l_options.m_dT, l_options.m_dH);
-        
-        update_free_surface_boundary_velocity(&l_data.m_velocityX[0][0][0], &l_data.m_velocityY[0][0][0], &l_data.m_velocityZ[0][0][0], strideX, strideY, strideZ,
-                                              l_data.m_numXGridPoints, l_data.m_numYGridPoints, l_data.m_numZGridPoints, &l_mesh.m_lam_mu[0][0][0], lamMuStrideX, lamMuStrideY);
+    int_pt lamMuStrideX = l_options.m_nY+2*odc::constants::boundary;
 
+    int_pt numUpdatesPerIter = BDRY_SIZE/6;
+    int_pt startMultUpdates = l_options.m_nSt;
+    if((l_options.m_nSt % numUpdatesPerIter) != 0)
+      startMultUpdates += (l_options.m_nSt - (l_options.m_nSt % numUpdatesPerIter));
+      
+#pragma omp parallel
+{
+    double start_time = -1.;
+    int start_ts = 0;
+    
+    int tdsPerWgrp[4] = {3,16,16,16};
+
+    odc::parallel::OpenMP l_omp(l_options.m_nX, l_options.m_nY, l_options.m_nZ,
+                                1, tdsPerWgrp, patch_decomp);
+    int_pt l_maxPtchsPerWgrp = l_omp.maxNumPtchsPerWgrp();
+    
+    int_pt start_x, start_y, start_z;
+    int_pt size_x, size_y, size_z;
+    
+    //  Main LOOP Starts
+    for (int_pt tloop=0; tloop<=l_options.m_numTimesteps / numUpdatesPerIter; tloop++) {
+      for(int_pt ptch = 0; ptch < l_maxPtchsPerWgrp; ptch++) {
+
+        int_pt p_id = l_omp.getPatchNumber(ptch);
+
+        Patch* p = &patch_decomp.m_patches[p_id];
+        int_pt h = p->bdry_width;
+
+        bool on_x_max_bdry = l_omp.isOnXMaxBdry(p_id);
+        bool on_y_zero_bdry = l_omp.isOnYZeroBdry(p_id);
+        bool on_z_bdry = l_omp.isOnZBdry(p_id);
         
-        update_stress_visco(&l_data.m_velocityX[0][0][0], &l_data.m_velocityY[0][0][0],
-                            &l_data.m_velocityZ[0][0][0], l_data.m_numXGridPoints, l_data.m_numYGridPoints,
-                            l_data.m_numZGridPoints, strideX, strideY, strideZ, lamMuStrideX,
-                            &l_data.m_stressXX[0][0][0],
-                            &l_data.m_stressXY[0][0][0], &l_data.m_stressXZ[0][0][0],
-                            &l_data.m_stressYY[0][0][0], &l_data.m_stressYZ[0][0][0],
-                            &l_data.m_stressZZ[0][0][0], &l_mesh.m_coeff[0],
-                            &l_cerjan.m_spongeCoeffX[0], &l_cerjan.m_spongeCoeffY[0],
-                            &l_cerjan.m_spongeCoeffZ[0], &l_mesh.m_density[0][0][0],
-                            &l_mesh.m_tau1[0][0][0], &l_mesh.m_tau2[0][0][0],
-                            &l_mesh.m_weight_index[0][0][0], &l_mesh.m_weights[0][0][0],
-                            &l_mesh.m_lam[0][0][0], &l_mesh.m_mu[0][0][0],
-                            &l_mesh.m_lam_mu[0][0][0], &l_mesh.m_qp[0][0][0],
-                            &l_mesh.m_qs[0][0][0], l_options.m_dT, l_options.m_dH,
-                            &l_data.m_memXX[0][0][0], &l_data.m_memYY[0][0][0], &l_data.m_memZZ[0][0][0],
-                            &l_data.m_memXY[0][0][0], &l_data.m_memXZ[0][0][0], &l_data.m_memYZ[0][0][0]);
+        int_pt l_start[3];
+        int_pt l_size[3];
+        l_omp.getTrdExtent(p_id, l_start, l_size);
+
+        start_x = l_start[0]; start_y = l_start[1]; start_z = l_start[2];
+        size_x = l_size[0]; size_y = l_size[1]; size_z = l_size[2];
+
+        #pragma omp barrier
         
-        update_free_surface_boundary_stress(&l_data.m_stressZZ[0][0][0], &l_data.m_stressXZ[0][0][0], &l_data.m_stressYZ[0][0][0],
-                                            strideX, strideY, strideZ, l_data.m_numXGridPoints, l_data.m_numYGridPoints, l_data.m_numZGridPoints);
+
+        int_pt n_tval = numUpdatesPerIter;
+        if(tloop < startMultUpdates)
+          n_tval = 1;
         
+        for(int_pt tval=0; tval < n_tval; tval++) {
+
+          int_pt tstep = 0;
+          if(tloop > startMultUpdates)
+            tstep = (tloop-startMultUpdates) * n_tval + startMultUpdates + tval + 1; 
+          else
+            tstep = tloop * 1 + tval + 1; 
+          
         
-        if (tstep < l_options.m_nSt) {
-            
-            
-            update_stress_from_fault_sources(source_step, l_options.m_readStep, 3,
+          if(l_omp.getThreadNumAll() == 0 && ptch == 0) {
+            std::cout << "Beginning  timestep: " << tstep <<  ' ' << tval << ' ' << tloop << ' ' << startMultUpdates << std::endl;
+          }
+
+
+          #pragma omp barrier
+          if(l_omp.participates(ptch)) {
+
+            odc::kernels::SCB::update_velocity(&p->soa.m_velocityX[start_x][start_y][start_z], &p->soa.m_velocityY[start_x][start_y][start_z],
+                        &p->soa.m_velocityZ[start_x][start_y][start_z], size_x, size_y,
+                        size_z, p->strideX, p->strideY, p->strideZ, &p->soa.m_stressXX[start_x][start_y][start_z],
+                        &p->soa.m_stressXY[start_x][start_y][start_z], &p->soa.m_stressXZ[start_x][start_y][start_z],
+                        &p->soa.m_stressYY[start_x][start_y][start_z], &p->soa.m_stressYZ[start_x][start_y][start_z],
+                        &p->soa.m_stressZZ[start_x][start_y][start_z], &p->cerjan.m_spongeCoeffX[start_x],
+                        &p->cerjan.m_spongeCoeffY[start_y], &p->cerjan.m_spongeCoeffZ[start_z],
+                        &p->mesh.m_density[start_x][start_y][start_z], l_options.m_dT, l_options.m_dH);
+          }
+
+          #pragma omp barrier
+          
+          if(l_omp.participates(ptch) && on_z_bdry) {
+                   update_free_surface_boundary_velocity(&p->soa.m_velocityX[start_x][start_y][start_z], &p->soa.m_velocityY[start_x][start_y][start_z], &p->soa.m_velocityZ[start_x][start_y][start_z], p->strideX, p->strideY, p->strideZ,
+                                                         size_x, size_y, size_z, &p->mesh.m_lam_mu[start_x][start_y][0], p->lamMuStrideX,
+                                                         on_x_max_bdry, on_y_zero_bdry);
+          }
+
+          #pragma omp barrier
+
+          if(l_omp.participates(ptch)) {        
+/*            update_stress_visco(&p->soa.m_velocityX[start_x][start_y][start_z], &p->soa.m_velocityY[start_x][start_y][start_z],
+                            &p->soa.m_velocityZ[start_x][start_y][start_z], size_x, size_y,
+                            size_z, p->strideX, p->strideY, p->strideZ, p->lamMuStrideX,
+                            &p->soa.m_stressXX[start_x][start_y][start_z],
+                            &p->soa.m_stressXY[start_x][start_y][start_z], &p->soa.m_stressXZ[start_x][start_y][start_z],
+                            &p->soa.m_stressYY[start_x][start_y][start_z], &p->soa.m_stressYZ[start_x][start_y][start_z],
+                            &p->soa.m_stressZZ[start_x][start_y][start_z], &p->mesh.m_coeff[0],
+                            &p->cerjan.m_spongeCoeffX[start_x], &p->cerjan.m_spongeCoeffY[start_y],
+                            &p->cerjan.m_spongeCoeffZ[start_z], &p->mesh.m_density[start_x][start_y][start_z],
+                            &p->mesh.m_tau1[start_x][start_y][start_z], &p->mesh.m_tau2[start_x][start_y][start_z],
+                            &p->mesh.m_weight_index[start_x][start_y][start_z], &p->mesh.m_weights[start_x][start_y][start_z],
+                            &p->mesh.m_lam[start_x][start_y][start_z], &p->mesh.m_mu[start_x][start_y][start_z],
+                            &p->mesh.m_lam_mu[start_x][start_y][0], &p->mesh.m_qp[start_x][start_y][start_z],
+                            &p->mesh.m_qs[start_x][start_y][start_z], l_options.m_dT, l_options.m_dH,
+                            &p->soa.m_memXX[start_x][start_y][start_z], &p->soa.m_memYY[start_x][start_y][start_z], &p->soa.m_memZZ[start_x][start_y][start_z],
+                            &p->soa.m_memXY[start_x][start_y][start_z], &p->soa.m_memXZ[start_x][start_y][start_z], &p->soa.m_memYZ[start_x][start_y][start_z]);*/
+            odc::kernels::SCB::update_stress_elastic(&p->soa.m_velocityX[start_x][start_y][start_z], &p->soa.m_velocityY[start_x][start_y][start_z],
+                            &p->soa.m_velocityZ[start_x][start_y][start_z], size_x, size_y,
+                            size_z, p->strideX, p->strideY, p->strideZ,
+                            &p->soa.m_stressXX[start_x][start_y][start_z],
+                            &p->soa.m_stressXY[start_x][start_y][start_z], &p->soa.m_stressXZ[start_x][start_y][start_z],
+                            &p->soa.m_stressYY[start_x][start_y][start_z], &p->soa.m_stressYZ[start_x][start_y][start_z],
+                            &p->soa.m_stressZZ[start_x][start_y][start_z], &p->mesh.m_coeff[0],
+                            &p->cerjan.m_spongeCoeffX[start_x], &p->cerjan.m_spongeCoeffY[start_y],
+                            &p->cerjan.m_spongeCoeffZ[start_z], &p->mesh.m_density[start_x][start_y][start_z],
+                            &p->mesh.m_lam[start_x][start_y][start_z], &p->mesh.m_mu[start_x][start_y][start_z],
+                            &p->mesh.m_lam_mu[start_x][start_y][0], l_options.m_dT, l_options.m_dH);
+          }
+          #pragma omp barrier
+
+          if(l_omp.participates(ptch) && on_z_bdry) {
+            update_free_surface_boundary_stress(&p->soa.m_stressZZ[start_x][start_y][start_z], &p->soa.m_stressXZ[start_x][start_y][start_z], &p->soa.m_stressYZ[start_x][start_y][start_z],
+                                             p->strideX, p->strideY, p->strideZ, size_x, size_y, size_z);
+          }
+        
+          #pragma omp barrier
+
+          if (tstep < l_options.m_nSt) {
+            update_stress_from_fault_sources(tstep, l_options.m_readStep, 3,
                                              &l_sources.m_ptpSrc[0], l_sources.m_nPsrc,
-                                             l_data.m_numXGridPoints, l_data.m_numYGridPoints, l_data.m_numZGridPoints,
+                                             l_options.m_nX, l_options.m_nY, l_options.m_nZ,
                                              strideX, strideY, strideZ,
                                              &l_sources.m_ptAxx[0], &l_sources.
                                              m_ptAxy[0], &l_sources.m_ptAxz[0], &l_sources.m_ptAyy[0], &l_sources.m_ptAyz[0],
-                                             &l_sources.m_ptAzz[0], &l_data.m_stressXX[0][0][0], &l_data.m_stressXY[0][0][0],
-                                             &l_data.m_stressXZ[0][0][0], &l_data.m_stressYY[0][0][0], &l_data.m_stressYZ[0][0][0],
-                                             &l_data.m_stressZZ[0][0][0], l_options.m_dT, l_options.m_dH);
+                                             &l_sources.m_ptAzz[0], l_options.m_dT, l_options.m_dH,
+                                             patch_decomp, start_x - BDRY_SIZE, start_y - BDRY_SIZE, start_z - BDRY_SIZE,
+                                             size_x, size_y, size_z, p_id);
+          }
+
+          if(l_omp.getThreadNumAll() == 0 && ptch == l_maxPtchsPerWgrp - 1 && tval == n_tval-1) {
+            if (tstep >= l_options.m_nSt) {
+              if (start_time < 0) {
+                start_time = wall_time();
+                start_ts = tstep;              
+                std::cout << "start time is " << start_time << std::endl;
+              }
+
+              else {
+                double cur_time = wall_time();
+                double avg = (cur_time - start_time) / (tstep - start_ts);
+
+                std::cout << "Time on tstep " << tstep << ": " << cur_time << "; avg = " << avg << std::endl;
+              }
+            }
+          
+            patch_decomp.synchronize();
             
-            source_step++;
+            l_output.update(tstep, patch_decomp, l_options.m_nZ);
+            l_checkpoint.writeUpdatedStats(tstep, patch_decomp);
+          }
         }
-        
-        l_output.update(tstep, l_data.m_velocityX, l_data.m_velocityY, l_data.m_velocityZ,
-                        l_data.m_numZGridPoints);
-        
-        l_checkpoint.writeUpdatedStats(tstep, l_data.m_velocityX, l_data.m_velocityY,
-                                       l_data.m_velocityZ);
-        
+
+        #pragma omp barrier
+      }
     }
+}
     
     // release memory
-    // TODO: log
     std::cout << "releasing memory" << std::endl;
-    l_data.finalize();
+    patch_decomp.finalize();
     l_checkpoint.finalize();
     l_output.finalize();
-    l_cerjan.finalize();
-    l_mesh.finalize();
     
     // close mpi
-    // TODO: log
     std::cout << "closing mpi" << std::endl;
-    odc::parallel::Mpi::finalize();
-    
-    
+    odc::parallel::Mpi::finalize();    
 }

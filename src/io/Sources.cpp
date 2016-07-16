@@ -441,11 +441,12 @@ int inisource(int      rank,    int     IFAULT, int     NSRC,   int     READ_STE
  
  */
 void odc::io::Sources::addsrc(int_pt i,      float DH,   float DT,   int NST,  int READ_STEP, int dim,
-            Grid3D xx,  Grid3D yy,  Grid3D zz,  Grid3D xy,  Grid3D yz,  Grid3D xz) {
+                              PatchDecomp& pd) {
     
     
     float vtst;
     int_pt idx, idy, idz, j;
+    int_pt x, y, z;
     vtst = (float)DT/(DH*DH*DH);
     
     for(j=0; j<m_nPsrc; j++)
@@ -453,21 +454,18 @@ void odc::io::Sources::addsrc(int_pt i,      float DH,   float DT,   int NST,  i
         idx = m_ptpSrc[j*dim]-1;
         idy = m_ptpSrc[j*dim+1]-1;
         idz = m_ptpSrc[j*dim+2]-1;
+
+        int patch_id = pd.globalToPatch(idx,idy,idz);
+        x = pd.globalToLocalX(idx,idy,idz);
+        y = pd.globalToLocalY(idx,idy,idz);
+        z = pd.globalToLocalZ(idx,idy,idz);
         
-        xx[idx][idy][idz] = xx[idx][idy][idz] - vtst*m_ptAxx[j*READ_STEP+i];
-        yy[idx][idy][idz] = yy[idx][idy][idz] - vtst*m_ptAyy[j*READ_STEP+i];
-        zz[idx][idy][idz] = zz[idx][idy][idz] - vtst*m_ptAzz[j*READ_STEP+i];
-        xz[idx][idy][idz] = xz[idx][idy][idz] - vtst*m_ptAxz[j*READ_STEP+i];
-        yz[idx][idy][idz] = yz[idx][idy][idz] - vtst*m_ptAyz[j*READ_STEP+i];
-        xy[idx][idy][idz] = xy[idx][idy][idz] - vtst*m_ptAxy[j*READ_STEP+i];
-        /*
-         printf("xx=%1.6g\n",xx[idx][idy][idz]);
-         printf("yy=%1.6g\n",yy[idx][idy][idz]);
-         printf("zz=%1.6g\n",zz[idx][idy][idz]);
-         printf("xz=%1.6g\n",xz[idx][idy][idz]);
-         printf("yz=%1.6g\n",yz[idx][idy][idz]);
-         printf("xy=%1.6g\n",xy[idx][idy][idz]);
-         */
+        pd.m_patches[patch_id].soa.m_stressXX[x][y][z] -= vtst*m_ptAxx[j*READ_STEP+i];
+        pd.m_patches[patch_id].soa.m_stressYY[x][y][z] -= vtst*m_ptAyy[j*READ_STEP+i];
+        pd.m_patches[patch_id].soa.m_stressZZ[x][y][z] -= vtst*m_ptAzz[j*READ_STEP+i];
+        pd.m_patches[patch_id].soa.m_stressXZ[x][y][z] -= vtst*m_ptAxz[j*READ_STEP+i];
+        pd.m_patches[patch_id].soa.m_stressYZ[x][y][z] -= vtst*m_ptAyz[j*READ_STEP+i];
+        pd.m_patches[patch_id].soa.m_stressXY[x][y][z] -= vtst*m_ptAxy[j*READ_STEP+i];
     }
     return;
 }

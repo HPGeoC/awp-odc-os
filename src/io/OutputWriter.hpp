@@ -25,6 +25,7 @@
 
 #include "data/common.hpp"
 #include "data/SoA.hpp"
+#include "data/PatchDecomp.hpp"
 
 namespace odc {
     namespace io {
@@ -41,9 +42,10 @@ public:
     
     void writeInitialStats(int_pt ntiskp, real dt, real dh, int_pt nxt, int_pt nyt, int_pt nzt,
                            int_pt nt, real arbc, int_pt npc, int_pt nve, real fac, real q0, real ex, real fp,
-                           real *vse, real *vpe, real *dde);
-    
-    void writeUpdatedStats(int_pt currentTimeStep, Grid3D velocityX, Grid3D velocityY,
+                           real vse_min, real vse_max, real vpe_min, real vpe_max, real dde_min, real dde_max);
+
+    void writeUpdatedStats(int_pt currentTimeStep, PatchDecomp& i_ptchDec);
+    void oldWriteUpdatedStats(int_pt currentTimeStep, Grid3D velocityX, Grid3D velocityY,
                            Grid3D velocityZ);
     void finalize();
     
@@ -61,8 +63,9 @@ private:
 class odc::io::OutputWriter {
     
 public:
-    void update(int_pt i_timestep, Grid3D velocityX, Grid3D velocityY,
-                Grid3D velocityZ, int_pt dimZ);
+    void update(int_pt i_timestep, PatchDecomp& i_ptchDec, int_pt dimZ);
+    void oldUpdate(int_pt i_timestep, Grid3D velocityX, Grid3D velocityY, Grid3D velocityZ, int_pt dimZ);
+
     void finalize();
     OutputWriter(OptionParser i_options);
     

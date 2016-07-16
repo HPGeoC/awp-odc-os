@@ -102,6 +102,8 @@ elif env['parallelization'] in ['mpi_cuda']:
 elif env['parallelization'] in ['mpi_omp']:
    env.Append( CPPDEFINES = ['USE_MPI'] )
    #env.Append( CPPDEFINES = ['ALIGNMENT=64'] )
+   env.Append( CPPFLAGS = ['-fopenmp'])
+   env.Append( LINKFLAGS = ['-fopenmp'] )
    env['CC'] = 'mpicc'
    env['CXX'] = 'mpicxx'
 
@@ -114,6 +116,7 @@ env.Append( CXXFLAGS="-std=c++11" )
 # check for debug mode
 if ARGUMENTS.get('debug', 0):
    env.Append( CCFLAGS = ['-g','-O0'] )
+
 
 # add math library for gcc
 env.Append(LIBS=['m'])

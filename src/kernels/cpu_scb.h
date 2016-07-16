@@ -77,6 +77,62 @@ class odc::kernels::SCB {
                                  real   *i_density,
                                  real    i_dT,
                                  real    i_dH );
+   /**
+     * @param i_velX velocity component in x-direction.
+     * @param i_velY velocity component in y-direction.
+     * @param i_velZ velocity component in z-direction.
+     * @param i_nX number of grid points in x-direction.
+     * @param i_nY number of grid points in y-direction.
+     * @param i_nZ number of grid points in z-direction.
+     * @param i_strideX stride of x-dimension.
+     * @param i_strideY stride of y-dimension.
+     * @param i_strideZ stride of z-dimension.
+     * @param io_stressXX stress component xx.
+     * @param io_stressXY stress component xy.
+     * @param io_stressXZ stress component xz.
+     * @param io_stressYY stress component yy.
+     * @param io_stressYZ stress component yz.
+     * @param io_stressZZ stress component zz.
+     * @param i_coeff is the coefficient array (TODO: remove? unused here)
+     * @param i_crjX cerjan in x-direction.
+     * @param i_crjY cerjan in y-direction.
+     * @param i_crjZ cerjan in z-direction.
+     * @param i_density density.
+     * @param i_lambda lambda parameter from mesh.
+     * @param i_mu mu parameter from mesh.
+     * @param i_lamMu lam_mu parameter from mesh (TODO: remove? unused here)
+     * @param i_dT time step.
+     * @param i_dH mesh width.
+     **/
+
+    static void update_stress_elastic( real   *i_velX,
+                                       real   *i_velY,
+                                       real   *i_velZ,
+                                       int_pt  i_nX,
+                                       int_pt  i_nY,
+                                       int_pt  i_nZ,
+                                       int_pt  i_strideX,
+                                       int_pt  i_strideY,
+                                       int_pt  i_strideZ,
+                                       real   *io_stressXX,
+                                       real   *io_stressXY,
+                                       real   *io_stressXZ,
+                                       real   *io_stressYY,
+                                       real   *io_stressYZ,
+                                       real   *io_stressZZ,
+                                       real   *i_coeff,
+                                       real   *i_crjX,
+                                       real   *i_crjY,
+                                       real   *i_crjZ,
+                                       real   *i_density,
+                                       real   *i_lambda,
+                                       real   *i_mu,
+                                       real   *i_lamMu,
+                                       real    i_dT,
+                                       real    i_dH);
+
+  
+  
 };
 
 #endif
