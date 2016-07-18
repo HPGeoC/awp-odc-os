@@ -33,6 +33,8 @@ else:
                                     'data/Grid.cpp',
                                     'data/Mesh.cpp',
                                     'data/Cerjan.cpp',
+				    'yask/stencil_calc.cpp',
+				    'yask/utils.cpp',
                                     'io/command.c',
                                     'io/OptionParser.cpp',
                                     'io/OutputWriter.cpp',

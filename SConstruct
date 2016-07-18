@@ -101,11 +101,12 @@ elif env['parallelization'] in ['mpi_cuda']:
    env['CXX'] = 'mpicxx'
 elif env['parallelization'] in ['mpi_omp']:
    env.Append( CPPDEFINES = ['USE_MPI'] )
-   #env.Append( CPPDEFINES = ['ALIGNMENT=64'] )
+   env.Append( CPPDEFINES = ['YASK','ALIGNMENT=64','REAL_BYTES=4','USE_INTRIN256','LAYOUT_3D=Layout_123','LAYOUT_4D=Layout_1234','ARCH_HOST','NO_STORE_INTRINSICS','USE_STREAMING_STORE'] )
    env.Append( CPPFLAGS = ['-fopenmp'])
    env.Append( LINKFLAGS = ['-fopenmp'] )
-   env['CC'] = 'mpicc'
-   env['CXX'] = 'mpicxx'
+   env['CC'] = 'mpiicc'
+   env['CXX'] = 'mpiicpc'
+
 
 # add current path to seach path
 env.Append( CPPPATH = [Dir('#.').path, Dir('#./src')] )

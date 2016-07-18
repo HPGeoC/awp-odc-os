@@ -59,6 +59,41 @@ void Patch::initialize(odc::io::OptionParser i_options, int_pt _nx, int_pt _ny, 
   std::cout << "\t size is " << soa.getSize() << std::endl;
   soa.allocate();
 
+#ifdef YASK
+  yask_context.dn = 1;
+  yask_context.dx = nx;
+  yask_context.dy = ny;
+  yask_context.dz = nz;
+    
+  yask_context.rt = 1;
+  yask_context.rn = 0;
+  yask_context.rx = 0; yask_context.ry = 0; yask_context.rz = 0;
+  yask_context.bt = 1;
+  yask_context.bn = 1;
+  yask_context.bx = DEF_BLOCK_SIZE;
+  yask_context.by = DEF_BLOCK_SIZE;
+  yask_context.bz = DEF_BLOCK_SIZE;    
+    
+  yask_context.pn = roundUp(0, VLEN_N, "# extra padding in n");
+  yask_context.px = roundUp(0, VLEN_X, "# extra padding in x");
+  yask_context.py = roundUp(0, VLEN_Y, "# extra padding in y");
+  yask_context.pz = roundUp(0, VLEN_Z, "# extra padding in z");
+
+  idx_t halo_size = 4/2; // TODO: make dim-specific.
+  yask_context.hn = 0;
+  yask_context.hx = ROUND_UP(halo_size, VLEN_X);
+  yask_context.hy = ROUND_UP(halo_size, VLEN_Y);
+  yask_context.hz = ROUND_UP(halo_size, VLEN_Z);
+
+  yask_context.pn = 0; yask_context.px = 2; yask_context.py = 2; yask_context.pz = 2;
+
+  yask_context.allocGrids();
+  yask_context.allocParams();
+
+  (*(yask_context.h))() = i_options.m_dH;
+  (*(yask_context.delta_t))() = i_options.m_dT;  
+#endif
+
   for(int i=0; i<3; i++)
     for(int j=0; j<3; j++)
       for(int k=0; k<3; k++)
