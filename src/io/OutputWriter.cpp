@@ -220,7 +220,7 @@ void odc::io::OutputWriter::update(int_pt i_timestep, PatchDecomp& i_ptchDec, in
                                   m_velocityZWriteBuffer + bufInd,
                                   m_firstXNodeToRecord, m_lastXNodeToRecord, m_numXNodesToSkip,
                                   m_firstYNodeToRecord, m_lastYNodeToRecord, m_numYNodesToSkip,
-                                  m_firstZNodeToRecord, m_lastZNodeToRecord, m_numZNodesToSkip, i_timestep);
+                                  m_firstZNodeToRecord, m_lastZNodeToRecord, m_numZNodesToSkip, i_timestep+1);
         
         if ((i_timestep/m_numTimestepsToSkip) % m_writeStep == 0) {
             

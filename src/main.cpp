@@ -219,7 +219,7 @@ int main( int i_argc, char *i_argv[] ) {
           else
             tstep = tloop * 1 + tval + 1; 
 
-#ifdef YASK
+#ifdef YASK__
           double tmp = 0.;
           for(int_pt tx = odc::constants::boundary; tx < 128+1*odc::constants::boundary; tx++)
           {
@@ -260,9 +260,9 @@ int main( int i_argc, char *i_argv[] ) {
 //          #pragma omp barrier
           
           if(l_omp.participates(ptch) && on_z_bdry) {
-//                   update_free_surface_boundary_velocity(&p->soa.m_velocityX[start_x][start_y][start_z], &p->soa.m_velocityY[start_x][start_y][start_z], &p->soa.m_velocityZ[start_x][start_y][start_z], p->strideX, p->strideY, p->strideZ,
-//                                                         size_x, size_y, size_z, &p->mesh.m_lam_mu[start_x][start_y][0], p->lamMuStrideX,
-//                                                         on_x_max_bdry, on_y_zero_bdry);
+                   update_free_surface_boundary_velocity(&p->soa.m_velocityX[start_x][start_y][start_z], &p->soa.m_velocityY[start_x][start_y][start_z], &p->soa.m_velocityZ[start_x][start_y][start_z], p->strideX, p->strideY, p->strideZ,
+                                                         size_x, size_y, size_z, &p->mesh.m_lam_mu[start_x][start_y][0], p->lamMuStrideX,
+                                                         on_x_max_bdry, on_y_zero_bdry);
           }
 
 //          #pragma omp barrier
@@ -304,8 +304,8 @@ int main( int i_argc, char *i_argv[] ) {
 //          #pragma omp barrier
 
           if(l_omp.participates(ptch) && on_z_bdry) {
-//            update_free_surface_boundary_stress(&p->soa.m_stressZZ[start_x][start_y][start_z], &p->soa.m_stressXZ[start_x][start_y][start_z], &p->soa.m_stressYZ[start_x][start_y][start_z],
-//                                             p->strideX, p->strideY, p->strideZ, size_x, size_y, size_z);
+            update_free_surface_boundary_stress(&p->soa.m_stressZZ[start_x][start_y][start_z], &p->soa.m_stressXZ[start_x][start_y][start_z], &p->soa.m_stressYZ[start_x][start_y][start_z],
+                                             p->strideX, p->strideY, p->strideZ, size_x, size_y, size_z);
           }
         
 //          #pragma omp barrier

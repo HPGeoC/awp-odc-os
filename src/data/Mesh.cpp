@@ -33,7 +33,9 @@
 #include <time.h>
 #include <sys/time.h>
 
+#ifdef YASK
 using namespace yask;
+#endif
 
 double w_time()
 {

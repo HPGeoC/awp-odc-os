@@ -27,12 +27,16 @@
 #include "data/Mesh.hpp"
 #include "data/Cerjan.hpp"
 
+
 // TODO(Josh): (Yask) are these the right includes?
+#ifdef YASK
 #include "yask/stencil.hpp"
 #include "yask/stencil_calc.hpp"
 #include "yask/stencil_code.hpp"
 
 using namespace yask;
+#endif
+
 
 class Patch
 {

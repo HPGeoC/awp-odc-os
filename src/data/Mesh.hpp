@@ -25,8 +25,9 @@
 #include "data/SoA.hpp"
 #include "io/OptionParser.h"
 
+#ifdef YASK
 #include "yask/stencil.hpp"
-
+#endif
 
 namespace odc
 {
