@@ -60,10 +60,10 @@ void Patch::initialize(odc::io::OptionParser i_options, int_pt _nx, int_pt _ny, 
   soa.allocate();
 
 #ifdef YASK
-  yask_context.dn = 1;
-  yask_context.dx = nx;
-  yask_context.dy = ny;
-  yask_context.dz = nz;
+  yask_context.dn = 4;
+  yask_context.dx = size_x;
+  yask_context.dy = size_y;
+  yask_context.dz = size_z;
     
   yask_context.rt = 1;
   yask_context.rn = 0;
@@ -103,10 +103,40 @@ void Patch::initialize(odc::io::OptionParser i_options, int_pt _nx, int_pt _ny, 
   // TODO(Josh): don't hardcode the true (analestic) here;
   //             the advantage of having it is that all memory gets
   //             allocated, just in case we need it
- 
+
+#ifdef YASK  
+  mesh.initialize(i_options, nx, ny, nz, bdry_width, true, i_inputBuffer, i_globalX, i_globalY, i_globalZ,
+                  (Grid_XYZ*) yask_context.rho, (Grid_XYZ*) yask_context.mu, (Grid_XYZ*) yask_context.lambda);
+#else
   mesh.initialize(i_options, nx, ny, nz, bdry_width, true, i_inputBuffer, i_globalX, i_globalY, i_globalZ);
+#endif
+  
   int_pt coords[] = {i_globalX, i_globalY, i_globalZ};
   cerjan.initialize(i_options, nx, ny, nz, bdry_width, coords);
+
+  
+#ifdef YASK
+  for(int_pt l_x = 0; l_x<nx+2*bdry_width; l_x++)
+  {
+    for(int_pt l_y = 0; l_y<ny+2*bdry_width; l_y++)
+    {
+      for(int_pt l_z = 0; l_z<nz+2*bdry_width; l_z++)
+      {
+        double l_cerj = cerjan.m_spongeCoeffX[l_x] * cerjan.m_spongeCoeffY[l_y] * cerjan.m_spongeCoeffZ[l_z];
+        yask_context.sponge->writeElem(l_cerj, l_x, l_y, l_z, 0);
+      }
+    }
+  }
+
+  for (StencilBase *stencil : yask_stencils.stencils)
+  {
+        stencil->init(yask_context);
+  }
+  
+#endif
+
+  std::cout << "mesh init done in patch" << std::endl;
+  
 
   strideZ = 1;
   strideY = (size_z + 2*odc::constants::boundary);

@@ -43,10 +43,6 @@ odc::data::Cerjan::Cerjan(odc::io::OptionParser i_options, SoA i_data) {
         m_spongeCoeffZ[k]  = 1.0;
     }
     
-    //for (int i=0;i<i_data.m_numXGridPoints;i++) {
-     //   printf("%f\n",m_spongeCoeffX[i]);
-    //}
-
     int_pt coords[] = {0,0,0}; // in this legacy code, a single node is assumed
     inicrj(i_options.m_arbc, coords, i_data.m_numXGridPoints,
            i_data.m_numYGridPoints, i_data.m_numZGridPoints, i_data.m_numXGridPoints,

@@ -205,40 +205,53 @@ int_pt PatchDecomp::localToGlobalZ(int_pt i_ptch, int_pt i_x, int_pt i_y, int_pt
   return m_idToGridZ[i_ptch] * m_patchZSize + i_z;
 }
 
-real PatchDecomp::getVelX(int_pt i_x, int_pt i_y, int_pt i_z)
+real PatchDecomp::getVelX(int_pt i_x, int_pt i_y, int_pt i_z, int_pt i_timestep)
 {
   int_pt l_ptch = globalToPatch(i_x,i_y,i_z);
   int_pt l_locX = globalToLocalX(i_x,i_y,i_z);
   int_pt l_locY = globalToLocalY(i_x,i_y,i_z);
   int_pt l_locZ = globalToLocalZ(i_x,i_y,i_z);
-
+  
+#ifdef YASK
+  return m_patches[l_ptch].yask_context.vel_x->readElem(i_timestep, l_locX, l_locY, l_locZ, 0);
+#else
   return m_patches[l_ptch].soa.m_velocityX[l_locX][l_locY][l_locZ];
+#endif
 }
 
-real PatchDecomp::getVelY(int_pt i_x, int_pt i_y, int_pt i_z)
+real PatchDecomp::getVelY(int_pt i_x, int_pt i_y, int_pt i_z, int_pt i_timestep)
 {
   int_pt l_ptch = globalToPatch(i_x,i_y,i_z);
   int_pt l_locX = globalToLocalX(i_x,i_y,i_z);
   int_pt l_locY = globalToLocalY(i_x,i_y,i_z);
   int_pt l_locZ = globalToLocalZ(i_x,i_y,i_z);
 
+#ifdef YASK
+  return m_patches[l_ptch].yask_context.vel_y->readElem(i_timestep, l_locX, l_locY, l_locZ, 0);
+#else
   return m_patches[l_ptch].soa.m_velocityY[l_locX][l_locY][l_locZ];
+#endif
 }
 
-real PatchDecomp::getVelZ(int_pt i_x, int_pt i_y, int_pt i_z)
+real PatchDecomp::getVelZ(int_pt i_x, int_pt i_y, int_pt i_z, int_pt i_timestep)
 {
   int_pt l_ptch = globalToPatch(i_x,i_y,i_z);
   int_pt l_locX = globalToLocalX(i_x,i_y,i_z);
   int_pt l_locY = globalToLocalY(i_x,i_y,i_z);
   int_pt l_locZ = globalToLocalZ(i_x,i_y,i_z);
 
+#ifdef YASK
+  return m_patches[l_ptch].yask_context.vel_z->readElem(i_timestep, l_locX, l_locY, l_locZ, 0);
+#else
   return m_patches[l_ptch].soa.m_velocityZ[l_locX][l_locY][l_locZ];
+#endif
 }
 
 void PatchDecomp::copyVelToBuffer(real* o_bufferX, real* o_bufferY, real* o_bufferZ,
                                   int_pt i_firstX, int_pt i_lastX, int_pt i_skipX,
                                   int_pt i_firstY, int_pt i_lastY, int_pt i_skipY,
-                                  int_pt i_firstZ, int_pt i_lastZ, int_pt i_skipZ)
+                                  int_pt i_firstZ, int_pt i_lastZ, int_pt i_skipZ,
+                                  int_pt i_timestep)
 {
   // TODO(Josh): optimize this very slow code...
   int_pt bufInd = 0;
@@ -248,9 +261,9 @@ void PatchDecomp::copyVelToBuffer(real* o_bufferX, real* o_bufferY, real* o_buff
     {
       for (int_pt ix = i_firstX; ix <= i_lastX; ix += i_skipX)
       {
-        o_bufferX[bufInd] = getVelX(ix,iy,iz);
-        o_bufferY[bufInd] = getVelY(ix,iy,iz);
-        o_bufferZ[bufInd] = getVelZ(ix,iy,iz);
+        o_bufferX[bufInd] = getVelX(ix,iy,iz,i_timestep);
+        o_bufferY[bufInd] = getVelY(ix,iy,iz,i_timestep);
+        o_bufferZ[bufInd] = getVelZ(ix,iy,iz,i_timestep);
                     
         bufInd++;
       }

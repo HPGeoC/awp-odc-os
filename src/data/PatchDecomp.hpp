@@ -61,14 +61,15 @@ public:
   int_pt localToGlobalY(int_pt i_ptch, int_pt x, int_pt y, int_pt z);
   int_pt localToGlobalZ(int_pt i_ptch, int_pt x, int_pt y, int_pt z);
 
-  real   getVelX(int_pt i_x, int_pt i_y, int_pt i_z);
-  real   getVelY(int_pt i_x, int_pt i_y, int_pt i_z);
-  real   getVelZ(int_pt i_x, int_pt i_y, int_pt i_z);
+  real   getVelX(int_pt i_x, int_pt i_y, int_pt i_z, int_pt i_timestep);
+  real   getVelY(int_pt i_x, int_pt i_y, int_pt i_z, int_pt i_timestep);
+  real   getVelZ(int_pt i_x, int_pt i_y, int_pt i_z, int_pt i_timestep);
   
   void copyVelToBuffer(real* o_bufferX, real* o_bufferY, real* o_bufferZ,
                        int_pt i_firstX, int_pt i_lastX, int_pt i_skipX,
                        int_pt i_firstY, int_pt i_lastY, int_pt i_skipY,
-                       int_pt i_firstZ, int_pt i_lastZ, int_pt i_skipZ);
+                       int_pt i_firstZ, int_pt i_lastZ, int_pt i_skipZ,
+                       int_pt i_timestep);
 
   // These functions return the max/min tmpvs, tmpvp and tmpdd over all patches
   real getVse(bool max);
