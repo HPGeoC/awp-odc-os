@@ -25,6 +25,9 @@
 #include "data/SoA.hpp"
 #include "io/OptionParser.h"
 
+#ifdef YASK
+#include "yask/stencil.hpp"
+#endif
 
 namespace odc
 {
@@ -58,7 +61,11 @@ public:
 
   void initialize(odc::io::OptionParser i_options, int_pt nx, int_pt ny, int_pt nz,
                   int_pt bdry_size, bool anelastic, Grid1D i_inputBuffer,
-                  int_pt globalX, int_pt globalY, int_pt globalZ);
+                  int_pt globalX, int_pt globalY, int_pt globalZ
+#ifdef YASK
+                  , yask::Grid_XYZ* density_grid, yask::Grid_XYZ* mu_grid, yask::Grid_XYZ* lam_grid 
+#endif
+                  );
   
   // initialize and store mesh parameters using input from command line options
   Mesh(odc::io::OptionParser i_options, odc::data::SoA i_data);
@@ -77,9 +84,16 @@ private:
                float *vse, float *vpe, float *dde);
 
   void new_inimesh(int MEDIASTART,
+#ifdef YASK
+                   yask::Grid_XYZ* density_grid,
+                   yask::Grid_XYZ* mu_grid,
+                   yask::Grid_XYZ* lam_grid,
+                   int_pt bdry_size,
+#else
                    real *d1,
                    real *mu,
                    real *lam,
+#endif
                    real *qp,
                    real *qs,
                    int_pt i_strideX,
@@ -121,8 +135,15 @@ private:
 
    
     
-  void set_boundaries(Grid3D density, Grid3D mu, Grid3D lam, Grid3D qp, Grid3D qs, bool anelastic,
-                      int_pt bdry_width, int_pt nx, int_pt ny, int_pt nz);
+  void set_boundaries(
+#ifdef YASK
+      yask::Grid_XYZ* gd1,yask::Grid_XYZ* gmu,yask::Grid_XYZ* glam,
+#endif
+//#else
+      Grid3D density,Grid3D mu, Grid3D lam,
+//#endif
+      Grid3D qp, Grid3D qs, bool anelastic,
+      int_pt bdry_width, int_pt nx, int_pt ny, int_pt nz);
     
     
     

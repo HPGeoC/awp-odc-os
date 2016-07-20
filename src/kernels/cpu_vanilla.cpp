@@ -524,13 +524,36 @@ void update_stress_from_fault_sources(int_pt source_timestep, int READ_STEP, int
 
         
         // Calculate stress updates
+#ifdef YASK
+        Patch& p = pd.m_patches[patch_id];
+        double new_xx = p.yask_context.stress_xx->readElem(source_timestep+1,x,y,z, 0)
+                        - coeff*stress_xx_update[j*READ_STEP+source_timestep];
+        double new_xy = p.yask_context.stress_xy->readElem(source_timestep+1,x,y,z, 0)
+                        - coeff*stress_xy_update[j*READ_STEP+source_timestep];
+        double new_xz = p.yask_context.stress_xz->readElem(source_timestep+1,x,y,z, 0)
+                        - coeff*stress_xz_update[j*READ_STEP+source_timestep];
+        double new_yy = p.yask_context.stress_yy->readElem(source_timestep+1,x,y,z, 0) 
+                        - coeff*stress_yy_update[j*READ_STEP+source_timestep];
+        double new_yz = p.yask_context.stress_yz->readElem(source_timestep+1,x,y,z, 0) 
+                        - coeff*stress_yz_update[j*READ_STEP+source_timestep];
+        double new_zz = p.yask_context.stress_zz->readElem(source_timestep+1,x,y,z, 0) 
+                        - coeff*stress_zz_update[j*READ_STEP+source_timestep];
+                        
+        p.yask_context.stress_xx->writeElem(new_xx,source_timestep+1,x,y,z, 0);
+        p.yask_context.stress_xy->writeElem(new_xy,source_timestep+1,x,y,z, 0);
+        p.yask_context.stress_xz->writeElem(new_xz,source_timestep+1,x,y,z, 0);
+        p.yask_context.stress_yy->writeElem(new_yy,source_timestep+1,x,y,z, 0);
+        p.yask_context.stress_yz->writeElem(new_yz,source_timestep+1,x,y,z, 0);
+        p.yask_context.stress_zz->writeElem(new_zz,source_timestep+1,x,y,z, 0);
+        
+#else
         pd.m_patches[patch_id].soa.m_stressXX[x][y][z] -= coeff*stress_xx_update[j*READ_STEP+source_timestep];
         pd.m_patches[patch_id].soa.m_stressXY[x][y][z] -= coeff*stress_xy_update[j*READ_STEP+source_timestep];
         pd.m_patches[patch_id].soa.m_stressXZ[x][y][z] -= coeff*stress_xz_update[j*READ_STEP+source_timestep];
         pd.m_patches[patch_id].soa.m_stressYY[x][y][z] -= coeff*stress_yy_update[j*READ_STEP+source_timestep];
         pd.m_patches[patch_id].soa.m_stressYZ[x][y][z] -= coeff*stress_yz_update[j*READ_STEP+source_timestep];
         pd.m_patches[patch_id].soa.m_stressZZ[x][y][z] -= coeff*stress_zz_update[j*READ_STEP+source_timestep];
-        
+#endif        
     }
 }
 

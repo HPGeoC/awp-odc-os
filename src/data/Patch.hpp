@@ -27,6 +27,17 @@
 #include "data/Mesh.hpp"
 #include "data/Cerjan.hpp"
 
+
+// TODO(Josh): (Yask) are these the right includes?
+#ifdef YASK
+#include "yask/stencil.hpp"
+#include "yask/stencil_calc.hpp"
+#include "yask/stencil_code.hpp"
+
+using namespace yask;
+#endif
+
+
 class Patch
 {
 public:
@@ -53,6 +64,12 @@ public:
   odc::data::SoA soa;
   odc::data::Mesh mesh;
   odc::data::Cerjan cerjan;
+
+  #ifdef YASK
+  STENCIL_EQUATIONS yask_stencils;
+  STENCIL_CONTEXT yask_context;
+  #endif
+
 };
 
 #define PATCH_H

@@ -220,7 +220,7 @@ void odc::io::OutputWriter::update(int_pt i_timestep, PatchDecomp& i_ptchDec, in
                                   m_velocityZWriteBuffer + bufInd,
                                   m_firstXNodeToRecord, m_lastXNodeToRecord, m_numXNodesToSkip,
                                   m_firstYNodeToRecord, m_lastYNodeToRecord, m_numYNodesToSkip,
-                                  m_firstZNodeToRecord, m_lastZNodeToRecord, m_numZNodesToSkip);
+                                  m_firstZNodeToRecord, m_lastZNodeToRecord, m_numZNodesToSkip, i_timestep+1);
         
         if ((i_timestep/m_numTimestepsToSkip) % m_writeStep == 0) {
             
@@ -355,12 +355,18 @@ void odc::io::CheckpointWriter::writeUpdatedStats(int_pt currentTimeStep, PatchD
         if (!m_checkPointFile) {
             m_checkPointFile = std::fopen(m_checkPointFileName,"a+");
         }
+
+#ifdef YASK
+        currentTimeStep++;
+#endif
         
         int_pt i = m_nd;
         int_pt j = i;
-        int_pt k = m_numZGridPoints-1-m_nd;
-        fprintf(m_checkPointFile,"%" AWP_PT_FORMAT_STRING " :\t%e\t%e\t%e\n", currentTimeStep,
-                i_ptchDec.getVelX(i,j,k), i_ptchDec.getVelY(i,j,k), i_ptchDec.getVelZ(i,j,k));
+        int_pt k = m_numZGridPoints-1-m_nd;        
+        fprintf(m_checkPointFile,"%" AWP_PT_FORMAT_STRING " :\t%e\t%e\t%e\n", currentTimeStep-1,
+                i_ptchDec.getVelX(i,j,k,currentTimeStep),
+                i_ptchDec.getVelY(i,j,k,currentTimeStep),
+                i_ptchDec.getVelZ(i,j,k,currentTimeStep));
         
         fflush(m_checkPointFile);
         

@@ -459,13 +459,30 @@ void odc::io::Sources::addsrc(int_pt i,      float DH,   float DT,   int NST,  i
         x = pd.globalToLocalX(idx,idy,idz);
         y = pd.globalToLocalY(idx,idy,idz);
         z = pd.globalToLocalZ(idx,idy,idz);
-        
+
+#ifdef YASK
+        Patch& p = pd.m_patches[patch_id];
+        double new_xx = p.yask_context.stress_xx->readElem(i,x,y,z, 0) - vtst*m_ptAxx[j*READ_STEP+i];
+        double new_xy = p.yask_context.stress_xy->readElem(i,x,y,z, 0) - vtst*m_ptAxy[j*READ_STEP+i];
+        double new_xz = p.yask_context.stress_xz->readElem(i,x,y,z, 0) - vtst*m_ptAxz[j*READ_STEP+i];
+        double new_yy = p.yask_context.stress_yy->readElem(i,x,y,z, 0) - vtst*m_ptAyy[j*READ_STEP+i];
+        double new_yz = p.yask_context.stress_yz->readElem(i,x,y,z, 0) - vtst*m_ptAyz[j*READ_STEP+i];
+        double new_zz = p.yask_context.stress_zz->readElem(i,x,y,z, 0) - vtst*m_ptAzz[j*READ_STEP+i];
+
+        p.yask_context.stress_xx->writeElem(new_xx,i,x,y,z, 0);
+        p.yask_context.stress_xy->writeElem(new_xy,i,x,y,z, 0);
+        p.yask_context.stress_xz->writeElem(new_xz,i,x,y,z, 0);
+        p.yask_context.stress_yy->writeElem(new_yy,i,x,y,z, 0);
+        p.yask_context.stress_yz->writeElem(new_yz,i,x,y,z, 0);
+        p.yask_context.stress_zz->writeElem(new_zz,i,x,y,z, 0);
+#else
         pd.m_patches[patch_id].soa.m_stressXX[x][y][z] -= vtst*m_ptAxx[j*READ_STEP+i];
         pd.m_patches[patch_id].soa.m_stressYY[x][y][z] -= vtst*m_ptAyy[j*READ_STEP+i];
         pd.m_patches[patch_id].soa.m_stressZZ[x][y][z] -= vtst*m_ptAzz[j*READ_STEP+i];
         pd.m_patches[patch_id].soa.m_stressXZ[x][y][z] -= vtst*m_ptAxz[j*READ_STEP+i];
         pd.m_patches[patch_id].soa.m_stressYZ[x][y][z] -= vtst*m_ptAyz[j*READ_STEP+i];
         pd.m_patches[patch_id].soa.m_stressXY[x][y][z] -= vtst*m_ptAxy[j*READ_STEP+i];
+#endif        
     }
     return;
 }

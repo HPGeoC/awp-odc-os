@@ -33,6 +33,10 @@
 #include <time.h>
 #include <sys/time.h>
 
+#ifdef YASK
+using namespace yask;
+#endif
+
 double w_time()
 {
   struct timeval t;
@@ -46,7 +50,11 @@ double w_time()
 
 void odc::data::Mesh::initialize(odc::io::OptionParser i_options, int_pt x, int_pt y, int_pt z,
                                  int_pt bdry_size, bool anelastic, Grid1D i_inputBuffer,
-                                 int_pt i_globalX, int_pt i_globalY, int_pt i_globalZ)
+                                 int_pt i_globalX, int_pt i_globalY, int_pt i_globalZ
+#ifdef YASK
+                                 , Grid_XYZ* density_grid, Grid_XYZ* mu_grid, Grid_XYZ* lam_grid 
+#endif
+                                 )
 {
   real taumax, taumin;
     
@@ -61,9 +69,11 @@ void odc::data::Mesh::initialize(odc::io::OptionParser i_options, int_pt x, int_
     
     
   m_usingAnelastic = anelastic;
+#ifndef YASK
   m_density = odc::data::Alloc3D(totalX, totalY, totalZ, odc::constants::boundary);
   m_mu = odc::data::Alloc3D(totalX, totalY, totalZ, odc::constants::boundary);
   m_lam = odc::data::Alloc3D(totalX, totalY, totalZ, odc::constants::boundary);
+#endif
   m_lam_mu = odc::data::Alloc3D(totalX, totalY, 1, odc::constants::boundary);
 
   if(m_usingAnelastic)
@@ -80,9 +90,17 @@ void odc::data::Mesh::initialize(odc::io::OptionParser i_options, int_pt x, int_
 
     
   new_inimesh(i_options.m_mediaStart,
+#ifdef YASK
+              density_grid,
+              mu_grid,
+              lam_grid,
+              bdry_size,
+#else
               &m_density[bdry_size][bdry_size][bdry_size],
               &m_mu[bdry_size][bdry_size][bdry_size],
               &m_lam[bdry_size][bdry_size][bdry_size],
+#endif
+              
               &m_qp[bdry_size][bdry_size][bdry_size],
               &m_qs[bdry_size][bdry_size][bdry_size],
               (totalY + 2*odc::constants::boundary)*(totalZ + 2*odc::constants::boundary),
@@ -113,14 +131,23 @@ void odc::data::Mesh::initialize(odc::io::OptionParser i_options, int_pt x, int_
               i_options.m_nZ
               );
 
-  set_boundaries(m_density, m_mu, m_lam, m_qp, m_qs, m_usingAnelastic, bdry_size, x, y, z);
+  set_boundaries(
+#ifdef YASK
+      density_grid, mu_grid, lam_grid,
+#endif
+      m_density, m_mu, m_lam, m_qp, m_qs, m_usingAnelastic, bdry_size, x, y, z);
 
   // For free surface boundary condition calculations
   for(int i = bdry_size; i < bdry_size + x; i++) {
     for(int j = bdry_size; j < bdry_size + y ;j++) {
       real t_xl, t_xl2m;
+#ifdef YASK
+      t_xl             = 1.0/lam_grid->readElem(i,j,bdry_size+z-1,0);
+      t_xl2m           = 2.0/mu_grid->readElem(i,j,bdry_size+z-1,0) + t_xl;      
+#else
       t_xl             = 1.0/m_lam[i][j][bdry_size+z-1];
       t_xl2m           = 2.0/m_mu[i][j][bdry_size+z-1] + t_xl;
+#endif
       m_lam_mu[i][j][0]  = t_xl/t_xl2m;
     }
   }
@@ -234,10 +261,11 @@ odc::data::Mesh::Mesh(odc::io::OptionParser i_options, odc::data::SoA data)
 
 void odc::data::Mesh::finalize()
 {
-    
+#ifndef YASK  
   odc::data::Delloc3D(m_density, 2);
   odc::data::Delloc3D(m_lam, 2);
   odc::data::Delloc3D(m_mu, 2);
+#endif
   odc::data::Delloc3D(m_lam_mu, 2);
     
   if (m_usingAnelastic)
@@ -877,9 +905,16 @@ void odc::data::Mesh::inimesh(int MEDIASTART, Grid3D d1, Grid3D mu, Grid3D lam, 
 }// end function inimesh
 
 void odc::data::Mesh::new_inimesh(int MEDIASTART,
+#ifdef YASK
+                                  Grid_XYZ* density_grid,
+                                  Grid_XYZ* mu_grid,
+                                  Grid_XYZ* lam_grid,
+                                  int_pt bdry_width,
+#else                                  
                                   real *d1,
                                   real *mu,
                                   real *lam,
+#endif
                                   real *qp,
                                   real *qs,
                                   int_pt i_strideX,
@@ -963,9 +998,16 @@ void odc::data::Mesh::new_inimesh(int MEDIASTART,
           //TODO(Josh): optimize this
           int_pt offset = i * i_strideX + j * i_strideY + k * i_strideZ;
 
-          lam[offset]=1./(dd*(vp*vp - 2.*vs*vs)); // PPP:H
-          mu[offset]=1./(dd*vs*vs); // PPP:H
-          d1[offset]=dd; // PPP:H
+          
+#ifdef YASK
+          lam_grid->writeElem(1./(dd*(vp*vp - 2.*vs*vs)), i+bdry_width, j+bdry_width, k+bdry_width, 0);
+          mu_grid->writeElem(1./(dd*vs*vs), i+bdry_width, j+bdry_width, k+bdry_width, 0);
+          density_grid->writeElem(dd, i+bdry_width, j+bdry_width, k+bdry_width, 0);
+#else
+          lam[offset]=1./(dd*(vp*vp - 2.*vs*vs)); 
+          mu[offset]=1./(dd*vs*vs); 
+          d1[offset]=dd;           
+#endif
         }
   }
   else
@@ -1208,10 +1250,20 @@ void odc::data::Mesh::new_inimesh(int MEDIASTART,
           int_pt offset = i * i_strideX + j * i_strideY + (nzt - 1 - k) * i_strideZ; 
                     
           if(tmpdd[i][j][k]<1700.0) tmpdd[i][j][k]=1700.0;
+          
+#ifdef YASK
+          mu_grid->writeElem(1./(tmpdd[i][j][k]*tmpvs[i][j][k]*tmpvs[i][j][k]), i+bdry_width, j+bdry_width, nzt-1-k+bdry_width,0);
+          lam_grid->writeElem(1./(tmpdd[i][j][k]*(tmpvp[i][j][k]*tmpvp[i][j][k]
+                              -2.*tmpvs[i][j][k]*tmpvs[i][j][k]))
+                              , i+bdry_width, j+bdry_width, nzt-1-k+bdry_width,0);
+          density_grid->writeElem(tmpdd[i][j][k], i+bdry_width, j+bdry_width, nzt-1-k+bdry_width,0);
+#else
           mu[offset]  = 1./(tmpdd[i][j][k]*tmpvs[i][j][k]*tmpvs[i][j][k]);
           lam[offset] = 1./(tmpdd[i][j][k]*(tmpvp[i][j][k]*tmpvp[i][j][k]
                                             -2.*tmpvs[i][j][k]*tmpvs[i][j][k]));
-          d1[offset]  = tmpdd[i][j][k]; 
+          d1[offset]  = tmpdd[i][j][k];          
+#endif          
+          
           if(NVE==1)
           {
             if(tmppq[i][j][k]<=0.0)
@@ -1734,8 +1786,16 @@ void odc::data::Mesh::weights_sub(Grid3D weights,Grid1D coeff, float ex, float f
 } // end function weights_sub
 
 
-void odc::data::Mesh::set_boundaries(Grid3D d1, Grid3D mu, Grid3D lam, Grid3D qp, Grid3D qs, bool anelastic,
-                                     int_pt bdry_width, int_pt nx, int_pt ny, int_pt nz)
+// TODO(Josh): rewrite this in a sane way
+void odc::data::Mesh::set_boundaries(
+#ifdef YASK
+    Grid_XYZ* gd1,Grid_XYZ* gmu,Grid_XYZ* glam,
+#endif
+//#else
+    Grid3D d1, Grid3D mu, Grid3D lam,
+//#endif
+    Grid3D qp, Grid3D qs, bool anelastic,
+    int_pt bdry_width, int_pt nx, int_pt ny, int_pt nz)
 
 {
   int_pt h = bdry_width;
@@ -1743,12 +1803,23 @@ void odc::data::Mesh::set_boundaries(Grid3D d1, Grid3D mu, Grid3D lam, Grid3D qp
   {
     for(int_pt k=0;k<nz;k++)
     {
+#ifdef YASK
+      glam->writeElem(glam->readElem(h,h+j,h+k,0), h-1,h+j,h+k,0);
+      glam->writeElem(glam->readElem(h+nx-1,h+j,h+k,0), h+nx,h+j,h+k,0);
+      
+      gmu->writeElem(gmu->readElem(h,h+j,h+k,0), h-1,h+j,h+k,0);
+      gmu->writeElem(gmu->readElem(h+nx-1,h+j,h+k,0), h+nx,h+j,h+k,0);
+
+      gd1->writeElem(gd1->readElem(h,h+j,h+k,0),h-1,h+j,h+k,0);
+      gd1->writeElem(gd1->readElem(h+nx-1,h+j,h+k,0),h+nx,h+j,h+k,0);
+#else
       lam[h-1][h+j][h+k]     = lam[h][h+j][h+k];
       lam[h+nx][h+j][h+k]    = lam[h+nx-1][h+j][h+k];
       mu[h-1][h+j][h+k]      = mu[h][h+j][h+k];
       mu[h+nx][h+j][h+k]     = mu[h+nx-1][h+j][h+k];
       d1[h-1][h+j][h+k]      = d1[h][h+j][h+k];
       d1[h+nx][h+j][h+k]     = d1[h+nx-1][h+j][h+k];
+#endif
     }
   }   
 
@@ -1756,12 +1827,23 @@ void odc::data::Mesh::set_boundaries(Grid3D d1, Grid3D mu, Grid3D lam, Grid3D qp
   {
     for(int_pt k=0;k<nz;k++)
     {
+#ifdef YASK
+      glam->writeElem(glam->readElem(h+i,h,h+k,0), h+i,h-1,h+k,0);
+      glam->writeElem(glam->readElem(h+i-1,h+ny-1,h+k,0), h+i,h+ny,h+k,0);
+      
+      gmu->writeElem(gmu->readElem(h+i,h,h+k,0), h+i,h-1,h+k,0);
+      gmu->writeElem(gmu->readElem(h+i,h+ny-1,h+k,0), h+i,h+ny,h+k,0);
+
+      gd1->writeElem(gd1->readElem(h+i,h,h+k,0),h+i,h-1,h+k,0);
+      gd1->writeElem(gd1->readElem(h+i,h+ny-1,h+k,0),h+i,h+ny,h+k,0);
+#else
       lam[h+i][h-1][h+k]     = lam[h+i][h][h+k];
       lam[h+i][h+ny][h+k]    = lam[h+i][h+ny-1][h+k];
       mu[h+i][h-1][h+k]      = mu[h+i][h][h+k];
       mu[h+i][h+ny][h+k]     = mu[h+i][h+ny-1][h+k];
       d1[h+i][h-1][h+k]      = d1[h+i][h][h+k];
       d1[h+i][h+ny][h+k]     = d1[h+i][h+ny-1][h+k];
+#endif
     }
   }
 
@@ -1769,15 +1851,36 @@ void odc::data::Mesh::set_boundaries(Grid3D d1, Grid3D mu, Grid3D lam, Grid3D qp
   {
     for(int_pt j=0;j<ny;j++)
     {
+#ifdef YASK
+      glam->writeElem(glam->readElem(h+i,h+j,h,0), h+i,h+j,h-1,0);
+      gmu->writeElem(gmu->readElem(h+i,h+j,h,0), h+i,h+j,h-1,0);
+      gd1->writeElem(gd1->readElem(h+i,h+j,h,0),h+i,h+j,h-1,0);
+#else      
       lam[h+i][h+j][h-1]   = lam[h+i][h+j][h];
       mu[h+i][h+j][h-1]    = mu[h+i][h+j][h];
       d1[h+i][h+j][h-1]    = d1[h+i][h+j][h];
+#endif
     }
   }
   
   //12 border lines
   for(int_pt i=0;i<nx;i++)
   {
+#ifdef YASK
+    glam->writeElem(glam->readElem(h+i,h,h,0), h+i,h-1,h-1,0);
+    gmu->writeElem(gmu->readElem(h+i,h,h,0), h+i,h-1,h-1,0);
+    gd1->writeElem(gd1->readElem(h+i,h,h,0),h+i,h-1,h-1,0);
+    glam->writeElem(glam->readElem(h+i,h+ny-1,h,0), h+i,h+ny,h-1,0);
+    gmu->writeElem(gmu->readElem(h+i,h+ny-1,h,0), h+i,h+ny,h-1,0);
+    gd1->writeElem(gd1->readElem(h+i,h+ny-1,h,0),h+i,h+ny,h-1,0);
+    glam->writeElem(glam->readElem(h+i,h,h+nz-1,0), h+i,h-1,h+nz,0);
+    gmu->writeElem(gmu->readElem(h+i,h,h+nz-1,0), h+i,h-1,h+nz,0);
+    gd1->writeElem(gd1->readElem(h+i,h,h+nz-1,0),h+i,h-1,h+nz,0);
+    glam->writeElem(glam->readElem(h+i,h+ny-1,h+nz-1,0), h+i,h+ny,h+nz,0);
+    gmu->writeElem(gmu->readElem(h+i,h+ny-1,h+nz-1,0),h+i,h+ny,h+nz,0);
+    gd1->writeElem(gd1->readElem(h+i,h+ny-1,h+nz-1,0),h+i,h+ny,h+nz,0);
+#else
+    
     lam[h+i][h-1][h-1]          = lam[h+i][h][h];
     mu[h+i][h-1][h-1]           = mu[h+i][h][h];
     d1[h+i][h-1][h-1]           = d1[h+i][h][h];
@@ -1790,10 +1893,25 @@ void odc::data::Mesh::set_boundaries(Grid3D d1, Grid3D mu, Grid3D lam, Grid3D qp
     lam[h+i][h+ny][h+nz]        = lam[h+i][h+ny-1][h+nz-1];
     mu[h+i][h+ny][h+nz]         = mu[h+i][h+ny-1][h+nz-1];
     d1[h+i][h+ny][h+nz]         = d1[h+i][h+ny-1][h+nz-1];
+#endif
   } 
         
   for(int_pt j=0;j<ny;j++)
   {
+#ifdef YASK
+    glam->writeElem(glam->readElem(h,h+j,h,0), h-1,h+j,h-1,0);
+    gmu->writeElem(gmu->readElem(h,h+j,h,0), h-1,h+j,h-1,0);
+    gd1->writeElem(gd1->readElem(h,h+j,h,0), h-1,h+j,h-1,0);
+    glam->writeElem(glam->readElem(h+nx-1,h+j,h,0), h+nx,h+j,h-1,0);
+    gmu->writeElem(gmu->readElem(h+nx-1,h+j,h,0), h+nx,h+j,h-1,0);
+    gd1->writeElem(gd1->readElem(h+nx-1,h+j,h,0), h+nx,h+j,h-1,0);
+    glam->writeElem(glam->readElem(h,h+j,h+nz-1,0), h-1,h+j,h+nz,0);
+    gmu->writeElem(gmu->readElem(h,h+j,h+nz-1,0), h-1,h+j,h+nz,0);
+    gd1->writeElem(gd1->readElem(h,h+j,h+nz-1,0), h-1,h+j,h+nz,0);
+    glam->writeElem(glam->readElem(h+nx-1,h+j,h+nz-1,0), h+nx,h+j,h+nz,0);
+    gmu->writeElem(gmu->readElem(h+nx-1,h+j,h+nz-1,0), h+nx,h+j,h+nz,0);
+    gd1->writeElem(gd1->readElem(h+nx-1,h+j,h+nz-1,0), h+nx,h+j,h+nz,0);
+#else          
     lam[h-1][h+j][h-1]          = lam[h][h+j][h];
     mu[h-1][h+j][h-1]           = mu[h][h+j][h];
     d1[h-1][h+j][h-1]           = d1[h][h+j][h];
@@ -1806,10 +1924,26 @@ void odc::data::Mesh::set_boundaries(Grid3D d1, Grid3D mu, Grid3D lam, Grid3D qp
     lam[h+nx][h+j][h+nz]        = lam[h+nx-1][h+j][h+nz-1];
     mu[h+nx][h+j][h+nz]         = mu[h+nx-1][h+j][h+nz-1];
     d1[h+nx][h+j][h+nz]         = d1[h+nx-1][h+j][h+nz-1];
+#endif
   }
         
   for(int_pt k=0;k<nz;k++)
   {
+#ifdef YASK
+    glam->writeElem(glam->readElem(h,h,h+k,0), h-1,h-1,h+k,0);
+    gmu->writeElem(gmu->readElem(h,h,h+k,0), h-1,h-1,h+k,0);
+    gd1->writeElem(gd1->readElem(h,h,h+k,0), h-1,h-1,h+k,0);
+    glam->writeElem(glam->readElem(h+nx-1,h,h+k,0), h+nx,h-1,h+k,0);
+    gmu->writeElem(gmu->readElem(h+nx-1,h,h+k,0), h+nx,h-1,h+k,0);
+    gd1->writeElem(gd1->readElem(h+nx-1,h,h+k,0), h+nx,h-1,h+k,0);
+    glam->writeElem(glam->readElem(h,h+ny-1,h+k,0), h-1,h+ny,h+k,0);
+    gmu->writeElem(gmu->readElem(h,h+ny-1,h+k,0), h-1,h+ny,h+k,0);
+    gd1->writeElem(gd1->readElem(h,h+ny-1,h+k,0), h-1,h+ny,h+k,0);
+    glam->writeElem(glam->readElem(h+nx-1,h+ny-1,h+k,0), h+nx,h+ny,h+k,0);
+    gmu->writeElem(gmu->readElem(h+nx-1,h+ny-1,h+k,0), h+nx,h+ny,h+k,0);
+    gd1->writeElem(gd1->readElem(h+nx-1,h+ny-1,h+k,0), h+nx,h+ny,h+k,0);
+#else      
+    
     lam[h-1][h-1][h+k]          = lam[h][h][h+k];
     mu[h-1][h-1][h+k]           = mu[h][h][h+k];
     d1[h-1][h-1][h+k]           = d1[h][h][h+k];
@@ -1822,9 +1956,43 @@ void odc::data::Mesh::set_boundaries(Grid3D d1, Grid3D mu, Grid3D lam, Grid3D qp
     lam[h+nx][h+ny][h+k]        = lam[h+nx-1][h+ny-1][h+k];
     mu[h+nx][h+ny][h+k]         = mu[h+nx-1][h+ny-1][h+k];
     d1[h+nx][h+ny][h+k]         = d1[h+nx-1][h+ny-1][h+k];
+#endif
   }
         
   //8 Corners
+#ifdef YASK
+  glam->writeElem(glam->readElem(h,h,h ,0), h-1,h-1,h-1,0);
+  gmu->writeElem( gmu->readElem( h,h,h ,0), h-1,h-1,h-1,0);
+  gd1->writeElem( gd1->readElem( h,h,h ,0), h-1,h-1,h-1,0);
+
+  glam->writeElem(glam->readElem(h+nx-1,h,h,0), h+nx,h-1,h-1,0);
+  gmu->writeElem( gmu->readElem( h+nx-1,h,h,0), h+nx,h-1,h-1,0);
+  gd1->writeElem( gd1->readElem( h+nx-1,h,h,0), h+nx,h-1,h-1,0);
+
+  glam->writeElem(glam->readElem(h,h+ny-1,h,0), h-1,h+ny,h-1,0);
+  gmu->writeElem( gmu->readElem( h,h+ny-1,h,0), h-1,h+ny,h-1,0);
+  gd1->writeElem( gd1->readElem( h,h+ny-1,h,0), h-1,h+ny,h-1,0);
+
+  glam->writeElem(glam->readElem(h,h,h+nz-1,0), h-1,h-1,h+nz,0);
+  gmu->writeElem( gmu->readElem( h,h,h+nz-1,0), h-1,h-1,h+nz,0);
+  gd1->writeElem( gd1->readElem( h,h,h+nz-1,0), h-1,h-1,h+nz,0);
+
+  glam->writeElem(glam->readElem(h+nx-1,h,h+nz-1,0), h+nx,h-1,h+nz,0);
+  gmu->writeElem( gmu->readElem( h+nx-1,h,h+nz-1,0), h+nx,h-1,h+nz,0);
+  gd1->writeElem( gd1->readElem( h+nx-1,h,h+nz-1,0), h+nx,h-1,h+nz,0);
+
+  glam->writeElem(glam->readElem(h+nx-1,h+ny-1,h,0), h+nx,h+ny,h-1,0);
+  gmu->writeElem( gmu->readElem( h+nx-1,h+ny-1,h,0), h+nx,h+ny,h-1,0);
+  gd1->writeElem( gd1->readElem( h+nx-1,h+ny-1,h,0), h+nx,h+ny,h-1,0);
+
+  glam->writeElem(glam->readElem(h,h+ny-1,h+nz-1,0), h-1,h+ny,h+nz,0);
+  gmu->writeElem( gmu->readElem( h,h+ny-1,h+nz-1,0), h-1,h+ny,h+nz,0);
+  gd1->writeElem( gd1->readElem( h,h+ny-1,h+nz-1,0), h-1,h+ny,h+nz,0);
+
+  glam->writeElem(glam->readElem(h+nx-1,h+ny-1,h+nz-1,0), h+nx,h+ny,h+nz,0);
+  gmu->writeElem( gmu->readElem( h+nx-1,h+ny-1,h+nz-1,0), h+nx,h+ny,h+nz,0);
+  gd1->writeElem( gd1->readElem( h+nx-1,h+ny-1,h+nz-1,0), h+nx,h+ny,h+nz,0);
+#else        
   lam[h-1][h-1][h-1]             = lam[h][h][h];
   mu[h-1][h-1][h-1]              = mu[h][h][h];
   d1[h-1][h-1][h-1]              = d1[h][h][h];
@@ -1834,7 +2002,7 @@ void odc::data::Mesh::set_boundaries(Grid3D d1, Grid3D mu, Grid3D lam, Grid3D qp
   lam[h-1][h+ny][h-1]            = lam[h][h+ny-1][h];
   mu[h-1][h+ny][h-1]             = mu[h][h+ny-1][h];
   d1[h-1][h+ny][h-1]             = d1[h][h+ny-1][h];
-  lam[h-1][h-1][h+nz]            = lam[h][h][h+nz-1];
+  lam[h-1][h-1][h+nz]            = lam[h][h][h+nz-1]; 
   mu[h-1][h-1][h+nz]             = mu[h][h][h+nz-1];
   d1[h-1][h-1][h+nz]             = d1[h][h][h+nz-1];
   lam[h+nx][h-1][h+nz]           = lam[h+nx-1][h][h+nz-1];
@@ -1849,17 +2017,23 @@ void odc::data::Mesh::set_boundaries(Grid3D d1, Grid3D mu, Grid3D lam, Grid3D qp
   lam[h+nx][h+ny][h+nz]          = lam[h+nx-1][h+ny-1][h+nz-1];
   mu[h+nx][h+ny][h+nz]           = mu[h+nx-1][h+ny-1][h+nz-1];
   d1[h+nx][h+ny][h+nz]           = d1[h+nx-1][h+ny-1][h+nz-1];
-        
+#endif        
         
         
   for(int_pt i=0;i<nx;i++)
   {
     for(int_pt j=0;j<ny;j++)
     {
-      int_pt k = nz; 
+      int_pt k = nz;
+#ifdef YASK
+      gd1->writeElem(gd1->readElem(h+i,h+j,h+k-1,0), h+i,h+j,h+k,0);
+      gmu->writeElem(gmu->readElem(h+i,h+j,h+k-1,0), h+i,h+j,h+k,0);
+      glam->writeElem(glam->readElem(h+i,h+j,h+k-1,0),h+i,h+j,h+k,0);
+#else            
       d1[h+i][h+j][h+k]   = d1[h+i][h+j][h+k-1];
       mu[h+i][h+j][h+k]   = mu[h+i][h+j][h+k-1];
       lam[h+i][h+j][h+k]  = lam[h+i][h+j][h+k-1];
+#endif
       if(anelastic)
       {
         qp[h+i][h+j][h+k] = qp[h+i][h+j][h+k-1];

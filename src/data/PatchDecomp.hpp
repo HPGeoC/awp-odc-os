@@ -27,52 +27,212 @@
 class PatchDecomp
 {
 public:
+  /*
+   * Grid-of-patches is the 3d grid that stores the spatial location of each patch.
+   * Eg. if there are exactly two patches, split in the x direction, then the two
+   * grid-of-patches coordinates are (0,0,0) and (1,0,0).
+   * Additionally each patch has a unique patch_id.
+   */
+  //! map patch id to which patch it is in the 3d grid-of-patches
   int_pt* m_idToGridX;
   int_pt* m_idToGridY;
   int_pt* m_idToGridZ;
 
+  //! map coordinate in 3d grid of patches into a patch_id
   int*** m_coordToId; // TODO(Josh): should be int_pt for larger runs
-  
+
+  //! map patch_id to the corresponding Patch object
   Patch* m_patches;
 
+  //! store the intended size of each patch.  Note that patches at the
+  //! end might be smaller.
   int_pt m_patchXSize, m_patchYSize, m_patchZSize;
+
+  //! number of patches in each direction
   int_pt m_numXPatches, m_numYPatches, m_numZPatches;
+
+  //! total number of patches
   int_pt m_numPatches;
 
+  //! total number of grid points across all patches, in each dimension
   int_pt m_numXGridPoints,m_numYGridPoints,m_numZGridPoints;
+
+  //! total number of grid points in this node
   int_pt m_numGridPoints;
 
+  //! the width of the patch overlap region.  Same in each dimension
   int_pt m_overlapSize;
-  
+
+  /**
+   * Allocated the patches and determine dimensions.
+   *
+   * @param i_options arguments from command line.
+   * @param xSize size of computational domain in x direction
+   * @param ySize size of computational domain in y direction
+   * @param zSize size of computational domain in z direction
+   * @param xPatchSize size of patch in x direction.
+   * @param yPatchSize size of patch in y direction.
+   * @param zPatchSize size of patch in z direction.
+   * @param overlapSize size of patch overlap region in each dimension
+   **/  
   void initialize(odc::io::OptionParser i_options, int_pt xSize, int_pt ySize, int_pt zSize,
                   int_pt xPatchSize, int_pt yPatchSize, int_pt zPatchSize,
                   int_pt overlapSize);
 
+  /**
+   * Deallocate patches.
+   **/    
   void finalize();
 
+  /**
+   * Synchronize all patches.
+   *
+   * @param allGrids synchronize static arrays (eg. true during initializtion, default false)
+   **/      
   void synchronize(bool allGrids=false);
-  
+
+  /**
+   * Maps coordinates of a point in the domain to the corresponding patch_id.
+   *
+   * @param x x-coordinate 
+   * @param y y-coordinate 
+   * @param z z-coordinate 
+   **/        
   int    globalToPatch(int_pt x, int_pt y, int_pt z);
+
+  /**
+   * Maps coordinates of a point in the domain to the x-coordinate of that point in
+   * its corresponding patch.
+   *
+   * @param x x-coordinate 
+   * @param y y-coordinate 
+   * @param z z-coordinate 
+   **/          
   int_pt globalToLocalX(int_pt x, int_pt y, int_pt z);
-  int_pt globalToLocalY(int_pt x, int_pt y, int_pt z);  
+
+  /**
+   * Maps coordinates of a point in the domain to the y-coordinate of that point in
+   * its corresponding patch.
+   *
+   * @param x x-coordinate 
+   * @param y y-coordinate 
+   * @param z z-coordinate 
+   **/            
+  int_pt globalToLocalY(int_pt x, int_pt y, int_pt z);
+
+  /**
+   * Maps coordinates of a point in the domain to the z-coordinate of that point in
+   * its corresponding patch.
+   *
+   * @param x x-coordinate 
+   * @param y y-coordinate 
+   * @param z z-coordinate 
+   **/            
   int_pt globalToLocalZ(int_pt x, int_pt y, int_pt z);
 
+  /**
+   * Maps coordinates of a point in its corresponding patch and a patch_id to
+   * the corresponding (node) global x-coordinate
+   *
+   * @param x x-coordinate 
+   * @param y y-coordinate 
+   * @param z z-coordinate 
+   **/              
   int_pt localToGlobalX(int_pt i_ptch, int_pt x, int_pt y, int_pt z);
+
+  /**
+   * Maps coordinates of a point in its corresponding patch and a patch_id to
+   * the corresponding (node) global y-coordinate
+   *
+   * @param x x-coordinate 
+   * @param y y-coordinate 
+   * @param z z-coordinate 
+   **/                
   int_pt localToGlobalY(int_pt i_ptch, int_pt x, int_pt y, int_pt z);
+
+  /**
+   * Maps coordinates of a point in its corresponding patch and a patch_id to
+   * the corresponding (node) global z-coordinate
+   *
+   * @param x x-coordinate 
+   * @param y y-coordinate 
+   * @param z z-coordinate 
+   **/              
   int_pt localToGlobalZ(int_pt i_ptch, int_pt x, int_pt y, int_pt z);
 
-  real   getVelX(int_pt i_x, int_pt i_y, int_pt i_z);
-  real   getVelY(int_pt i_x, int_pt i_y, int_pt i_z);
-  real   getVelZ(int_pt i_x, int_pt i_y, int_pt i_z);
-  
+  /**
+   * Maps global coordinates to the x velocity of that point,
+   * at a given time index (not used for AWP-vanilla, just YASK)
+   *
+   * @param x x-coordinate 
+   * @param y y-coordinate 
+   * @param z z-coordinate
+   * @param i_timestep desired time index 
+   **/                
+  real   getVelX(int_pt i_x, int_pt i_y, int_pt i_z, int_pt i_timestep);
+
+  /**
+   * Maps global coordinates to the y velocity of that point,
+   * at a given time index (not used for AWP-vanilla, just YASK)
+   *
+   * @param x x-coordinate 
+   * @param y y-coordinate 
+   * @param z z-coordinate
+   * @param i_timestep desired time index 
+   **/                  
+  real   getVelY(int_pt i_x, int_pt i_y, int_pt i_z, int_pt i_timestep);
+
+  /**
+   * Maps global coordinates to the \ velocity of that point,
+   * at a given time index (not used for AWP-vanilla, just YASK)
+   *
+   * @param x x-coordinate 
+   * @param y y-coordinate 
+   * @param z z-coordinate
+   * @param i_timestep desired time index 
+   **/                  
+  real   getVelZ(int_pt i_x, int_pt i_y, int_pt i_z, int_pt i_timestep);
+
+  /**
+   * Copy velocities to 1D buffers, ordered as required by OutputWriter.
+   *
+   * @param o_bufferX buffer for x velocities
+   * @param o_bufferY buffer for y velocities
+   * @param o_bufferZ buffer for z velocities
+   * @param i_firstX first x-coordinate to copy
+   * @param i_lastX last x-coordinate to copy
+   * @param i_skipX number of x-coordinates to skip each iteration   
+   * @param i_firstY first y-coordinate to copy
+   * @param i_lastY last y-coordinate to copy
+   * @param i_skipY number of y-coordinates to skip each iteration   
+   * @param i_firstZ first z-coordinate to copy
+   * @param i_lastZ last z-coordinate to copy
+   * @param i_skipZ number of z-coordinates to skip each iteration   
+   * @param i_timestep desired time index 
+   **/                  
   void copyVelToBuffer(real* o_bufferX, real* o_bufferY, real* o_bufferZ,
                        int_pt i_firstX, int_pt i_lastX, int_pt i_skipX,
                        int_pt i_firstY, int_pt i_lastY, int_pt i_skipY,
-                       int_pt i_firstZ, int_pt i_lastZ, int_pt i_skipZ);
+                       int_pt i_firstZ, int_pt i_lastZ, int_pt i_skipZ,
+                       int_pt i_timestep);
 
-  // These functions return the max/min tmpvs, tmpvp and tmpdd over all patches
+  /**
+   * Gets max/min tmpvs observed during mesh initialization.
+   *
+   * @param max return max val (otherwise return min)
+   **/                  
   real getVse(bool max);
+  /**
+   * Gets max/min tmpvp observed during mesh initialization.
+   *
+   * @param max return max val (otherwise return min)
+   **/                    
   real getVpe(bool max);
+  /**
+   * Gets max/min tmpdd observed during mesh initialization.
+   *
+   * @param max return max val (otherwise return min)
+   **/                    
   real getDde(bool max);
   
 };

@@ -53,11 +53,46 @@ void Patch::initialize(odc::io::OptionParser i_options, int_pt _nx, int_pt _ny, 
   size_x = nx + 2*bdry_width;
   size_y = ny + 2*bdry_width;
   size_z = nz + 2*bdry_width;
-  
+ 
+#ifdef YASK
+  yask_context.dn = 4;
+  yask_context.dx = size_x;
+  yask_context.dy = size_y;
+  yask_context.dz = size_z;
+    
+  yask_context.rt = 1;
+  yask_context.rn = 0;
+  yask_context.rx = 0; yask_context.ry = 0; yask_context.rz = 0;
+  yask_context.bt = 1;
+  yask_context.bn = 1;
+  yask_context.bx = DEF_BLOCK_SIZE;
+  yask_context.by = DEF_BLOCK_SIZE;
+  yask_context.bz = DEF_BLOCK_SIZE;    
+    
+  yask_context.pn = roundUp(0, VLEN_N, "# extra padding in n");
+  yask_context.px = roundUp(0, VLEN_X, "# extra padding in x");
+  yask_context.py = roundUp(0, VLEN_Y, "# extra padding in y");
+  yask_context.pz = roundUp(0, VLEN_Z, "# extra padding in z");
+
+  idx_t halo_size = 4/2; // TODO: make dim-specific.
+  yask_context.hn = 0;
+  yask_context.hx = ROUND_UP(halo_size, VLEN_X);
+  yask_context.hy = ROUND_UP(halo_size, VLEN_Y);
+  yask_context.hz = ROUND_UP(halo_size, VLEN_Z);
+
+  yask_context.pn = 0; yask_context.px = 2; yask_context.py = 2; yask_context.pz = 2;
+
+  yask_context.allocGrids();
+  yask_context.allocParams();
+
+  (*(yask_context.h))() = i_options.m_dH;
+  (*(yask_context.delta_t))() = i_options.m_dT;
+#else
   std::cout << "\t setting up patch soa" << std::endl;
   soa.initialize(size_x, size_y, size_z);
   std::cout << "\t size is " << soa.getSize() << std::endl;
   soa.allocate();
+#endif
 
   for(int i=0; i<3; i++)
     for(int j=0; j<3; j++)
@@ -68,10 +103,44 @@ void Patch::initialize(odc::io::OptionParser i_options, int_pt _nx, int_pt _ny, 
   // TODO(Josh): don't hardcode the true (analestic) here;
   //             the advantage of having it is that all memory gets
   //             allocated, just in case we need it
- 
+  std::cout << "here" << std::endl;
+
+#ifdef YASK  
+  mesh.initialize(i_options, nx, ny, nz, bdry_width, true, i_inputBuffer, i_globalX, i_globalY, i_globalZ,
+                  (Grid_XYZ*) yask_context.rho, (Grid_XYZ*) yask_context.mu, (Grid_XYZ*) yask_context.lambda);
+#else
   mesh.initialize(i_options, nx, ny, nz, bdry_width, true, i_inputBuffer, i_globalX, i_globalY, i_globalZ);
+#endif
+  std::cout << "here1" << std::endl;
+  
   int_pt coords[] = {i_globalX, i_globalY, i_globalZ};
   cerjan.initialize(i_options, nx, ny, nz, bdry_width, coords);
+
+  std::cout << "here2" << std::endl;
+  
+#ifdef YASK
+  for(int_pt l_x = 0; l_x<nx+2*bdry_width; l_x++)
+  {
+    for(int_pt l_y = 0; l_y<ny+2*bdry_width; l_y++)
+    {
+      for(int_pt l_z = 0; l_z<nz+2*bdry_width; l_z++)
+      {
+        double l_cerj = cerjan.m_spongeCoeffX[l_x] * cerjan.m_spongeCoeffY[l_y] * cerjan.m_spongeCoeffZ[l_z];
+        yask_context.sponge->writeElem(l_cerj, l_x, l_y, l_z, 0);
+      }
+    }
+  }
+  std::cout << "here" << std::endl;
+
+  for (StencilBase *stencil : yask_stencils.stencils)
+  {
+        stencil->init(yask_context);
+  }
+  
+#endif
+
+  std::cout << "mesh init done in patch" << std::endl;
+  
 
   strideZ = 1;
   strideY = (size_z + 2*odc::constants::boundary);
@@ -157,6 +226,9 @@ void Patch::synchronize(int dir_x, int dir_y, int dir_z, bool allGrids)
     {
       for(int_pt z=z_start; z<z_end; z++)
       {
+#ifdef YASK
+        //TODO(Josh): implement patch synchronization for YASK data
+#else
         soa.m_velocityX[x][y][z] = source_patch->soa.m_velocityX[x+mx][y+my][z+mz];
         soa.m_velocityY[x][y][z] = source_patch->soa.m_velocityY[x+mx][y+my][z+mz];
         soa.m_velocityZ[x][y][z] = source_patch->soa.m_velocityZ[x+mx][y+my][z+mz];
@@ -174,13 +246,18 @@ void Patch::synchronize(int dir_x, int dir_y, int dir_z, bool allGrids)
         soa.m_memXY[x][y][z] = source_patch->soa.m_memXY[x+mx][y+my][z+mz];
         soa.m_memXZ[x][y][z] = source_patch->soa.m_memXZ[x+mx][y+my][z+mz];
         soa.m_memYZ[x][y][z] = source_patch->soa.m_memYZ[x+mx][y+my][z+mz];
-
+#endif
+        
         if(allGrids)
         {
+#ifdef YASK
+        //TODO(Josh): implement patch synchronization for YASK data
+#else
           mesh.m_density[x][y][z] = source_patch->mesh.m_density[x+mx][y+my][z+mz];
           mesh.m_lam[x][y][z] = source_patch->mesh.m_lam[x+mx][y+my][z+mz];
           mesh.m_mu[x][y][z] = source_patch->mesh.m_mu[x+mx][y+my][z+mz];
-
+#endif
+          
           if(mesh.m_usingAnelastic)
           {
             mesh.m_qp[x][y][z] = source_patch->mesh.m_qp[x+mx][y+my][z+mz];

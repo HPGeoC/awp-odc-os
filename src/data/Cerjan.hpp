@@ -25,7 +25,6 @@
 #include "io/OptionParser.h"
 #include "data/SoA.hpp"
 
-
 namespace odc {
     namespace data {
         class Cerjan;

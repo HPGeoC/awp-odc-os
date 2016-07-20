@@ -28,11 +28,29 @@ if env['parallelization'] in ['cuda', 'mpi_cuda' ]:
                                     'parallel/swap.c',
                                     'kernels/kernel.cu' ] )
 # CPU-version
+if env['parallelization'] in ['mpi_omp']:
+  env.Program( 'pmcl3d', source = [ 'main.cpp',
+                                    'data/Grid.cpp',
+                                    'data/Mesh.cpp',
+                                    'data/Cerjan.cpp',
+                                    'io/command.c',
+                                    'io/OptionParser.cpp',
+                                    'io/OutputWriter.cpp',
+                                    'io/Sources.cpp',
+                                    'parallel/Mpi.cpp',
+                                    'parallel/OpenMP.cpp',
+                                    'kernels/cpu_vanilla.cpp',
+				    'kernels/cpu_scb.cpp', 
+				    'data/PatchDecomp.cpp',
+				    'data/Patch.cpp'
+                                    ] )
 else:
   env.Program( 'pmcl3d', source = [ 'main.cpp',
                                     'data/Grid.cpp',
                                     'data/Mesh.cpp',
                                     'data/Cerjan.cpp',
+				    'yask/stencil_calc.cpp',
+				    'yask/utils.cpp',
                                     'io/command.c',
                                     'io/OptionParser.cpp',
                                     'io/OutputWriter.cpp',
