@@ -71,17 +71,26 @@ int odc::parallel::Mpi::m_size;
 // TODO: add logging
 
 #ifdef YASK
-void applyYASKStencil(STENCIL_CONTEXT context, StencilBase *stencil, int_pt t,
+void applyYASKStencil(STENCIL_CONTEXT context, STENCIL_EQUATIONS *stencil, int stencil_index, int_pt t,
                       int_pt start_x, int_pt start_y, int_pt start_z,
                       int_pt numX, int_pt numY, int_pt numZ) {
   int_pt end_x = start_x + numX;
   int_pt end_y = start_y + numY;
   int_pt end_z = start_z + numZ;
+
+  start_x = (int_pt) ((start_x + VLEN_X-1) / VLEN_X);
+  start_y = (int_pt) ((start_y + VLEN_Y-1) / VLEN_Y);
+  start_z = (int_pt) ((start_z + VLEN_Z-1) / VLEN_Z);
+  
+
+  end_x = (int_pt) ((end_x + VLEN_X-1) / VLEN_X); 
+  end_y = (int_pt) ((end_y + VLEN_Y-1) / VLEN_Y); 
+  end_z = (int_pt) ((end_z + VLEN_Z-1) / VLEN_Z); 
   
   for(int_pt ix = start_x; ix < end_x; ix++) {
     for(int_pt iy = start_x; iy < end_y; iy++) {
       for(int_pt iz = start_x; iz < end_z; iz++) {
-        stencil->calc_scalar(context, t, 0, ix, iy, iz);
+        stencil->stencils[stencil_index]->calc_vector(context, t, 0, ix, iy, iz);
       }
     }
   }
@@ -204,7 +213,7 @@ int main( int i_argc, char *i_argv[] ) {
         start_x = l_start[0]; start_y = l_start[1]; start_z = l_start[2];
         size_x = l_size[0]; size_y = l_size[1]; size_z = l_size[2];
 
-        #pragma omp barrier
+//        #pragma omp barrier
         
 
         int_pt n_tval = numUpdatesPerIter;
@@ -225,10 +234,10 @@ int main( int i_argc, char *i_argv[] ) {
           }
 
 
-          #pragma omp barrier
+//          #pragma omp barrier
           if(l_omp.participates(ptch)) {
 #ifdef YASK
-            applyYASKStencil(p->yask_context, p->yask_stencils.stencils[0], tstep, start_x, start_y, start_z,
+            applyYASKStencil(p->yask_context, &(p->yask_stencils), 0, tstep, start_x, start_y, start_z,
                              size_x, size_y, size_z);
 #else
             odc::kernels::SCB::update_velocity(&p->soa.m_velocityX[start_x][start_y][start_z], &p->soa.m_velocityY[start_x][start_y][start_z],
@@ -242,7 +251,7 @@ int main( int i_argc, char *i_argv[] ) {
 #endif
           }
 
-          #pragma omp barrier
+//          #pragma omp barrier
 
 #ifndef YASK          
           if(l_omp.participates(ptch) && on_z_bdry) {
@@ -250,7 +259,7 @@ int main( int i_argc, char *i_argv[] ) {
                                                          size_x, size_y, size_z, &p->mesh.m_lam_mu[start_x][start_y][0], p->lamMuStrideX,
                                                          on_x_max_bdry, on_y_zero_bdry);
           }
-          #pragma omp barrier
+//          #pragma omp barrier
             
 #endif
 
@@ -273,7 +282,7 @@ int main( int i_argc, char *i_argv[] ) {
                             &p->soa.m_memXX[start_x][start_y][start_z], &p->soa.m_memYY[start_x][start_y][start_z], &p->soa.m_memZZ[start_x][start_y][start_z],
                             &p->soa.m_memXY[start_x][start_y][start_z], &p->soa.m_memXZ[start_x][start_y][start_z], &p->soa.m_memYZ[start_x][start_y][start_z]);*/
 #ifdef YASK
-            applyYASKStencil(p->yask_context, p->yask_stencils.stencils[1], tstep, start_x, start_y, start_z,
+            applyYASKStencil(p->yask_context, &(p->yask_stencils), 1, tstep, start_x, start_y, start_z,
                              size_x, size_y, size_z);
 #else
             odc::kernels::SCB::update_stress_elastic(&p->soa.m_velocityX[start_x][start_y][start_z], &p->soa.m_velocityY[start_x][start_y][start_z],
@@ -289,14 +298,14 @@ int main( int i_argc, char *i_argv[] ) {
                             &p->mesh.m_lam_mu[start_x][start_y][0], l_options.m_dT, l_options.m_dH);
 #endif
           }
-          #pragma omp barrier
+//          #pragma omp barrier
 
 #ifndef YASK            
           if(l_omp.participates(ptch) && on_z_bdry) {
             update_free_surface_boundary_stress(&p->soa.m_stressZZ[start_x][start_y][start_z], &p->soa.m_stressXZ[start_x][start_y][start_z], &p->soa.m_stressYZ[start_x][start_y][start_z],
                                              p->strideX, p->strideY, p->strideZ, size_x, size_y, size_z);
           }
-          #pragma omp barrier            
+//          #pragma omp barrier            
 #endif
         
           
@@ -335,7 +344,7 @@ int main( int i_argc, char *i_argv[] ) {
           }
         }
 
-        #pragma omp barrier
+//        #pragma omp barrier
       }
     }
 }
