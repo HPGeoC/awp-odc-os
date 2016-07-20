@@ -282,7 +282,9 @@ void Patch::synchronize(int dir_x, int dir_y, int dir_z, bool allGrids)
 
 Patch::~Patch()
 {
+#ifndef YASK
   soa.finalize();
+#endif
   mesh.finalize();
   cerjan.finalize();
 }
