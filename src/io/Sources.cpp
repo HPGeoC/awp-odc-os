@@ -461,10 +461,6 @@ void odc::io::Sources::addsrc(int_pt i,      float DH,   float DT,   int NST,  i
         z = pd.globalToLocalZ(idx,idy,idz);
 
 #ifdef YASK
-//        x += pd.m_overlapSize;
-//        y += pd.m_overlapSize;
-//        z += pd.m_overlapSize;
-
         Patch& p = pd.m_patches[patch_id];
         double new_xx = p.yask_context.stress_xx->readElem(i,x,y,z, 0) - vtst*m_ptAxx[j*READ_STEP+i];
         double new_xy = p.yask_context.stress_xy->readElem(i,x,y,z, 0) - vtst*m_ptAxy[j*READ_STEP+i];

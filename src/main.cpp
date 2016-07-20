@@ -150,6 +150,7 @@ int main( int i_argc, char *i_argv[] ) {
     std::cout << "Add initial rupture source" << std::endl;
     int_pt initial_ts = 0;
 #ifdef YASK
+    //TODO(Josh): why is this offset needed?
     initial_ts = 1;
 #endif
     l_sources.addsrc(initial_ts, l_options.m_dH, l_options.m_dT, l_options.m_nSt,
@@ -203,7 +204,7 @@ int main( int i_argc, char *i_argv[] ) {
         start_x = l_start[0]; start_y = l_start[1]; start_z = l_start[2];
         size_x = l_size[0]; size_y = l_size[1]; size_z = l_size[2];
 
-//        #pragma omp barrier
+        #pragma omp barrier
         
 
         int_pt n_tval = numUpdatesPerIter;
@@ -217,30 +218,14 @@ int main( int i_argc, char *i_argv[] ) {
           if(tloop > startMultUpdates)
             tstep = (tloop-startMultUpdates) * n_tval + startMultUpdates + tval + 1; 
           else
-            tstep = tloop * 1 + tval + 1; 
-
-#ifdef YASK__
-          double tmp = 0.;
-          for(int_pt tx = odc::constants::boundary; tx < 128+1*odc::constants::boundary; tx++)
-          {
-            for(int_pt ty = odc::constants::boundary; ty < 128+1*odc::constants::boundary; ty++)
-            {
-              for(int_pt tz = odc::constants::boundary; tz < 64+1*odc::constants::boundary; tz++)
-              {
-                tmp += patch_decomp.m_patches[0].yask_context.vel_x->readElem(tstep,tx,ty,tz,0);
-              }
-            }
-          }
-          std::cout << "total " << tmp << std::endl;
-#endif
-          
+            tstep = tloop * 1 + tval + 1;           
         
           if(l_omp.getThreadNumAll() == 0 && ptch == 0) {
             std::cout << "Beginning  timestep: " << tstep <<  ' ' << tval << ' ' << tloop << ' ' << startMultUpdates << std::endl;
           }
 
 
-//          #pragma omp barrier
+          #pragma omp barrier
           if(l_omp.participates(ptch)) {
 #ifdef YASK
             applyYASKStencil(p->yask_context, p->yask_stencils.stencils[0], tstep, start_x, start_y, start_z,
@@ -257,15 +242,18 @@ int main( int i_argc, char *i_argv[] ) {
 #endif
           }
 
-//          #pragma omp barrier
-          
+          #pragma omp barrier
+
+#ifndef YASK          
           if(l_omp.participates(ptch) && on_z_bdry) {
                    update_free_surface_boundary_velocity(&p->soa.m_velocityX[start_x][start_y][start_z], &p->soa.m_velocityY[start_x][start_y][start_z], &p->soa.m_velocityZ[start_x][start_y][start_z], p->strideX, p->strideY, p->strideZ,
                                                          size_x, size_y, size_z, &p->mesh.m_lam_mu[start_x][start_y][0], p->lamMuStrideX,
                                                          on_x_max_bdry, on_y_zero_bdry);
           }
+          #pragma omp barrier
+            
+#endif
 
-//          #pragma omp barrier
 
           if(l_omp.participates(ptch)) {        
 /*            update_stress_visco(&p->soa.m_velocityX[start_x][start_y][start_z], &p->soa.m_velocityY[start_x][start_y][start_z],
@@ -301,14 +289,16 @@ int main( int i_argc, char *i_argv[] ) {
                             &p->mesh.m_lam_mu[start_x][start_y][0], l_options.m_dT, l_options.m_dH);
 #endif
           }
-//          #pragma omp barrier
+          #pragma omp barrier
 
+#ifndef YASK            
           if(l_omp.participates(ptch) && on_z_bdry) {
             update_free_surface_boundary_stress(&p->soa.m_stressZZ[start_x][start_y][start_z], &p->soa.m_stressXZ[start_x][start_y][start_z], &p->soa.m_stressYZ[start_x][start_y][start_z],
                                              p->strideX, p->strideY, p->strideZ, size_x, size_y, size_z);
           }
+          #pragma omp barrier            
+#endif
         
-//          #pragma omp barrier
           
           if (tstep < l_options.m_nSt) {
             update_stress_from_fault_sources(tstep, l_options.m_readStep, 3,
@@ -345,7 +335,7 @@ int main( int i_argc, char *i_argv[] ) {
           }
         }
 
-//        #pragma omp barrier
+        #pragma omp barrier
       }
     }
 }

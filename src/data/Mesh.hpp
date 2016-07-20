@@ -84,14 +84,15 @@ private:
                float *vse, float *vpe, float *dde);
 
   void new_inimesh(int MEDIASTART,
-                   real *d1,
-                   real *mu,
-                   real *lam,
 #ifdef YASK
                    yask::Grid_XYZ* density_grid,
                    yask::Grid_XYZ* mu_grid,
                    yask::Grid_XYZ* lam_grid,
                    int_pt bdry_size,
+#else
+                   real *d1,
+                   real *mu,
+                   real *lam,
 #endif
                    real *qp,
                    real *qs,

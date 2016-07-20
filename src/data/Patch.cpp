@@ -53,12 +53,7 @@ void Patch::initialize(odc::io::OptionParser i_options, int_pt _nx, int_pt _ny, 
   size_x = nx + 2*bdry_width;
   size_y = ny + 2*bdry_width;
   size_z = nz + 2*bdry_width;
-  
-  std::cout << "\t setting up patch soa" << std::endl;
-  soa.initialize(size_x, size_y, size_z);
-  std::cout << "\t size is " << soa.getSize() << std::endl;
-  soa.allocate();
-
+ 
 #ifdef YASK
   yask_context.dn = 4;
   yask_context.dx = size_x;
@@ -91,7 +86,12 @@ void Patch::initialize(odc::io::OptionParser i_options, int_pt _nx, int_pt _ny, 
   yask_context.allocParams();
 
   (*(yask_context.h))() = i_options.m_dH;
-  (*(yask_context.delta_t))() = i_options.m_dT;  
+  (*(yask_context.delta_t))() = i_options.m_dT;
+#else
+  std::cout << "\t setting up patch soa" << std::endl;
+  soa.initialize(size_x, size_y, size_z);
+  std::cout << "\t size is " << soa.getSize() << std::endl;
+  soa.allocate();
 #endif
 
   for(int i=0; i<3; i++)
@@ -103,6 +103,7 @@ void Patch::initialize(odc::io::OptionParser i_options, int_pt _nx, int_pt _ny, 
   // TODO(Josh): don't hardcode the true (analestic) here;
   //             the advantage of having it is that all memory gets
   //             allocated, just in case we need it
+  std::cout << "here" << std::endl;
 
 #ifdef YASK  
   mesh.initialize(i_options, nx, ny, nz, bdry_width, true, i_inputBuffer, i_globalX, i_globalY, i_globalZ,
@@ -110,10 +111,12 @@ void Patch::initialize(odc::io::OptionParser i_options, int_pt _nx, int_pt _ny, 
 #else
   mesh.initialize(i_options, nx, ny, nz, bdry_width, true, i_inputBuffer, i_globalX, i_globalY, i_globalZ);
 #endif
+  std::cout << "here1" << std::endl;
   
   int_pt coords[] = {i_globalX, i_globalY, i_globalZ};
   cerjan.initialize(i_options, nx, ny, nz, bdry_width, coords);
 
+  std::cout << "here2" << std::endl;
   
 #ifdef YASK
   for(int_pt l_x = 0; l_x<nx+2*bdry_width; l_x++)
@@ -127,6 +130,7 @@ void Patch::initialize(odc::io::OptionParser i_options, int_pt _nx, int_pt _ny, 
       }
     }
   }
+  std::cout << "here" << std::endl;
 
   for (StencilBase *stencil : yask_stencils.stencils)
   {
@@ -222,6 +226,9 @@ void Patch::synchronize(int dir_x, int dir_y, int dir_z, bool allGrids)
     {
       for(int_pt z=z_start; z<z_end; z++)
       {
+#ifdef YASK
+        //TODO(Josh): implement patch synchronization for YASK data
+#else
         soa.m_velocityX[x][y][z] = source_patch->soa.m_velocityX[x+mx][y+my][z+mz];
         soa.m_velocityY[x][y][z] = source_patch->soa.m_velocityY[x+mx][y+my][z+mz];
         soa.m_velocityZ[x][y][z] = source_patch->soa.m_velocityZ[x+mx][y+my][z+mz];
@@ -239,13 +246,18 @@ void Patch::synchronize(int dir_x, int dir_y, int dir_z, bool allGrids)
         soa.m_memXY[x][y][z] = source_patch->soa.m_memXY[x+mx][y+my][z+mz];
         soa.m_memXZ[x][y][z] = source_patch->soa.m_memXZ[x+mx][y+my][z+mz];
         soa.m_memYZ[x][y][z] = source_patch->soa.m_memYZ[x+mx][y+my][z+mz];
-
+#endif
+        
         if(allGrids)
         {
+#ifdef YASK
+        //TODO(Josh): implement patch synchronization for YASK data
+#else
           mesh.m_density[x][y][z] = source_patch->mesh.m_density[x+mx][y+my][z+mz];
           mesh.m_lam[x][y][z] = source_patch->mesh.m_lam[x+mx][y+my][z+mz];
           mesh.m_mu[x][y][z] = source_patch->mesh.m_mu[x+mx][y+my][z+mz];
-
+#endif
+          
           if(mesh.m_usingAnelastic)
           {
             mesh.m_qp[x][y][z] = source_patch->mesh.m_qp[x+mx][y+my][z+mz];

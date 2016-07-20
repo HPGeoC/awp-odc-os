@@ -526,10 +526,6 @@ void update_stress_from_fault_sources(int_pt source_timestep, int READ_STEP, int
         // Calculate stress updates
 #ifdef YASK
         Patch& p = pd.m_patches[patch_id];
-//        x += pd.m_overlapSize;
-//        y += pd.m_overlapSize;
-//        z += pd.m_overlapSize;
-
         double new_xx = p.yask_context.stress_xx->readElem(source_timestep+1,x,y,z, 0)
                         - coeff*stress_xx_update[j*READ_STEP+source_timestep];
         double new_xy = p.yask_context.stress_xy->readElem(source_timestep+1,x,y,z, 0)
