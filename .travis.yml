@@ -54,7 +54,7 @@ before_install:
 
   # update binutils
   - wget http://ftp.gnu.org/gnu/binutils/binutils-2.26.tar.gz
-  - tar -xzf http://ftp.gnu.org/gnu/binutils/binutils-2.26.tar.gz
+  - tar -xzf binutils-2.26.tar.gz
   - cd binutils-2.26
   - ./cofigure && make -j 4 > /dev/null && sudo make install
   - cd ..
