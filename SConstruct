@@ -88,33 +88,30 @@ if env['parallelization'] in ['cuda', 'mpi_cuda' ]:
 
 # chose compilers
 env.Append( CPPDEFINES = ['ALIGNMENT=64'] )
+
 if env['parallelization'] in ['cuda']:
   env.Append( CPPDEFINES = ['USE_CUDA'] )
-  if( 'CC' in env['ENV'].keys()):
-    env['CC'] = env['ENV']['CC']
-  if( 'CXX' in env['ENV'].keys()):  
-    env['CXX'] = env['ENV']['CXX']
 elif env['parallelization'] in ['mpi_cuda']:
    env.Append( CPPDEFINES = ['USE_CUDA'] )
    env.Append( CPPDEFINES = ['USE_MPI'] )
-   env['CC'] = 'mpicc'
-   env['CXX'] = 'mpicxx'
 elif env['parallelization'] in ['mpi_omp']:
    env.Append( CPPDEFINES = ['USE_MPI'] )
    env.Append( CPPDEFINES = ['ALIGNMENT=64'] )
    env.Append( CPPFLAGS = ['-fopenmp'])
    env.Append( LINKFLAGS = ['-fopenmp'] )
-   env['CC'] = 'mpiicc'
-   env['CXX'] = 'mpiicpc'
 elif env['parallelization'] in ['mpi_omp_yask']:
    env.Append( CPPDEFINES = ['USE_MPI'] )
-   env.Append( CPPDEFINES = ['YASK','ALIGNMENT=64','REAL_BYTES=4','USE_INTRIN256','LAYOUT_3D=Layout_123','LAYOUT_4D=Layout_1234','ARCH_HOST','NO_STORE_INTRINSICS','USE_STREAMING_STORE'] )
+   env.Append( CPPDEFINES = ['YASK',
+                             'ALIGNMENT=64',
+                             'REAL_BYTES=4',
+                             'USE_INTRIN256',
+                             'LAYOUT_3D=Layout_123',
+                             'LAYOUT_4D=Layout_1234',
+                             'ARCH_HOST',
+                             'NO_STORE_INTRINSICS',
+                             'USE_STREAMING_STORE'] )
    env.Append( CPPFLAGS = ['-fopenmp'])
    env.Append( LINKFLAGS = ['-fopenmp'] )
-   env['CC'] = 'mpiicc'
-   env['CXX'] = 'mpiicpc'
-   
-
 
 # add current path to seach path
 env.Append( CPPPATH = [Dir('#.').path, Dir('#./src')] )
