@@ -53,8 +53,8 @@ before_install:
   - sudo apt-get install -qq openmpi-bin libopenmpi-dev
 
 script:
-  - export CXX=${CXX_COMPILER} && export OMPI_CXX=${CXX_COMPILER}
-  - export CC=${CC_COMPILER} && export OMPI_CC=${CC_COMPILER}
+  - export CXX=mpiCC && export OMPI_CXX=${CXX_COMPILER}
+  - export CC=mpicc && export OMPI_CC=${CC_COMPILER}
   - ${CC} --version
   - ${CXX} --version
 
