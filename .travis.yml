@@ -52,11 +52,19 @@ before_install:
   - sudo apt-get update -qq
   - sudo apt-get install -qq openmpi-bin libopenmpi-dev
 
+  # update binutils
+  - wget http://ftp.gnu.org/gnu/binutils/binutils-2.26.tar.gz
+  - tar -xzf http://ftp.gnu.org/gnu/binutils/binutils-2.26.tar.gz
+  - cd binutils-2.26
+  - ./cofigure && make -j 4 > /dev/null && sudo make install
+  - cd ..
+
 script:
   - export CXX=mpiCC && export OMPI_CXX=${CXX_COMPILER}
   - export CC=mpicc && export OMPI_CC=${CC_COMPILER}
   - ${CC} --version
   - ${CXX} --version
+  - as --version
 
   - scons parallelization=mpi_omp
 

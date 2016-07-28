@@ -5,5 +5,5 @@
 	path = submodules/scons/cuda
 	url = https://github.com/bryancatanzaro/cuda-scons.git
 [submodule "src/yask"]
-	path = src/yask
+	path = submodules/yask
 	url = https://github.com/HPGeoC/yask-kernels.git
