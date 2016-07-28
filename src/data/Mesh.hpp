@@ -63,7 +63,10 @@ public:
                   int_pt bdry_size, bool anelastic, Grid1D i_inputBuffer,
                   int_pt globalX, int_pt globalY, int_pt globalZ
 #ifdef YASK
-                  , yask::Grid_XYZ* density_grid, yask::Grid_XYZ* mu_grid, yask::Grid_XYZ* lam_grid 
+                  , yask::Grid_XYZ* density_grid, yask::Grid_XYZ* mu_grid, yask::Grid_XYZ* lam_grid,
+                  yask::Grid_XYZ* weights_grid, yask::Grid_XYZ* tau2_grid, yask::Grid_XYZ* an_ap_grid,
+                  yask::Grid_XYZ* an_as_grid, yask::Grid_XYZ* an_xy_grid, yask::Grid_XYZ* an_xz_grid,
+                  yask::Grid_XYZ* an_yz_grid
 #endif
                   );
   

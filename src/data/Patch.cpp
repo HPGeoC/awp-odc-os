@@ -107,7 +107,10 @@ void Patch::initialize(odc::io::OptionParser i_options, int_pt _nx, int_pt _ny, 
 
 #ifdef YASK  
   mesh.initialize(i_options, nx, ny, nz, bdry_width, true, i_inputBuffer, i_globalX, i_globalY, i_globalZ,
-                  (Grid_XYZ*) yask_context.rho, (Grid_XYZ*) yask_context.mu, (Grid_XYZ*) yask_context.lambda);
+                  (Grid_XYZ*) yask_context.rho, (Grid_XYZ*) yask_context.mu, (Grid_XYZ*) yask_context.lambda,
+                  (Grid_XYZ*) yask_context.weight, (Grid_XYZ*) yask_context.tau2, (Grid_XYZ*) yask_context.anelastic_ap,
+                  (Grid_XYZ*) yask_context.anelastic_as_diag, (Grid_XYZ*) yask_context.anelastic_xy,
+                  (Grid_XYZ*) yask_context.anelastic_xz, (Grid_XYZ*) yask_context.anelastic_yz);
 #else
   mesh.initialize(i_options, nx, ny, nz, bdry_width, true, i_inputBuffer, i_globalX, i_globalY, i_globalZ);
 #endif

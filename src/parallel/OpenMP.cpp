@@ -53,7 +53,7 @@ m_nWgrpsAll(i_nWgrps), m_ptchDec(i_ptchDec) {
   for( int l_gr = 0; l_gr < m_nWgrpsAll; l_gr++ ) {
     l_nThreads += std::abs( m_nTdsPerWgrpAll[l_gr] );
   }
-  std::cout << "num threads: " << m_nThreadsAll << std::endl;
+  std::cout << "num threads: " << m_nThreadsAll << ' ' << l_nThreads << std::endl;
   assert( l_nThreads == m_nThreadsAll );
 
   // derive number of work groups participating in computation
@@ -117,6 +117,7 @@ m_nWgrpsAll(i_nWgrps), m_ptchDec(i_ptchDec) {
 }
 
 odc::parallel::OpenMP::~OpenMP() {
+
   free( m_nTdsPerWgrpAll  );
   free( m_nTdsPerWgrpComp );
   free( m_nPtchsPerWgrpComp );

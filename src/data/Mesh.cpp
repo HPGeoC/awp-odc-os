@@ -47,12 +47,25 @@ double w_time()
   return (double) t.tv_sec + 0.000001 * (double) t.tv_usec;
 }
 
+static real anelastic_coeff(real q, int_pt weight_index, real weight, real *coeff) {
+    if(1.0/q <= 200.0) {
+        q = (coeff[weight_index*2-2]*q*q + coeff[weight_index*2-1]*q)/weight;
+    } else {
+        q *= 0.5;
+    }
+    return q;
+}
+
+
 
 void odc::data::Mesh::initialize(odc::io::OptionParser i_options, int_pt x, int_pt y, int_pt z,
                                  int_pt bdry_size, bool anelastic, Grid1D i_inputBuffer,
                                  int_pt i_globalX, int_pt i_globalY, int_pt i_globalZ
 #ifdef YASK
-                                 , Grid_XYZ* density_grid, Grid_XYZ* mu_grid, Grid_XYZ* lam_grid 
+                                 , Grid_XYZ* density_grid, Grid_XYZ* mu_grid, Grid_XYZ* lam_grid,
+                                 Grid_XYZ* weights_grid, Grid_XYZ* tau2_grid, Grid_XYZ* an_ap_grid,
+                                 Grid_XYZ* an_as_grid, Grid_XYZ* an_xy_grid, Grid_XYZ* an_xz_grid,
+                                 Grid_XYZ* an_yz_grid
 #endif
                                  )
 {
@@ -181,6 +194,54 @@ void odc::data::Mesh::initialize(odc::io::OptionParser i_options, int_pt x, int_
   Delloc3D(tau1);
   Delloc3D(tau2);
   Delloc3D(weights);
+
+#ifdef YASK
+  
+  for(int_pt tx=-1+bdry_size; tx<x+1+bdry_size; tx++)
+  {
+    for(int_pt ty=-1+bdry_size; ty<y+1+bdry_size; ty++)
+    {
+      for(int_pt tz=-1+bdry_size; tz<z+1+bdry_size; tz++)
+      {
+        real local_qp = 0.125*(m_qp[tx][ty][tz] + m_qp[tx+1][ty][tz] + m_qp[tx][ty-1][tz] + m_qp[tx+1][ty-1][tz] + m_qp[tx][ty][tz-1] +
+                               m_qp[tx+1][ty][tz-1] + m_qp[tx][ty-1][tz-1] + m_qp[tx+1][ty-1][tz-1]);          
+        real local_qs_diag = 0.125*(m_qs[tx][ty][tz] + m_qs[tx+1][ty][tz] + m_qs[tx][ty-1][tz] + m_qs[tx+1][ty-1][tz] + m_qs[tx][ty][tz-1] +
+                                    m_qs[tx+1][ty][tz-1] + m_qs[tx][ty-1][tz-1] + m_qs[tx+1][ty-1][tz-1]);
+        real local_qs_xy = 0.5*(m_qs[tx][ty][tz] + m_qs[tx][ty][tz-1]);
+        real local_qs_xz = 0.5*(m_qs[tx][ty][tz] + m_qs[tx][ty-1][tz]);
+        real local_qs_yz = 0.5*(m_qs[tx][ty][tz] + m_qs[tx+1][ty][tz]);
+
+        an_ap_grid->writeElem(anelastic_coeff(local_qp, m_weight_index[tx][ty][tz], m_weights[tx][ty][tz], m_coeff),
+                              tx, ty, tz, 0);
+        an_as_grid->writeElem(anelastic_coeff(local_qs_diag, m_weight_index[tx][ty][tz], m_weights[tx][ty][tz], m_coeff),
+                              tx, ty, tz, 0);
+        an_xy_grid->writeElem(anelastic_coeff(local_qs_xy, m_weight_index[tx][ty][tz], m_weights[tx][ty][tz], m_coeff),
+                              tx, ty, tz, 0);
+        an_xz_grid->writeElem(anelastic_coeff(local_qs_xz, m_weight_index[tx][ty][tz], m_weights[tx][ty][tz], m_coeff),
+                              tx, ty, tz, 0);
+        an_yz_grid->writeElem(anelastic_coeff(local_qs_yz, m_weight_index[tx][ty][tz], m_weights[tx][ty][tz], m_coeff),
+                              tx, ty, tz, 0);
+
+        
+        weights_grid->writeElem(m_weights[tx][ty][tz], tx, ty, tz, 0);
+        tau2_grid->writeElem(m_tau2[tx][ty][tz], tx, ty, tz, 0);
+        
+      }
+    }
+  }
+  
+  if(m_usingAnelastic)
+  {
+    odc::data::Delloc3D(m_qp, 2);
+    odc::data::Delloc3D(m_qs, 2);
+    odc::data::Delloc3D(m_tau1, 2);
+    odc::data::Delloc3D(m_tau2, 2);
+    odc::data::Delloc3D(m_weights, 2);
+        
+    odc::data::Delloc3Dww(m_weight_index, 2);
+  }
+#endif
+  
 }
 
 
@@ -198,7 +259,6 @@ odc::data::Mesh::Mesh(odc::io::OptionParser i_options, odc::data::SoA data)
     
   m_density = odc::data::Alloc3D(data.m_numXGridPoints, data.m_numYGridPoints, data.m_numZGridPoints, odc::constants::boundary);
   m_mu = odc::data::Alloc3D(data.m_numXGridPoints, data.m_numYGridPoints, data.m_numZGridPoints, odc::constants::boundary);
-  printf("allocated two arrays...\n");
   m_lam = odc::data::Alloc3D(data.m_numXGridPoints, data.m_numYGridPoints, data.m_numZGridPoints, odc::constants::boundary);
   m_lam_mu = odc::data::Alloc3D(data.m_numXGridPoints, data.m_numYGridPoints, 1, odc::constants::boundary);
     
@@ -255,7 +315,6 @@ odc::data::Mesh::Mesh(odc::io::OptionParser i_options, odc::data::SoA data)
   Delloc3D(tau1);
   Delloc3D(tau2);
   Delloc3D(weights);
-    
 }
 
 
@@ -270,6 +329,7 @@ void odc::data::Mesh::finalize()
     
   if (m_usingAnelastic)
   {
+#ifndef YASK    
     odc::data::Delloc3D(m_qp, 2);
     odc::data::Delloc3D(m_qs, 2);
     odc::data::Delloc3D(m_tau1, 2);
@@ -277,7 +337,8 @@ void odc::data::Mesh::finalize()
     odc::data::Delloc3D(m_weights, 2);
         
     odc::data::Delloc3Dww(m_weight_index, 2);
-        
+#endif
+    
     Delloc1D(m_coeff);
   }
     

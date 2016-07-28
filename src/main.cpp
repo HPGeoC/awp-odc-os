@@ -63,7 +63,7 @@ int odc::parallel::Mpi::m_rank;
 int odc::parallel::Mpi::m_size;
 
 #define PATCH_X 1024
-#define PATCH_Y 128
+#define PATCH_Y 1024
 #define PATCH_Z 512
 
 #define BDRY_SIZE 24
@@ -71,30 +71,45 @@ int odc::parallel::Mpi::m_size;
 // TODO: add logging
 
 #ifdef YASK
-void applyYASKStencil(STENCIL_CONTEXT context, STENCIL_EQUATIONS *stencil, int stencil_index, int_pt t,
+void applyYASKStencil(STENCIL_CONTEXT context, STENCIL_EQUATIONS *stencils, int stencil_index, int_pt t,
                       int_pt start_x, int_pt start_y, int_pt start_z,
                       int_pt numX, int_pt numY, int_pt numZ) {
+  const idx_t step_rt = 1;
+  const idx_t step_rn = 1;
+  const idx_t step_rx = 96;
+  const idx_t step_ry = 96;
+  const idx_t step_rz = 32;
+
+
   int_pt end_x = start_x + numX;
   int_pt end_y = start_y + numY;
   int_pt end_z = start_z + numZ;
 
-  start_x = (int_pt) ((start_x + VLEN_X-1) / VLEN_X);
-  start_y = (int_pt) ((start_y + VLEN_Y-1) / VLEN_Y);
-  start_z = (int_pt) ((start_z + VLEN_Z-1) / VLEN_Z);
-  
+  start_x = (VLEN_X*CLEN_X)*(int_pt) ((start_x + VLEN_X*CLEN_X-1) / (VLEN_X * CLEN_X));
+  start_y = (VLEN_Y*CLEN_Y)*(int_pt) ((start_y + VLEN_Y*CLEN_Y-1) / (VLEN_Y * CLEN_Y));
+  start_z = (VLEN_Z*CLEN_Z)*(int_pt) ((start_z + VLEN_Z*CLEN_Z-1) / (VLEN_Z * CLEN_Z));
 
-  end_x = (int_pt) ((end_x + VLEN_X-1) / VLEN_X); 
-  end_y = (int_pt) ((end_y + VLEN_Y-1) / VLEN_Y); 
-  end_z = (int_pt) ((end_z + VLEN_Z-1) / VLEN_Z); 
+
+  end_x = ROUND_UP(end_x, CPTS_X);
+  end_y = ROUND_UP(end_y, CPTS_Y);
+  end_z = ROUND_UP(end_z, CPTS_Z);
   
-  for(int_pt ix = start_x; ix < end_x; ix++) {
-    for(int_pt iy = start_x; iy < end_y; iy++) {
-      for(int_pt iz = start_x; iz < end_z; iz++) {
-        stencil->stencils[stencil_index]->calc_vector(context, t, 0, ix, iy, iz);
-      }
-    }
-  }
-}
+  StencilBase *stencil = stencils->stencils[stencil_index];
+ 
+  idx_t begin_rn = 0;
+  idx_t end_rn = CPTS_N;
+  idx_t begin_rx = start_x;
+  idx_t end_rx = end_x;
+  idx_t begin_ry = start_y;
+  idx_t end_ry = end_y;
+  idx_t begin_rz = start_z;
+  idx_t end_rz = end_z;
+  idx_t rt = t;
+  
+#include "yask/stencil_region_loops.hpp"
+
+ }
+
 #endif
 
 
@@ -160,7 +175,7 @@ int main( int i_argc, char *i_argv[] ) {
     int_pt initial_ts = 0;
 #ifdef YASK
     //TODO(Josh): why is this offset needed?
-    initial_ts = 1;
+    initial_ts = 0;
 #endif
     l_sources.addsrc(initial_ts, l_options.m_dH, l_options.m_dT, l_options.m_nSt,
                      l_options.m_readStep, 3, patch_decomp);
@@ -192,6 +207,7 @@ int main( int i_argc, char *i_argv[] ) {
     
     int_pt start_x, start_y, start_z;
     int_pt size_x, size_y, size_z;
+
     
     //  Main LOOP Starts
     for (int_pt tloop=0; tloop<=l_options.m_numTimesteps / numUpdatesPerIter; tloop++) {
@@ -213,7 +229,7 @@ int main( int i_argc, char *i_argv[] ) {
         start_x = l_start[0]; start_y = l_start[1]; start_z = l_start[2];
         size_x = l_size[0]; size_y = l_size[1]; size_z = l_size[2];
 
-//        #pragma omp barrier
+        #pragma omp barrier
         
 
         int_pt n_tval = numUpdatesPerIter;
@@ -234,7 +250,6 @@ int main( int i_argc, char *i_argv[] ) {
           }
 
 
-//          #pragma omp barrier
           if(l_omp.participates(ptch)) {
 #ifdef YASK
             applyYASKStencil(p->yask_context, &(p->yask_stencils), 0, tstep, start_x, start_y, start_z,
@@ -251,21 +266,33 @@ int main( int i_argc, char *i_argv[] ) {
 #endif
           }
 
-//          #pragma omp barrier
+          #pragma omp barrier
 
-#ifndef YASK          
           if(l_omp.participates(ptch) && on_z_bdry) {
-                   update_free_surface_boundary_velocity(&p->soa.m_velocityX[start_x][start_y][start_z], &p->soa.m_velocityY[start_x][start_y][start_z], &p->soa.m_velocityZ[start_x][start_y][start_z], p->strideX, p->strideY, p->strideZ,
+#ifdef YASK
+            yask_update_free_surface_boundary_velocity((Grid_TXYZ *)p->yask_context.vel_x,
+                                                       (Grid_TXYZ *)p->yask_context.vel_y,
+                                                       (Grid_TXYZ *)p->yask_context.vel_z,
+                                                       start_x, start_y, start_z,
+                                                       size_x, size_y, size_z,
+                                                       &p->mesh.m_lam_mu[0][0][0], p->lamMuStrideX,
+                                                       tstep+1,on_x_max_bdry, on_y_zero_bdry);
+#else
+              update_free_surface_boundary_velocity(&p->soa.m_velocityX[start_x][start_y][start_z], &p->soa.m_velocityY[start_x][start_y][start_z], &p->soa.m_velocityZ[start_x][start_y][start_z], p->strideX, p->strideY, p->strideZ,
                                                          size_x, size_y, size_z, &p->mesh.m_lam_mu[start_x][start_y][0], p->lamMuStrideX,
                                                          on_x_max_bdry, on_y_zero_bdry);
-          }
-//          #pragma omp barrier
-            
 #endif
+          }
+          #pragma omp barrier
+            
 
 
           if(l_omp.participates(ptch)) {        
-/*            update_stress_visco(&p->soa.m_velocityX[start_x][start_y][start_z], &p->soa.m_velocityY[start_x][start_y][start_z],
+#ifdef YASK
+            applyYASKStencil(p->yask_context, &(p->yask_stencils), 1, tstep, start_x, start_y, start_z,
+                             size_x, size_y, size_z);
+#else
+            update_stress_visco(&p->soa.m_velocityX[start_x][start_y][start_z], &p->soa.m_velocityY[start_x][start_y][start_z],
                             &p->soa.m_velocityZ[start_x][start_y][start_z], size_x, size_y,
                             size_z, p->strideX, p->strideY, p->strideZ, p->lamMuStrideX,
                             &p->soa.m_stressXX[start_x][start_y][start_z],
@@ -280,12 +307,9 @@ int main( int i_argc, char *i_argv[] ) {
                             &p->mesh.m_lam_mu[start_x][start_y][0], &p->mesh.m_qp[start_x][start_y][start_z],
                             &p->mesh.m_qs[start_x][start_y][start_z], l_options.m_dT, l_options.m_dH,
                             &p->soa.m_memXX[start_x][start_y][start_z], &p->soa.m_memYY[start_x][start_y][start_z], &p->soa.m_memZZ[start_x][start_y][start_z],
-                            &p->soa.m_memXY[start_x][start_y][start_z], &p->soa.m_memXZ[start_x][start_y][start_z], &p->soa.m_memYZ[start_x][start_y][start_z]);*/
-#ifdef YASK
-            applyYASKStencil(p->yask_context, &(p->yask_stencils), 1, tstep, start_x, start_y, start_z,
-                             size_x, size_y, size_z);
-#else
-            odc::kernels::SCB::update_stress_elastic(&p->soa.m_velocityX[start_x][start_y][start_z], &p->soa.m_velocityY[start_x][start_y][start_z],
+                            &p->soa.m_memXY[start_x][start_y][start_z], &p->soa.m_memXZ[start_x][start_y][start_z], &p->soa.m_memYZ[start_x][start_y][start_z]);
+            
+/*            odc::kernels::SCB::update_stress_elastic(&p->soa.m_velocityX[start_x][start_y][start_z], &p->soa.m_velocityY[start_x][start_y][start_z],
                             &p->soa.m_velocityZ[start_x][start_y][start_z], size_x, size_y,
                             size_z, p->strideX, p->strideY, p->strideZ,
                             &p->soa.m_stressXX[start_x][start_y][start_z],
@@ -295,18 +319,22 @@ int main( int i_argc, char *i_argv[] ) {
                             &p->cerjan.m_spongeCoeffX[start_x], &p->cerjan.m_spongeCoeffY[start_y],
                             &p->cerjan.m_spongeCoeffZ[start_z], &p->mesh.m_density[start_x][start_y][start_z],
                             &p->mesh.m_lam[start_x][start_y][start_z], &p->mesh.m_mu[start_x][start_y][start_z],
-                            &p->mesh.m_lam_mu[start_x][start_y][0], l_options.m_dT, l_options.m_dH);
+                            &p->mesh.m_lam_mu[start_x][start_y][0], l_options.m_dT, l_options.m_dH);*/
 #endif
           }
-//          #pragma omp barrier
+          #pragma omp barrier
 
-#ifndef YASK            
           if(l_omp.participates(ptch) && on_z_bdry) {
+#ifdef YASK
+            yask_update_free_surface_boundary_stress((Grid_TXYZ *)p->yask_context.stress_zz,(Grid_TXYZ *)p->yask_context.stress_xz,
+                                                     (Grid_TXYZ *)p->yask_context.stress_yz, start_x, start_y,start_z,
+                                                     size_x, size_y, size_z, tstep+1);            
+#else
             update_free_surface_boundary_stress(&p->soa.m_stressZZ[start_x][start_y][start_z], &p->soa.m_stressXZ[start_x][start_y][start_z], &p->soa.m_stressYZ[start_x][start_y][start_z],
                                              p->strideX, p->strideY, p->strideZ, size_x, size_y, size_z);
-          }
-//          #pragma omp barrier            
 #endif
+          }
+          #pragma omp barrier            
         
           
           if (tstep < l_options.m_nSt) {

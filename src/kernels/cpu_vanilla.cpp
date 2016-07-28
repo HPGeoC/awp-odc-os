@@ -278,6 +278,76 @@ void update_free_surface_boundary_velocity(real *velocity_x, real *velocity_y, r
     
 }
 
+#ifdef YASK
+void yask_update_free_surface_boundary_velocity(Grid_TXYZ *velocity_x, Grid_TXYZ *velocity_y, Grid_TXYZ *velocity_z,
+                                                int_pt start_x, int_pt start_y, int_pt start_z,
+                                                int_pt size_x, int_pt size_y, int_pt size_z,
+                                                real *lam_mu, int_pt lam_mu_xstep, int_pt timestep,
+                                                bool on_x_max_bdry, bool on_y_zero_bdry) {
+    
+    
+    for (int_pt ix=start_x; ix < start_x+size_x; ix++) {
+        for (int_pt iy=start_y; iy < start_y+size_y; iy++) {
+            
+            // Apply Free Surface Boundary Conditions for velocity
+            // Note: The highest z index corresponds to the surface
+            int_pt izs = start_z+size_z-1;
+
+            real vel_x = velocity_x->readElem(timestep, ix, iy, izs, 0);
+            real vel_y = velocity_y->readElem(timestep, ix, iy, izs, 0);
+            real vel_z = velocity_z->readElem(timestep, ix, iy, izs, 0);
+
+            real vel_z_xp1 = velocity_z->readElem(timestep, ix+1, iy, izs, 0);
+            real vel_z_xm1 = velocity_z->readElem(timestep, ix-1, iy, izs, 0);
+            real vel_z_yp1 = velocity_z->readElem(timestep, ix, iy+1, izs, 0);
+            real vel_z_ym1 = velocity_z->readElem(timestep, ix, iy-1, izs, 0);
+            real vel_z_zm1 = velocity_z->readElem(timestep, ix, iy, izs-1, 0);
+
+            real vel_x_xp1 = velocity_x->readElem(timestep, ix+1, iy, izs, 0);
+
+            real vel_y_xp1 = velocity_y->readElem(timestep, ix+1, iy, izs, 0);
+            real vel_y_ym1 = velocity_y->readElem(timestep, ix, iy-1, izs, 0);
+
+
+            velocity_x->writeElem(vel_x - (vel_z - vel_z_xm1), timestep, ix, iy, izs+1, 0);
+            //velocity_x[pos_zp1] = velocity_x[pos] - (velocity_z[pos] - velocity_z[pos_xm1]);
+            velocity_y->writeElem(vel_y - (vel_z_yp1 - vel_z), timestep, ix, iy, izs+1, 0);            
+            //velocity_y[pos_zp1] = velocity_y[pos] - (velocity_z[pos_yp1] - velocity_z[pos]);
+
+            real vel_x_zp1 = velocity_x->readElem(timestep, ix, iy, izs+1, 0);
+            real vel_y_zp1 = velocity_y->readElem(timestep, ix, iy, izs+1, 0);
+            
+            real dvx = 0.0;
+            real dvy = 0.0;
+            if (!on_x_max_bdry || ix < start_x+size_x-1) {
+                dvx = vel_x_xp1 - (vel_z_xp1 - vel_z);
+                //dvx = velocity_x[pos_xp1] - (velocity_z[pos_xp1] - velocity_z[pos]);
+            }
+            
+            // TODO: For MPI, this should check to see if this is the first y point on the GLOBAL grid
+            if (!on_y_zero_bdry || iy > start_y) {
+                dvy = vel_y_ym1 - (vel_z - vel_z_ym1);
+                //dvy = velocity_y[pos_ym1] - (velocity_z[pos] - velocity_z[pos_ym1]);
+            }
+            
+            // TODO(Josh): Remove hardcoded '5' in the following (comes from 2*bdry+1 I think)
+
+            real tmp = vel_z_zm1 - lam_mu[ix*lam_mu_xstep*5 + iy*5]* 
+            ((dvx - vel_x_zp1) + (vel_x_xp1 - vel_x) +
+             (vel_y_zp1 - dvy) + (vel_y - vel_y_ym1));
+            
+            velocity_z->writeElem(tmp, timestep, ix, iy, izs+1, 0);
+            
+            //velocity_z[pos_zp1] = velocity_z[pos_zm1] - lam_mu[ix*lam_mu_xstep*5 + iy*5]* 
+            //((dvx - velocity_x[pos_zp1]) + (velocity_x[pos_xp1] - velocity_x[pos]) +
+            // (velocity_y[pos_zp1] - dvy) + (velocity_y[pos] - velocity_y[pos_ym1]));
+            
+        }
+    }
+    
+}
+#endif
+
 void update_free_surface_boundary_stress(real *stress_zz, real *stress_xz, real *stress_yz,
                                          int_pt xstep, int_pt ystep, int_pt zstep,
                                          int_pt dim_x, int_pt dim_y, int_pt dim_z) {
@@ -312,6 +382,36 @@ void update_free_surface_boundary_stress(real *stress_zz, real *stress_xz, real 
     }
     
 } // end function update_free_surface_boundary_stress
+
+#ifdef YASK
+void yask_update_free_surface_boundary_stress(Grid_TXYZ *stress_zz, Grid_TXYZ *stress_xz, Grid_TXYZ *stress_yz,
+                                              int_pt start_x, int_pt start_y, int_pt start_z,
+                                              int_pt size_x, int_pt size_y, int_pt size_z, int_pt timestep) {
+    
+    
+    for (int_pt ix=start_x; ix < start_x+size_x; ix++) {
+        for (int_pt iy=start_y; iy < start_y+size_y; iy++) {
+            
+            // Apply Free Surface Boundary Conditions for velocity
+            // Note: The highest z index corresponds to the surface
+            int_pt izs = start_z+size_z-1;
+           
+            // Apply Free Surface Boundary conditions for stress components
+            stress_zz->writeElem(-stress_zz->readElem(timestep,ix,iy,izs,0), timestep, ix, iy, izs+1, 0);
+            stress_xz->writeElem(0.0, timestep, ix, iy, izs, 0);
+            stress_yz->writeElem(0.0, timestep, ix, iy, izs, 0);
+                        
+            stress_zz->writeElem(-stress_zz->readElem(timestep,ix,iy,izs-1,0), timestep, ix, iy, izs+2, 0);
+            stress_xz->writeElem(-stress_xz->readElem(timestep,ix,iy,izs-1,0), timestep, ix, iy, izs+1, 0);
+            stress_yz->writeElem(-stress_yz->readElem(timestep,ix,iy,izs-1,0), timestep, ix, iy, izs+1, 0);
+            
+            stress_xz->writeElem(-stress_xz->readElem(timestep,ix,iy,izs-2,0), timestep, ix, iy, izs+2, 0);
+            stress_yz->writeElem(-stress_yz->readElem(timestep,ix,iy,izs-2,0), timestep, ix, iy, izs+2, 0);            
+        }
+    }
+    
+} // end function update_free_surface_boundary_stress
+#endif
 
 
 void update_stress_visco(real *velocity_x, real *velocity_y, real *velocity_z,

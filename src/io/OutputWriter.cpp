@@ -363,7 +363,12 @@ void odc::io::CheckpointWriter::writeUpdatedStats(int_pt currentTimeStep, PatchD
         int_pt i = m_nd;
         int_pt j = i;
         int_pt k = m_numZGridPoints-1-m_nd;        
-        fprintf(m_checkPointFile,"%" AWP_PT_FORMAT_STRING " :\t%e\t%e\t%e\n", currentTimeStep-1,
+        fprintf(m_checkPointFile,"%" AWP_PT_FORMAT_STRING " :\t%e\t%e\t%e\n",
+#ifdef YASK
+                currentTimeStep-1,
+#else
+                currentTimeStep,
+#endif
                 i_ptchDec.getVelX(i,j,k,currentTimeStep),
                 i_ptchDec.getVelY(i,j,k,currentTimeStep),
                 i_ptchDec.getVelZ(i,j,k,currentTimeStep));

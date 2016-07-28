@@ -60,11 +60,25 @@ void update_free_surface_boundary_stress(real *stress_zz, real *stress_xz, real 
                                          int_pt xstep, int_pt ystep, int_pt zstep,
                                          int_pt dim_x, int_pt dim_y, int_pt dim_z);
 
+#ifdef YASK
+void yask_update_free_surface_boundary_stress(Grid_TXYZ *stress_zz, Grid_TXYZ *stress_xz, Grid_TXYZ *stress_yz,
+                                              int_pt start_x, int_pt start_y, int_pt start_z,
+                                              int_pt size_x, int_pt size_y, int_pt size_z, int_pt timestep);
+#endif
+
 void update_free_surface_boundary_velocity(real *velocity_x, real *velocity_y, real *velocity_z,
                                            int_pt xstep, int_pt ystep, int_pt zstep,
                                            int_pt dim_x, int_pt dim_y, int_pt dim_z,
                                            real *lam_mu, int_pt lam_mu_xstep,
                                            bool on_x_max_bdry, bool on_y_zero_bdry);
+
+#ifdef YASK
+void yask_update_free_surface_boundary_velocity(Grid_TXYZ *velocity_x, Grid_TXYZ *velocity_y, Grid_TXYZ *velocity_z,
+                                                int_pt start_x, int_pt start_y, int_pt start_z,
+                                                int_pt size_x, int_pt size_y, int_pt size_z,
+                                                real *lam_mu, int_pt lam_mu_xstep, int_pt timestep,
+                                                bool on_x_max_bdry, bool on_y_zero_bdry);
+#endif
 
 
 
