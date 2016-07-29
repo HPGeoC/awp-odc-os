@@ -103,4 +103,4 @@ script:
 
 after_success:
   - ${GCOV} -v
-  - coveralls --exclude bin/submodules --gcov ${GCOV} --gcov-options '\-lp'
+  - coveralls --exclude bin/submodules --exclude bin/yask --gcov ${GCOV} --gcov-options '\-lp'
