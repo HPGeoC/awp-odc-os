@@ -32,7 +32,15 @@ vars.AddVariables(
                 'CPU architecture to compile for',
                 'host',
                  allowed_values=('host', 'snb', 'hsw', 'knl')
-              )
+              ),
+  EnumVariable( 'mode',
+                'compile mode',
+                'release',
+                 allowed_values=('release', 'debug' )
+              ),
+  BoolVariable( 'cov',
+                'enable code coverage',
+                 False ),
 )
 
 vars.AddVariables(
@@ -120,8 +128,15 @@ env.Append( CPPPATH = [Dir('#.').path, Dir('#./src')] )
 env.Append( CXXFLAGS="-std=c++11" )
 
 # check for debug mode
-if ARGUMENTS.get('debug', 0):
-   env.Append( CCFLAGS = ['-g','-O0'] )
+if env['mode'] == 'debug':
+  env.Append( CCFLAGS = ['-g','-O0'], CXXFLAGS = ['-g', '-O0'] )
+else:
+  env.Append( CCFLAGS = ['-O3'], CXXFLAGS = ['-O3'] )
+
+# enable code coverage, if requested
+if env['cov'] == True:
+  env.Append( CXXFLAGS = ['-coverage', '-fno-inline', '-fno-inline-small-functions', '-fno-default-inline'] )
+  env.Append( LINKFLAGS = ['-coverage'] )
 
 
 # add math library for gcc
