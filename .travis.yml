@@ -53,7 +53,11 @@ matrix:
 before_install:
   - cd ..
   - sudo apt-get update -qq
+
+install:
   - sudo apt-get install -qq openmpi-bin libopenmpi-dev
+  - sudo apt-get install lcov rubygems
+  - pip install --user cpp-coveralls
 
   # update binutils
   - wget http://ftp.gnu.org/gnu/binutils/binutils-2.26.tar.gz
@@ -86,4 +90,5 @@ script:
   - scons parallelization=mpi_omp cpu_arch=knl
 
 after_success:
-- ${GCOV} -v
+  - ${GCOV} -v
+  - coveralls --exclude bin/submodules --gcov-options '\-lp'
