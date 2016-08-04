@@ -53,8 +53,14 @@ m_nWgrpsAll(i_nWgrps), m_ptchDec(i_ptchDec) {
   for( int l_gr = 0; l_gr < m_nWgrpsAll; l_gr++ ) {
     l_nThreads += std::abs( m_nTdsPerWgrpAll[l_gr] );
   }
-  std::cout << "num threads: " << m_nThreadsAll << ' ' << l_nThreads << std::endl;
-  assert( l_nThreads == m_nThreadsAll );
+
+  #pragma omp critical
+  {
+   std::cout << "num threads: " << m_nThreadsAll << ' ' << l_nThreads << std::endl;
+  }
+  if(l_nThreads != m_nThreadsAll) {
+    std::cerr << "Error: number of threads requested does not equal number of threads provided by system." << std::endl;
+  }
 
   // derive number of work groups participating in computation
   m_nWgrpsComp = 0;

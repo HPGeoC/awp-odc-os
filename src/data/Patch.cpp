@@ -70,17 +70,15 @@ void Patch::initialize(odc::io::OptionParser i_options, int_pt _nx, int_pt _ny, 
   yask_context.bz = DEF_BLOCK_SIZE;    
     
   yask_context.pn = roundUp(0, VLEN_N, "# extra padding in n");
-  yask_context.px = roundUp(0, VLEN_X, "# extra padding in x");
-  yask_context.py = roundUp(0, VLEN_Y, "# extra padding in y");
-  yask_context.pz = roundUp(0, VLEN_Z, "# extra padding in z");
+  yask_context.px = roundUp(2, VLEN_X, "# extra padding in x");
+  yask_context.py = roundUp(2, VLEN_Y, "# extra padding in y");
+  yask_context.pz = roundUp(2, VLEN_Z, "# extra padding in z");
 
   idx_t halo_size = 4/2; // TODO: make dim-specific.
   yask_context.hn = 0;
   yask_context.hx = ROUND_UP(halo_size, VLEN_X);
   yask_context.hy = ROUND_UP(halo_size, VLEN_Y);
   yask_context.hz = ROUND_UP(halo_size, VLEN_Z);
-
-  yask_context.pn = 0; yask_context.px = 2; yask_context.py = 2; yask_context.pz = 2;
 
   yask_context.allocGrids();
   yask_context.allocParams();
@@ -103,7 +101,6 @@ void Patch::initialize(odc::io::OptionParser i_options, int_pt _nx, int_pt _ny, 
   // TODO(Josh): don't hardcode the true (analestic) here;
   //             the advantage of having it is that all memory gets
   //             allocated, just in case we need it
-  std::cout << "here" << std::endl;
 
 #ifdef YASK  
   mesh.initialize(i_options, nx, ny, nz, bdry_width, true, i_inputBuffer, i_globalX, i_globalY, i_globalZ,
@@ -114,12 +111,10 @@ void Patch::initialize(odc::io::OptionParser i_options, int_pt _nx, int_pt _ny, 
 #else
   mesh.initialize(i_options, nx, ny, nz, bdry_width, true, i_inputBuffer, i_globalX, i_globalY, i_globalZ);
 #endif
-  std::cout << "here1" << std::endl;
   
   int_pt coords[] = {i_globalX, i_globalY, i_globalZ};
   cerjan.initialize(i_options, nx, ny, nz, bdry_width, coords);
 
-  std::cout << "here2" << std::endl;
   
 #ifdef YASK
   for(int_pt l_x = 0; l_x<nx+2*bdry_width; l_x++)
@@ -133,7 +128,6 @@ void Patch::initialize(odc::io::OptionParser i_options, int_pt _nx, int_pt _ny, 
       }
     }
   }
-  std::cout << "here" << std::endl;
 
   for (StencilBase *stencil : yask_stencils.stencils)
   {

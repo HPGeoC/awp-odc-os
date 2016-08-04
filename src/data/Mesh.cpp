@@ -181,9 +181,6 @@ void odc::data::Mesh::initialize(odc::io::OptionParser i_options, int_pt x, int_
       }
     }
 
-    std::cout << tau1[0][0][0] << ' ' << tau1[1][0][0] << ' ' << tau1[0][1][0] << ' ' << tau1[1][1][0] << ' '
-              << tau1[0][0][1] << ' ' << tau1[1][0][1] << ' ' << tau1[0][1][1] << ' ' << tau1[1][1][1] << std::endl;
-    std::cout << "globals: " << i_globalX << ' ' << i_globalY << ' ' << i_globalZ << std::endl;
     new_init_texture(tau1, tau2, m_tau1, m_tau2, weights, m_weight_index, m_weights,
                      bdry_size, bdry_size+x, bdry_size, bdry_size+y, bdry_size, bdry_size+z,
                      i_globalX, i_globalY, i_globalZ,
