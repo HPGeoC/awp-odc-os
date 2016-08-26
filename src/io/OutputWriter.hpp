@@ -45,8 +45,6 @@ public:
                            real vse_min, real vse_max, real vpe_min, real vpe_max, real dde_min, real dde_max);
 
     void writeUpdatedStats(int_pt currentTimeStep, PatchDecomp& i_ptchDec);
-    void oldWriteUpdatedStats(int_pt currentTimeStep, Grid3D velocityX, Grid3D velocityY,
-                           Grid3D velocityZ);
     void finalize();
     
 private:
@@ -54,6 +52,9 @@ private:
     int_pt m_nd;
     int_pt m_numTimestepsToSkip;
     int_pt m_numZGridPoints;
+
+    int_pt m_rcdX, m_rcdY, m_rcdZ;
+    bool m_ownedByThisRank;
     
     char m_checkPointFileName[256];
     FILE *m_checkPointFile = nullptr;
@@ -63,8 +64,7 @@ private:
 class odc::io::OutputWriter {
     
 public:
-    void update(int_pt i_timestep, PatchDecomp& i_ptchDec, int_pt dimZ);
-    void oldUpdate(int_pt i_timestep, Grid3D velocityX, Grid3D velocityY, Grid3D velocityZ, int_pt dimZ);
+    void update(int_pt i_timestep, PatchDecomp& i_ptchDec);
 
     void finalize();
     OutputWriter(OptionParser i_options);
@@ -77,40 +77,41 @@ private:
     
     char m_outputFolder[50];
     
-    int m_firstGlobalXNodeToRecord;
-    int m_firstGlobalYNodeToRecord;
-    int m_firstGlobalZNodeToRecord;
+    int_pt m_firstGlobalXNodeToRecord;
+    int_pt m_firstGlobalYNodeToRecord;
+    int_pt m_firstGlobalZNodeToRecord;
     
-    int m_lastGlobalXNodeToRecord;
-    int m_lastGlobalYNodeToRecord;
-    int m_lastGlobalZNodeToRecord;
+    int_pt m_lastGlobalXNodeToRecord;
+    int_pt m_lastGlobalYNodeToRecord;
+    int_pt m_lastGlobalZNodeToRecord;
     
-    int m_numGlobalXNodesToRecord;
-    int m_numGlobalYNodesToRecord;
-    int m_numGlobalZNodesToRecord;
+    int_pt m_numGlobalXNodesToRecord;
+    int_pt m_numGlobalYNodesToRecord;
+    int_pt m_numGlobalZNodesToRecord;
     
     int m_numTimestepsToSkip;
     
-    int m_firstXNodeToRecord;
-    int m_firstYNodeToRecord;
-    int m_firstZNodeToRecord;
+    int_pt m_firstXNodeToRecord;
+    int_pt m_firstYNodeToRecord;
+    int_pt m_firstZNodeToRecord;
     
-    int m_lastXNodeToRecord;
-    int m_lastYNodeToRecord;
-    int m_lastZNodeToRecord;
+    int_pt m_lastXNodeToRecord;
+    int_pt m_lastYNodeToRecord;
+    int_pt m_lastZNodeToRecord;
     
     int m_writeStep;
     
-    int m_numXNodesToSkip;
-    int m_numYNodesToSkip;
-    int m_numZNodesToSkip;
+    int_pt m_numXNodesToSkip;
+    int_pt m_numYNodesToSkip;
+    int_pt m_numZNodesToSkip;
     
-    int m_numXNodesToRecord;
-    int m_numYNodesToRecord;
-    int m_numZNodesToRecord;
-    int m_numGridPointsToRecord;
+    int_pt m_numXNodesToRecord;
+    int_pt m_numYNodesToRecord;
+    int_pt m_numZNodesToRecord;
+    int_pt m_numGridPointsToRecord;
     
     MPI_Datatype m_filetype;
+    MPI_Offset   m_displacement;
     
     real *m_velocityXWriteBuffer;
     real *m_velocityYWriteBuffer;

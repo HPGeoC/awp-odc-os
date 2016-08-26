@@ -23,8 +23,6 @@
 #include <cmath>
 #include <cstdio>
 
-int odc::parallel::Mpi::coords[3];
-
 odc::data::Cerjan::Cerjan(odc::io::OptionParser i_options, SoA i_data) {
     
     m_spongeCoeffX = Alloc1D(i_data.m_numXGridPoints, odc::constants::boundary);
@@ -43,7 +41,7 @@ odc::data::Cerjan::Cerjan(odc::io::OptionParser i_options, SoA i_data) {
         m_spongeCoeffZ[k]  = 1.0;
     }
     
-    int_pt coords[] = {0,0,0}; // in this legacy code, a single node is assumed
+    int_pt coords[] = {odc::parallel::Mpi::m_startX,odc::parallel::Mpi::m_startY,odc::parallel::Mpi::m_startZ}; // in this legacy code, a single node is assumed
     inicrj(i_options.m_arbc, coords, i_data.m_numXGridPoints,
            i_data.m_numYGridPoints, i_data.m_numZGridPoints, i_data.m_numXGridPoints,
            i_data.m_numYGridPoints, i_options.m_nD, m_spongeCoeffX,
@@ -69,7 +67,7 @@ void odc::data::Cerjan::initialize(odc::io::OptionParser i_options, int_pt nx, i
         m_spongeCoeffZ[k]  = 1.0;
     }
 
-    inicrj(i_options.m_arbc, coords, nx, ny, nz, i_options.m_nX, i_options.m_nY, i_options.m_nD,
+    inicrj(i_options.m_arbc, coords, nx, ny, nz, i_options.m_nX, i_options.m_nY, i_options.m_nD, 
            m_spongeCoeffX + bdry_width, m_spongeCoeffY + bdry_width, m_spongeCoeffZ + bdry_width);
 }
 

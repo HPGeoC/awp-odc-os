@@ -112,7 +112,7 @@ void Patch::initialize(odc::io::OptionParser i_options, int_pt _nx, int_pt _ny, 
   mesh.initialize(i_options, nx, ny, nz, bdry_width, true, i_inputBuffer, i_globalX, i_globalY, i_globalZ);
 #endif
   
-  int_pt coords[] = {i_globalX, i_globalY, i_globalZ};
+  int_pt coords[] = {i_globalX+odc::parallel::Mpi::m_startX, i_globalY+odc::parallel::Mpi::m_startY, i_globalZ+odc::parallel::Mpi::m_startZ};
   cerjan.initialize(i_options, nx, ny, nz, bdry_width, coords);
 
   
@@ -135,8 +135,6 @@ void Patch::initialize(odc::io::OptionParser i_options, int_pt _nx, int_pt _ny, 
   }
   
 #endif
-
-  std::cout << "mesh init done in patch" << std::endl;
   
 
   strideZ = 1;

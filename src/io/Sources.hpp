@@ -21,14 +21,14 @@
 #define SOURCES_H_
 
 // TODO: Required for sources
-#include <mpi.h>
+#include "parallel/Mpi.hpp"
 
 #include "data/PatchDecomp.hpp"
 #include "constants.hpp"
 
-extern "C" int inisource( int      rank,    int     IFAULT, int     NSRC,   int     READ_STEP, int     NST,     int     *SRCPROC, int    NZ, 
-                          MPI_Comm MCW,     int     nxt,    int     nyt,    int     nzt,       int     *coords, int     maxdim,   int    *NPSRC,
-                          PosInf   *ptpsrc, Grid1D  *ptaxx, Grid1D  *ptayy, Grid1D  *ptazz,    Grid1D  *ptaxz,  Grid1D  *ptayz,   Grid1D *ptaxy, char *INSRC, char *INSRC_I2);
+extern "C" int inisource(int     IFAULT, int     NSRC,   int     READ_STEP, int     NST,     int     *SRCPROC, int     maxdim,   int    *NPSRC, int_pt NZ,
+                         PosInf   *ptpsrc, Grid1D  *ptaxx, Grid1D  *ptayy, Grid1D  *ptazz,    Grid1D  *ptaxz,  Grid1D  *ptayz,   Grid1D *ptaxy, char *INSRC, char *INSRC_I2);
+
 
 namespace odc {
   namespace io {
@@ -68,7 +68,7 @@ class odc::io::Sources {
              int   i_nSrc,
              int   i_readStep,
              int   i_nSt,
-             int   i_nZ,
+             int_pt   i_nZ,
              int   i_nXt, int i_nYt, int i_nZt,
              char *i_inSrc,
             char *i_inSrcI2 );

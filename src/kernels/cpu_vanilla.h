@@ -16,6 +16,7 @@
 #define CPU_VANILLA_H
 
 #include <stdio.h>
+#include "parallel/Mpi.hpp"
 #include "data/PatchDecomp.hpp"
 #include "constants.hpp"
 

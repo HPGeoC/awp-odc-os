@@ -36,8 +36,8 @@ odc::parallel::OpenMP::OpenMP( int_pt       i_nPtsX,
                                int         *i_tdsPerWgrp,
                                PatchDecomp& i_ptchDec):
 m_nWgrpsAll(i_nWgrps), m_ptchDec(i_ptchDec) {
-  if( !omp_in_parallel() )
-    std::cerr << "Error: OpenMP constructor should be called in a parallel region." << std::endl;
+  //if( !omp_in_parallel() )
+  //  std::cerr << "Error: OpenMP constructor should be called in a parallel region." << std::endl;
 
   // copy threads per work group data
   m_nTdsPerWgrpAll = (int*) malloc( m_nWgrpsAll * sizeof( int ) );
@@ -54,10 +54,10 @@ m_nWgrpsAll(i_nWgrps), m_ptchDec(i_ptchDec) {
     l_nThreads += std::abs( m_nTdsPerWgrpAll[l_gr] );
   }
 
-  #pragma omp critical
-  {
-   std::cout << "num threads: " << m_nThreadsAll << ' ' << l_nThreads << std::endl;
-  }
+  //#pragma omp critical
+  //{
+  // std::cout << "num threads: " << m_nThreadsAll << ' ' << l_nThreads << std::endl;
+  //}
   if(l_nThreads != m_nThreadsAll) {
     std::cerr << "Error: number of threads requested does not equal number of threads provided by system." << std::endl;
   }

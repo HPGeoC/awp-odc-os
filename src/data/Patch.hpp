@@ -26,9 +26,8 @@
 #include "data/SoA.hpp"
 #include "data/Mesh.hpp"
 #include "data/Cerjan.hpp"
+#include "parallel/Mpi.hpp"
 
-
-// TODO(Josh): (Yask) are these the right includes?
 #ifdef YASK
 #include "yask/stencil.hpp"
 #include "yask/stencil_calc.hpp"

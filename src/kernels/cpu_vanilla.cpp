@@ -268,7 +268,7 @@ void update_free_surface_boundary_velocity(real *velocity_x, real *velocity_y, r
                 dvy = velocity_y[pos_ym1] - (velocity_z[pos] - velocity_z[pos_ym1]);
             }
             
-            // TODO(Josh): Remove hardcoded '5' in the following (comes from 2*bdry+1 I think)
+            // TODO(Josh): Remove hardcoded '5' in the following (comes from 2*bdry+1)
             velocity_z[pos_zp1] = velocity_z[pos_zm1] - lam_mu[ix*lam_mu_xstep*5 + iy*5]* 
             ((dvx - velocity_x[pos_zp1]) + (velocity_x[pos_xp1] - velocity_x[pos]) +
              (velocity_y[pos_zp1] - dvy) + (velocity_y[pos] - velocity_y[pos_ym1]));
@@ -310,9 +310,7 @@ void yask_update_free_surface_boundary_velocity(Grid_TXYZ *velocity_x, Grid_TXYZ
 
 
             velocity_x->writeElem(vel_x - (vel_z - vel_z_xm1), timestep, ix, iy, izs+1, 0);
-            //velocity_x[pos_zp1] = velocity_x[pos] - (velocity_z[pos] - velocity_z[pos_xm1]);
             velocity_y->writeElem(vel_y - (vel_z_yp1 - vel_z), timestep, ix, iy, izs+1, 0);            
-            //velocity_y[pos_zp1] = velocity_y[pos] - (velocity_z[pos_yp1] - velocity_z[pos]);
 
             real vel_x_zp1 = velocity_x->readElem(timestep, ix, iy, izs+1, 0);
             real vel_y_zp1 = velocity_y->readElem(timestep, ix, iy, izs+1, 0);
@@ -321,13 +319,10 @@ void yask_update_free_surface_boundary_velocity(Grid_TXYZ *velocity_x, Grid_TXYZ
             real dvy = 0.0;
             if (!on_x_max_bdry || ix < start_x+size_x-1) {
                 dvx = vel_x_xp1 - (vel_z_xp1 - vel_z);
-                //dvx = velocity_x[pos_xp1] - (velocity_z[pos_xp1] - velocity_z[pos]);
             }
             
-            // TODO: For MPI, this should check to see if this is the first y point on the GLOBAL grid
             if (!on_y_zero_bdry || iy > start_y) {
                 dvy = vel_y_ym1 - (vel_z - vel_z_ym1);
-                //dvy = velocity_y[pos_ym1] - (velocity_z[pos] - velocity_z[pos_ym1]);
             }
             
             // TODO(Josh): Remove hardcoded '5' in the following (comes from 2*bdry+1 I think)
@@ -337,11 +332,7 @@ void yask_update_free_surface_boundary_velocity(Grid_TXYZ *velocity_x, Grid_TXYZ
              (vel_y_zp1 - dvy) + (vel_y - vel_y_ym1));
             
             velocity_z->writeElem(tmp, timestep, ix, iy, izs+1, 0);
-            
-            //velocity_z[pos_zp1] = velocity_z[pos_zm1] - lam_mu[ix*lam_mu_xstep*5 + iy*5]* 
-            //((dvx - velocity_x[pos_zp1]) + (velocity_x[pos_xp1] - velocity_x[pos]) +
-            // (velocity_y[pos_zp1] - dvy) + (velocity_y[pos] - velocity_y[pos_ym1]));
-            
+                       
         }
     }
     
@@ -593,17 +584,12 @@ void update_stress_from_fault_sources(int_pt source_timestep, int READ_STEP, int
     real coeff = dt/(dh*dh*dh);
     
     for (int_pt j=0; j < num_fault_nodes; j++) {
-      
+
         // Find index (idx, idy, idz) of fault node
         int_pt idx = fault_nodes[j*num_model_dimensions]-1;
         int_pt idy = fault_nodes[j*num_model_dimensions+1]-1;
         int_pt idz = fault_nodes[j*num_model_dimensions+2]-1;
-
-      if(source_timestep==1)
-      {
-        //std::cout << idx << ' ' << idy << ' ' << idz << std::endl; 
-      }
-        
+	
         // Index of source node at position (idx,idy,idz)
         int_pt pos = idx*xstep + idy*ystep + idz*zstep;
 
@@ -620,7 +606,7 @@ void update_stress_from_fault_sources(int_pt source_timestep, int READ_STEP, int
         if(y < start_y || y >= start_y + size_y)
           continue;
         if(z < start_z || z >= start_z + size_z)
-        continue;
+          continue;
 
         
         // Calculate stress updates

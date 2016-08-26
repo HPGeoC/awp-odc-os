@@ -17,174 +17,26 @@
 // TODO: Provide non-mpi version.
 #include <mpi.h>
 #include <stdio.h>
+#include <iostream>
 #include "constants.hpp"
 #include "io/Sources.hpp"
 #include "parallel/Mpi.hpp"
 #include "data/Grid.hpp"
 
 odc::io::Sources::Sources(int   i_iFault,
-                 int   i_nSrc,
-                 int   i_readStep,
-                 int   i_nSt,
-                 int   i_nZ,
-                 int   i_nXt, int i_nYt, int i_nZt,
-                 char *i_inSrc,
-                 char *i_inSrcI2 ) {
+                 int      i_nSrc,
+                 int      i_readStep,
+                 int      i_nSt,
+                 int_pt   i_nZ,
+                 int      i_nXt, int i_nYt, int i_nZt,
+                 char     *i_inSrc,
+                 char     *i_inSrcI2 ) {
     
     
-    inisource(0, i_iFault, i_nSrc, i_readStep, i_nSt, &m_srcProc, i_nZ,
-              MPI_COMM_WORLD, i_nXt, i_nYt, i_nZt, odc::parallel::Mpi::coords,
-              3, &m_nPsrc, &m_ptpSrc,&m_ptAxx, &m_ptAyy, &m_ptAzz, &m_ptAxz,
+    inisource(i_iFault, i_nSrc, i_readStep, i_nSt, &m_srcProc, 3,
+              &m_nPsrc, i_nZ, &m_ptpSrc,&m_ptAxx, &m_ptAyy, &m_ptAzz, &m_ptAxz,
               &m_ptAyz, &m_ptAxy, i_inSrc, i_inSrcI2 );
-    
-}
 
-
-/**
- Reads fault source file and sets corresponding parameter values for source fault nodes owned by the calling process when @c IFAULT==2
- 
- @param rank            Rank of calling process (from MPI)
- @param READ_STEP       Number of rupture timesteps to read from source file
- @param INSRC           Prefix of source input file
- @param INSRC_I2        Split source input file prefix for @c IFAULT==2 option
- @param maxdim          Number of spatial dimensions (always 3)
- @param coords          @c int array (length 2) that stores the x and y coordinates of calling process in the Cartesian MPI topology
- @param NZ              z model dimension in nodes
- @param nxt             Number of x nodes that calling process owns
- @param nyt             Number of y nodes that calling process owns
- @param nzt             Number of z nodes that calling process owns
- 
- 
- @param[out] NPSRC           Number of fault source nodes owned by calling process
- @param[out] SRCPROC         Set to rank of calling process (or -1 if source file could not be opened)
- @param[out] psrc            Array of length <tt>NPSRC*maxdim</tt> that stores indices of nodes owned by calling process that are fault sources \n
-                                    <tt>psrc[i*maxdim]</tt> = x node index of source fault @c i \n
-                                    <tt>psrc[i*maxdim+1]</tt> = y node index of source fault @c i \n
-                                    <tt>psrc[i*maxdim+2]</tt> = z node index of source fault @c i
- @param[out] axx
- @param[out] ayy
- @param[out] azz
- @param[out] axz
- @param[out] ayz
- @param[out] axy
- @param[out] idx
- */
-int read_src_ifault_2(int rank, int READ_STEP,
-                      char *INSRC, char *INSRC_I2,
-                      int maxdim, int *coords, int NZ,
-                      int nxt, int nyt, int nzt,
-                      int *NPSRC, int *SRCPROC,
-                      PosInf *psrc, Grid1D *axx, Grid1D *ayy, Grid1D *azz,
-                      Grid1D *axz, Grid1D *ayz, Grid1D *axy,
-                      int idx){
-    
-    FILE *f;
-    char fname[150];
-    int dummy[2], i, j;
-    int nbx, nby;
-    PosInf tpsrc = NULL;
-    Grid1D taxx=NULL, tayy=NULL, tazz=NULL;
-    Grid1D taxy=NULL, taxz=NULL, tayz=NULL;
-    
-    // First time entering this function
-    if(idx == 1){
-        //TODO: unsafe call; this should be snprintf, or fname should be dynamically allocated to always be large enough to hold the format string
-        sprintf(fname, "%s%07d", INSRC, rank);
-        printf("SOURCE reading first time: %s\n",fname);
-        f = fopen(fname, "rb");
-        if(f == NULL){
-            printf("SOURCE %d) no such file: %s\n",rank,fname);
-            *SRCPROC = -1;
-            *NPSRC = 0;
-            return 0;
-        }
-        *SRCPROC = rank;
-        nbx     = nxt*coords[0] + 1 - 2;
-        nby     = nyt*coords[1] + 1 - 2;
-        // not sure what happens if maxdim != 3
-        fread(NPSRC, sizeof(int), 1, f);
-        fread(dummy, sizeof(int), 2, f);
-        
-        printf("SOURCE I am, rank=%d npsrc=%d\n",rank,*NPSRC);
-        
-        tpsrc = odc::data::Alloc1P((*NPSRC)*maxdim);
-        fread(tpsrc, sizeof(int), (*NPSRC)*maxdim, f);
-        // assuming nzt=NZ
-        for(i=0; i<*NPSRC; i++){
-            //tpsrc[i*maxdim] = (tpsrc[i*maxdim]-1)%nxt+1;
-            //tpsrc[i*maxdim+1] = (tpsrc[i*maxdim+1]-1)%nyt+1;
-            //tpsrc[i*maxdim+2] = NZ+1 - tpsrc[i*maxdim+2];
-            tpsrc[i*maxdim]   = tpsrc[i*maxdim] - nbx - 1;
-            tpsrc[i*maxdim+1] = tpsrc[i*maxdim+1] - nby - 1;
-            tpsrc[i*maxdim+2] = NZ + 1 - tpsrc[i*maxdim+2];
-        }
-        *psrc = tpsrc;
-        fclose(f);
-    }
-    if(*NPSRC > 0){
-        //TODO: unsafe call; this should be snprintf, or fname should be dynamically allocated to always be large enough to hold the format string
-        sprintf(fname, "%s%07d_%03d", INSRC_I2, rank, idx);
-        printf("SOURCE reading: %s\n",fname);
-        f = fopen(fname, "rb");
-        if(f == NULL){
-            printf("ERROR! Rank=%d: Cannot open file: %s\n", rank, fname);
-            return -1;
-        }
-        // fastest axis in partitioned source is npsrc, then read_step (see source.f)
-        // fastest axis in axx is time
-        Grid1D tmpta;
-        tmpta = odc::data::Alloc1D((*NPSRC)*READ_STEP);
-        if(idx==1){
-            taxx = odc::data::Alloc1D((*NPSRC)*READ_STEP);
-            tayy = odc::data::Alloc1D((*NPSRC)*READ_STEP);
-            tazz = odc::data::Alloc1D((*NPSRC)*READ_STEP);
-            taxy = odc::data::Alloc1D((*NPSRC)*READ_STEP);
-            taxz = odc::data::Alloc1D((*NPSRC)*READ_STEP);
-            tayz = odc::data::Alloc1D((*NPSRC)*READ_STEP);
-        }
-        else{
-            taxx = *axx;
-            tayy = *ayy;
-            tazz = *azz;
-            taxy = *axy;
-            taxz = *axz;
-            tayz = *ayz;
-        }
-        fread(tmpta, sizeof(float), (*NPSRC)*READ_STEP, f);
-        for(i=0; i<*NPSRC; i++)
-            for(j=0; j<READ_STEP; j++)
-                taxx[i*READ_STEP+j] = tmpta[j*(*NPSRC)+i];
-        fread(tmpta, sizeof(float), (*NPSRC)*READ_STEP, f);
-        for(i=0; i<*NPSRC; i++)
-            for(j=0; j<READ_STEP; j++)
-                tayy[i*READ_STEP+j] = tmpta[j*(*NPSRC)+i];
-        fread(tmpta, sizeof(float), (*NPSRC)*READ_STEP, f);
-        for(i=0; i<*NPSRC; i++)
-            for(j=0; j<READ_STEP; j++)
-                tazz[i*READ_STEP+j] = tmpta[j*(*NPSRC)+i];
-        fread(tmpta, sizeof(float), (*NPSRC)*READ_STEP, f);
-        for(i=0; i<*NPSRC; i++)
-            for(j=0; j<READ_STEP; j++)
-                taxz[i*READ_STEP+j] = tmpta[j*(*NPSRC)+i];
-        fread(tmpta, sizeof(float), (*NPSRC)*READ_STEP, f);
-        for(i=0; i<*NPSRC; i++)
-            for(j=0; j<READ_STEP; j++)
-                tayz[i*READ_STEP+j] = tmpta[j*(*NPSRC)+i];
-        fread(tmpta, sizeof(float), (*NPSRC)*READ_STEP, f);
-        for(i=0; i<*NPSRC; i++)
-            for(j=0; j<READ_STEP; j++)
-                taxy[i*READ_STEP+j] = tmpta[j*(*NPSRC)+i];
-        fclose(f);
-        *axx = taxx;
-        *ayy = tayy;
-        *azz = tazz;
-        *axz = taxz;
-        *ayz = tayz;
-        *axy = taxy;
-        odc::data::Delloc1D(tmpta);
-    }
-    
-    return 0;
 }
 
 
@@ -193,17 +45,10 @@ int read_src_ifault_2(int rank, int READ_STEP,
  
  @bug When @c IFAULT==1, @c READ_STEP does not work. It reads all the time steps at once instead of only @c READ_STEP of them.
  
- @param rank        Rank of calling process (from MPI)
  @param IFAULT      Mode selection and fault or initial stress setting (1 or 2)
  @param NSRC        Number of source nodes on fault
  @param READ_STEP   Number of rupture timesteps to read from source file
  @param NST         Number of time steps in rupture functions
- @param NZ          z model dimension in nodes
- @param MCW         MPI process communicator for 2D Cartesian MPI Topology
- @param nxt         Number of x nodes that calling process owns
- @param nyt         Number of y nodes that calling process owns
- @param nzt         Number of z nodes that calling process owns
- @param coords      @c int array (length 2) that stores the x and y coordinates of calling process in the Cartesian MPI topology
  @param maxdim      Number of spatial dimensions (always 3)
  @param INSRC       Source input file (if @c IFAULT==2, then this is prefix of @c tpsrc)
  @param INSRC_I2    Split source input file prefix for @c IFAULT==2 option
@@ -230,12 +75,30 @@ int read_src_ifault_2(int rank, int READ_STEP,
  
  @return 0 on success, -1 if there was an error when reading input files
  */
-int inisource(int      rank,    int     IFAULT, int     NSRC,   int     READ_STEP, int     NST,     int     *SRCPROC, int    NZ,
-              MPI_Comm MCW,     int     nxt,    int     nyt,    int     nzt,       int     *coords, int     maxdim,   int    *NPSRC,
+int inisource(int     IFAULT, int     NSRC,   int     READ_STEP, int     NST,     int     *SRCPROC, int     maxdim,   int    *NPSRC, int_pt NZ,
               PosInf   *ptpsrc, Grid1D  *ptaxx, Grid1D  *ptayy, Grid1D  *ptazz,    Grid1D  *ptaxz,  Grid1D  *ptayz,   Grid1D *ptaxy, char *INSRC, char *INSRC_I2)
 {
+    int rank = odc::parallel::Mpi::m_rank;
+
+    // Calculate starting and ending x, y, and z node indices that are owned by calling process. Since MPI topology is 2D each process owns every z node.
+    // Indexing is based on 1: [1, nxt], etc. Include 1st layer ghost cells ("loop" is defined to be 1)
+    //
+    // [        -         -       |                  - . . . -                            |          -       -              ]
+    // ^        ^                 ^                      ^                                ^                 ^               ^
+    // |        |                 |                      |                                |                 |               |
+    // nbx    2 ghost cells     nbx+2       regular cells (nxt of them)             nbx+(nxt-1)+2       2 ghost cells       nex
+    //
+    // In the above diagram, nbx+2 seems misplaced?  Seems like the first real (non-ghost) point in the domain corresponds to index 0, in the fault
+    // indexing, so that's what I'm going with below.
+    
+    int_pt nbx = odc::parallel::Mpi::m_startX + 2;
+    int_pt nex = nbx + odc::parallel::Mpi::m_rangeX - 1;
+    int_pt nby = odc::parallel::Mpi::m_startY + 2;
+    int_pt ney = nby + odc::parallel::Mpi::m_rangeY - 1;
+    int_pt nbz = odc::parallel::Mpi::m_startZ;
+    int_pt nez = nbz + odc::parallel::Mpi::m_rangeZ - 1;
+  
     int i, j, k, npsrc, srcproc, master=0;
-    int nbx, nex, nby, ney, nbz, nez;
     PosInf tpsrc=NULL, tpsrcp =NULL;
     Grid1D taxx =NULL, tayy   =NULL, tazz =NULL, taxz =NULL, tayz =NULL, taxy =NULL;
     Grid1D taxxp=NULL, tayyp  =NULL, tazzp=NULL, taxzp=NULL, tayzp=NULL, taxyp=NULL;
@@ -251,12 +114,12 @@ int inisource(int      rank,    int     IFAULT, int     NSRC,   int     READ_STE
     // ^        ^                 ^                      ^                                ^                 ^               ^
     // |        |                 |                      |                                |                 |               |
     // nbx    2 ghost cells     nbx+2       regular cells (nxt of them)             nbx+(nxt-1)+2       2 ghost cells       nex
-    nbx     = nxt*coords[0] + 1 - 2;
-    nex     = nbx + nxt - 1;
-    nby     = nyt*coords[1] + 1 - 2;
-    ney     = nby + nyt - 1;
-    nbz     = 1;
-    nez     = nzt;
+    //nbx     = nxt*coords[0] + 1 - 2;
+    //nex     = nbx + nxt - 1;
+    //nby     = nyt*coords[1] + 1 - 2;
+    //ney     = nby + nyt - 1;
+    //nbz     = 1;
+    //nez     = nzt;
     
     // IFAULT=1 has bug! READ_STEP does not work, it tries to read NST all at once - Efe
     if(IFAULT<=1)
@@ -273,7 +136,7 @@ int inisource(int      rank,    int     IFAULT, int     NSRC,   int     READ_STE
         taxy  = odc::data::Alloc1D(NSRC*READ_STEP);
         
         // Read rupture function data from input file
-        if(rank==master)
+        if(1||rank==master)
         {
             FILE   *file;
             int    tmpsrc[3];
@@ -331,14 +194,16 @@ int inisource(int      rank,    int     IFAULT, int     NSRC,   int     READ_STE
             fclose(file);
             
         } // end if(rank==master)
-        
-        MPI_Bcast(tpsrc, NSRC*maxdim,    MPI_INT,  master, MCW);
-        MPI_Bcast(taxx,  NSRC*READ_STEP, MPI_REAL, master, MCW);
-        MPI_Bcast(tayy,  NSRC*READ_STEP, MPI_REAL, master, MCW);
-        MPI_Bcast(tazz,  NSRC*READ_STEP, MPI_REAL, master, MCW);
-        MPI_Bcast(taxz,  NSRC*READ_STEP, MPI_REAL, master, MCW);
-        MPI_Bcast(tayz,  NSRC*READ_STEP, MPI_REAL, master, MCW);
-        MPI_Bcast(taxy,  NSRC*READ_STEP, MPI_REAL, master, MCW);
+
+	// TODO(Josh): is it better to handle source input via bcast (ie. as below)?
+        //MPI_Bcast(tpsrc, NSRC*maxdim,    MPI_INT,  master, MPI_COMM_WORLD);
+        //MPI_Bcast(taxx,  NSRC*READ_STEP, MPI_REAL, master, MPI_COMM_WORLD);
+        //MPI_Bcast(tayy,  NSRC*READ_STEP, MPI_REAL, master, MPI_COMM_WORLD);
+        //MPI_Bcast(tazz,  NSRC*READ_STEP, MPI_REAL, master, MPI_COMM_WORLD);
+        //MPI_Bcast(taxz,  NSRC*READ_STEP, MPI_REAL, master, MPI_COMM_WORLD);
+        //MPI_Bcast(tayz,  NSRC*READ_STEP, MPI_REAL, master, MPI_COMM_WORLD);
+        //MPI_Bcast(taxy,  NSRC*READ_STEP, MPI_REAL, master, MPI_COMM_WORLD);
+
         for(i=0;i<NSRC;i++)
         {
             // Count number of source nodes owned by calling process. If no nodes are owned by calling process then srcproc remains set to -1
@@ -366,12 +231,12 @@ int inisource(int      rank,    int     IFAULT, int     NSRC,   int     READ_STE
                 if( tpsrc[i*maxdim]   >= nbx && tpsrc[i*maxdim]   <= nex && tpsrc[i*maxdim+1] >= nby
                    && tpsrc[i*maxdim+1] <= ney && tpsrc[i*maxdim+2] >= nbz && tpsrc[i*maxdim+2] <= nez)
                 {
-                    tpsrcp[k*maxdim]   = tpsrc[i*maxdim]   - nbx - 1;
-                    tpsrcp[k*maxdim+1] = tpsrc[i*maxdim+1] - nby - 1;
-                    tpsrcp[k*maxdim+2] = tpsrc[i*maxdim+2] - nbz + 1;
+		  tpsrcp[k*maxdim]   = tpsrc[i*maxdim]   - nbx + 1; 
+		  tpsrcp[k*maxdim+1] = tpsrc[i*maxdim+1] - nby + 1;
+		  tpsrcp[k*maxdim+2] = tpsrc[i*maxdim+2] - nbz + 1;
                     for(j=0;j<READ_STEP;j++)
                     {
-                        taxxp[k*READ_STEP+j] = taxx[i*READ_STEP+j];
+		        taxxp[k*READ_STEP+j] = taxx[i*READ_STEP+j]; 
                         tayyp[k*READ_STEP+j] = tayy[i*READ_STEP+j];
                         tazzp[k*READ_STEP+j] = tazz[i*READ_STEP+j];
                         taxzp[k*READ_STEP+j] = taxz[i*READ_STEP+j];
@@ -389,7 +254,7 @@ int inisource(int      rank,    int     IFAULT, int     NSRC,   int     READ_STE
         odc::data::Delloc1D(tayz);
         odc::data::Delloc1D(taxy);
         odc::data::Delloc1P(tpsrc);
-        
+	
         *SRCPROC = srcproc;
         *NPSRC   = npsrc;
         *ptpsrc  = tpsrcp;
@@ -401,13 +266,8 @@ int inisource(int      rank,    int     IFAULT, int     NSRC,   int     READ_STE
         *ptaxy   = taxyp;
     }
     else if(IFAULT == 2){
-        return read_src_ifault_2(rank, READ_STEP,
-                                 INSRC, INSRC_I2,
-                                 maxdim, coords, NZ,
-                                 nxt, nyt, nzt,
-                                 NPSRC, SRCPROC,
-                                 ptpsrc, ptaxx, ptayy, ptazz,
-                                 ptaxz, ptayz, ptaxy, 1);
+        std::cerr << "Error: IFAULT == 2 is not implemented in CPU version.  Please use IFAULT=1 instead" << std::endl;
+        return 1;
     }
     return 0;
 }

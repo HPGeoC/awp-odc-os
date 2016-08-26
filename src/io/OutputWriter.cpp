@@ -77,7 +77,8 @@ void odc::io::OutputWriter::calcRecordingPoints(int *rec_nbgx, int *rec_nedx,
     return;
 }
 
-
+// TODO(Josh):  Output writer assumes at least some node from each rank is an
+//              output point;  should remove this requirement
 odc::io::OutputWriter::OutputWriter(odc::io::OptionParser i_options) {
     
     m_firstXNodeToRecord = i_options.m_nBgX;
@@ -116,11 +117,42 @@ odc::io::OutputWriter::OutputWriter(odc::io::OptionParser i_options) {
     m_numYNodesToRecord = (m_lastYNodeToRecord-m_firstYNodeToRecord)/m_numYNodesToSkip + 1;
     m_numZNodesToRecord = (m_lastZNodeToRecord-m_firstZNodeToRecord)/m_numZNodesToSkip + 1;
     
-    
-    // TODO: set up the global variables based on MPI rank
     m_numGlobalXNodesToRecord = m_numXNodesToRecord;
     m_numGlobalYNodesToRecord = m_numYNodesToRecord;
     m_numGlobalZNodesToRecord = m_numZNodesToRecord;
+
+    int_pt globalFirstX = m_firstXNodeToRecord;
+    int_pt globalFirstY = m_firstYNodeToRecord;
+    int_pt globalFirstZ = m_firstZNodeToRecord;
+ 
+    
+    while(m_firstXNodeToRecord < odc::parallel::Mpi::m_startX+1)
+      m_firstXNodeToRecord += m_numXNodesToSkip;
+    while(m_firstYNodeToRecord < odc::parallel::Mpi::m_startY+1)
+      m_firstYNodeToRecord += m_numYNodesToSkip;
+    while(m_firstZNodeToRecord < odc::parallel::Mpi::m_startZ+1)
+      m_firstZNodeToRecord += m_numZNodesToSkip;
+
+    m_lastXNodeToRecord = odc::parallel::Mpi::m_endX;
+    m_lastYNodeToRecord = odc::parallel::Mpi::m_endY;
+    m_lastZNodeToRecord = odc::parallel::Mpi::m_endZ;
+
+    m_lastXNodeToRecord -= (m_lastXNodeToRecord-m_firstXNodeToRecord) % m_numXNodesToSkip;
+    m_lastYNodeToRecord -= (m_lastYNodeToRecord-m_firstYNodeToRecord) % m_numYNodesToSkip;
+    m_lastZNodeToRecord -= (m_lastZNodeToRecord-m_firstZNodeToRecord) % m_numZNodesToSkip;
+
+    m_numXNodesToRecord = (m_lastXNodeToRecord-m_firstXNodeToRecord)/m_numXNodesToSkip + 1;
+    m_numYNodesToRecord = (m_lastYNodeToRecord-m_firstYNodeToRecord)/m_numYNodesToSkip + 1;
+    m_numZNodesToRecord = (m_lastZNodeToRecord-m_firstZNodeToRecord)/m_numZNodesToSkip + 1;
+    
+    int_pt strideX = sizeof(real);
+    int_pt strideY = m_numGlobalXNodesToRecord * strideX;
+    int_pt strideZ = m_numGlobalYNodesToRecord * strideY;
+    
+    m_displacement =  ((m_firstXNodeToRecord - globalFirstX) / m_numXNodesToSkip) * strideX;
+    m_displacement += ((m_firstYNodeToRecord - globalFirstY) / m_numYNodesToSkip) * strideY;
+    m_displacement += ((m_firstZNodeToRecord - globalFirstZ) / m_numZNodesToSkip) * strideZ;
+
     
     // Switch from 1-based indexing to 0-based indexing
     m_firstXNodeToRecord--;
@@ -192,111 +224,40 @@ odc::io::OutputWriter::OutputWriter(odc::io::OptionParser i_options) {
     snprintf(m_filenamebasex, sizeof(m_filenamebasex), "%s/SX", m_outputFolder);
     snprintf(m_filenamebasey, sizeof(m_filenamebasey), "%s/SY", m_outputFolder);
     snprintf(m_filenamebasez, sizeof(m_filenamebasez), "%s/SZ", m_outputFolder);
+
+    m_firstXNodeToRecord -= odc::parallel::Mpi::m_startX;
+    m_firstYNodeToRecord -= odc::parallel::Mpi::m_startY;
+    m_firstZNodeToRecord -= odc::parallel::Mpi::m_startZ;
+
+    m_lastXNodeToRecord -= odc::parallel::Mpi::m_startX;
+    m_lastYNodeToRecord -= odc::parallel::Mpi::m_startY;
+    m_lastZNodeToRecord -= odc::parallel::Mpi::m_startZ;
+    
     
 }
 
-void odc::io::OutputWriter::update(int_pt i_timestep, PatchDecomp& i_ptchDec, int_pt dimZ) {
+void odc::io::OutputWriter::update(int_pt i_timestep, PatchDecomp& i_ptchDec) {
     
     if (i_timestep % m_numTimestepsToSkip == 0) {
         
         int bufInd = (i_timestep/m_numTimestepsToSkip + m_writeStep-1) % m_writeStep;
         bufInd *= m_numGridPointsToRecord;
 
-        /*
-        // record node data into buffers
-        for (int_pt iz = dimZ - m_firstZNodeToRecord - 1; iz >= dimZ - m_lastZNodeToRecord; iz -= m_numZNodesToSkip) {
-            for (int_pt iy = m_firstYNodeToRecord; iy <= m_lastYNodeToRecord; iy += m_numYNodesToSkip) {
-                for (int_pt ix = m_firstXNodeToRecord; ix <= m_lastXNodeToRecord; ix += m_numXNodesToSkip) {
-                    
-                  m_velocityXWriteBuffer[bufInd] = velocityX[ix][iy][iz];
-                    m_velocityYWriteBuffer[bufInd] = velocityY[ix][iy][iz];
-                    m_velocityZWriteBuffer[bufInd] = velocityZ[ix][iy][iz];
-                    
-                    bufInd++;
-                }
-            }
-            }*/
         i_ptchDec.copyVelToBuffer(m_velocityXWriteBuffer + bufInd, m_velocityYWriteBuffer + bufInd,
                                   m_velocityZWriteBuffer + bufInd,
                                   m_firstXNodeToRecord, m_lastXNodeToRecord, m_numXNodesToSkip,
                                   m_firstYNodeToRecord, m_lastYNodeToRecord, m_numYNodesToSkip,
                                   m_firstZNodeToRecord, m_lastZNodeToRecord, m_numZNodesToSkip, i_timestep+1);
-        
+ 
         if ((i_timestep/m_numTimestepsToSkip) % m_writeStep == 0) {
-            
-            std::cout << "Writing to file" << std::endl;
-            
-            char filename[256];
-            MPI_File file;
-            
-            // TODO: calculate this through calcRecordingPoints to respect MPI topology
-            MPI_Offset displacement = 0;
-            MPI_Status filestatus;
-            
-            // Write x velocity data
-            snprintf(filename, sizeof(filename), "%s%07" AWP_PT_FORMAT_STRING, m_filenamebasex, i_timestep);
-            int err = MPI_File_open(MPI_COMM_WORLD, filename,
-                                MPI_MODE_CREATE|MPI_MODE_WRONLY,
-                                MPI_INFO_NULL, &file);
-            
-            err = MPI_File_set_view(file, displacement, AWP_MPI_REAL, m_filetype, "native", MPI_INFO_NULL);
-            err = MPI_File_write_all(file, m_velocityXWriteBuffer, m_numGridPointsToRecord*m_writeStep, AWP_MPI_REAL, &filestatus);
-            err = MPI_File_close(&file);
-            
-            // Write y velocity data
-            snprintf(filename, sizeof(filename), "%s%07" AWP_PT_FORMAT_STRING, m_filenamebasey, i_timestep);
-            err = MPI_File_open(MPI_COMM_WORLD, filename,
-                                    MPI_MODE_CREATE|MPI_MODE_WRONLY,
-                                    MPI_INFO_NULL, &file);
-            
-            err = MPI_File_set_view(file, displacement, AWP_MPI_REAL, m_filetype, "native", MPI_INFO_NULL);
-            err = MPI_File_write_all(file, m_velocityYWriteBuffer, m_numGridPointsToRecord*m_writeStep, AWP_MPI_REAL, &filestatus);
-            err = MPI_File_close(&file);
-            
-            // Write z velocity data
-            snprintf(filename, sizeof(filename), "%s%07" AWP_PT_FORMAT_STRING, m_filenamebasez, i_timestep);
-            err = MPI_File_open(MPI_COMM_WORLD, filename,
-                                MPI_MODE_CREATE|MPI_MODE_WRONLY,
-                                MPI_INFO_NULL, &file);
-            
-            err = MPI_File_set_view(file, displacement, AWP_MPI_REAL, m_filetype, "native", MPI_INFO_NULL);
-            err = MPI_File_write_all(file, m_velocityZWriteBuffer, m_numGridPointsToRecord*m_writeStep, AWP_MPI_REAL, &filestatus);
-            err = MPI_File_close(&file);
-        }
-             
-    }
-}
 
-void odc::io::OutputWriter::oldUpdate(int_pt i_timestep, Grid3D velocityX, Grid3D velocityY, Grid3D velocityZ, int_pt dimZ) {
-    
-    if (i_timestep % m_numTimestepsToSkip == 0) {
-        
-        int bufInd = (i_timestep/m_numTimestepsToSkip + m_writeStep-1) % m_writeStep;
-        bufInd *= m_numGridPointsToRecord;
-        
-        // record node data into buffers
-        for (int_pt iz = dimZ - m_firstZNodeToRecord - 1; iz >= dimZ - m_lastZNodeToRecord; iz -= m_numZNodesToSkip) {
-            for (int_pt iy = m_firstYNodeToRecord; iy <= m_lastYNodeToRecord; iy += m_numYNodesToSkip) {
-                for (int_pt ix = m_firstXNodeToRecord; ix <= m_lastXNodeToRecord; ix += m_numXNodesToSkip) {
-                    
-                    m_velocityXWriteBuffer[bufInd] = velocityX[ix][iy][iz];
-                    m_velocityYWriteBuffer[bufInd] = velocityY[ix][iy][iz];
-                    m_velocityZWriteBuffer[bufInd] = velocityZ[ix][iy][iz];
-                    
-                    bufInd++;
-                }
-            }
-        }
-        
-        if ((i_timestep/m_numTimestepsToSkip) % m_writeStep == 0) {
-            
-            std::cout << "Writing to file" << std::endl;
+  	    if(odc::parallel::Mpi::m_rank == 0)
+              std::cout << "Writing to file" << std::endl;
             
             char filename[256];
             MPI_File file;
             
-            // TODO: calculate this through calcRecordingPoints to respect MPI topology
-            MPI_Offset displacement = 0;
+            MPI_Offset displacement = m_displacement;
             MPI_Status filestatus;
             
             // Write x velocity data
@@ -304,11 +265,11 @@ void odc::io::OutputWriter::oldUpdate(int_pt i_timestep, Grid3D velocityX, Grid3
             int err = MPI_File_open(MPI_COMM_WORLD, filename,
                                 MPI_MODE_CREATE|MPI_MODE_WRONLY,
                                 MPI_INFO_NULL, &file);
-            
+
             err = MPI_File_set_view(file, displacement, AWP_MPI_REAL, m_filetype, "native", MPI_INFO_NULL);
-            err = MPI_File_write_all(file, m_velocityXWriteBuffer, m_numGridPointsToRecord*m_writeStep, AWP_MPI_REAL, &filestatus);
+	    err = MPI_File_write_all(file, m_velocityXWriteBuffer, m_numGridPointsToRecord*m_writeStep, AWP_MPI_REAL, &filestatus);
             err = MPI_File_close(&file);
-            
+
             // Write y velocity data
             snprintf(filename, sizeof(filename), "%s%07" AWP_PT_FORMAT_STRING, m_filenamebasey, i_timestep);
             err = MPI_File_open(MPI_COMM_WORLD, filename,
@@ -347,51 +308,34 @@ odc::io::CheckpointWriter::CheckpointWriter(char *chkfile, int_pt nd, int_pt tim
     m_numTimestepsToSkip = timestepsToSkip;
     m_numZGridPoints = numZGridPoints;
     std::strncpy(m_checkPointFileName, chkfile, sizeof(m_checkPointFileName));
+
+    m_rcdX = m_nd;
+    m_rcdY = m_nd;
+    m_rcdZ = m_numZGridPoints - 1 - m_nd;
+
+    m_ownedByThisRank = odc::parallel::Mpi::isInThisRank(m_rcdX, m_rcdY, m_rcdZ);
 }
 
 void odc::io::CheckpointWriter::writeUpdatedStats(int_pt currentTimeStep, PatchDecomp& i_ptchDec) {
-    
-    if (currentTimeStep % m_numTimestepsToSkip == 0) {
+
+    if (m_ownedByThisRank && currentTimeStep % m_numTimestepsToSkip == 0) {
         if (!m_checkPointFile) {
             m_checkPointFile = std::fopen(m_checkPointFileName,"a+");
         }
 
+	// TODO(Josh): This update seems pointless?  Is there a reason?
 #ifdef YASK
         currentTimeStep++;
 #endif
-        
-        int_pt i = m_nd;
-        int_pt j = i;
-        int_pt k = m_numZGridPoints-1-m_nd;        
         fprintf(m_checkPointFile,"%" AWP_PT_FORMAT_STRING " :\t%e\t%e\t%e\n",
 #ifdef YASK
                 currentTimeStep-1,
 #else
                 currentTimeStep,
 #endif
-                i_ptchDec.getVelX(i,j,k,currentTimeStep),
-                i_ptchDec.getVelY(i,j,k,currentTimeStep),
-                i_ptchDec.getVelZ(i,j,k,currentTimeStep));
-        
-        fflush(m_checkPointFile);
-        
-    }
-    
-}
-
-void odc::io::CheckpointWriter::oldWriteUpdatedStats(int_pt currentTimeStep, Grid3D velocityX, Grid3D velocityY,
-                                                  Grid3D velocityZ) {
-    
-    if (currentTimeStep % m_numTimestepsToSkip == 0) {
-        if (!m_checkPointFile) {
-            m_checkPointFile = std::fopen(m_checkPointFileName,"a+");
-        }
-        
-        int_pt i = m_nd;
-        int_pt j = i;
-        int_pt k = m_numZGridPoints-1-m_nd;
-        fprintf(m_checkPointFile,"%" AWP_PT_FORMAT_STRING " :\t%e\t%e\t%e\n", currentTimeStep,
-                velocityX[i][j][k], velocityY[i][j][k], velocityZ[i][j][k]);
+                i_ptchDec.getVelX(m_rcdX,m_rcdY,m_rcdZ,currentTimeStep),
+                i_ptchDec.getVelY(m_rcdX,m_rcdY,m_rcdZ,currentTimeStep),
+                i_ptchDec.getVelZ(m_rcdX,m_rcdY,m_rcdZ,currentTimeStep));
         
         fflush(m_checkPointFile);
         
@@ -403,11 +347,21 @@ void odc::io::CheckpointWriter::writeInitialStats(int_pt ntiskp, real dt, real d
                                                   int_pt nt, real arbc, int_pt npc, int_pt nve, real fac, real q0, real ex, real fp,
                                                   real vse_min, real vse_max, real vpe_min, real vpe_max,
                                                   real dde_min, real dde_max) {
+
+    if(!m_ownedByThisRank)
+    {
+      return;
+    }
     
     FILE *fchk;
     
     fchk = std::fopen(m_checkPointFileName,"w");
     fprintf(fchk,"STABILITY CRITERIA .5 > CMAX*DT/DX:\t%f\n",vpe_max*dt/dh);
+    if(vpe_max*dt/dh >= 0.5)
+    {
+      fprintf(fchk,"!! WARNING: STABILITY CRITERIA NOT MET, MAY DIVERGE !!\n");
+    }
+    
     fprintf(fchk,"# OF X,Y,Z NODES PER PROC:\t%" AWP_PT_FORMAT_STRING ", %" AWP_PT_FORMAT_STRING ", %" AWP_PT_FORMAT_STRING "\n",nxt,nyt,nzt);
     fprintf(fchk,"# OF TIME STEPS:\t%" AWP_PT_FORMAT_STRING "\n",nt);
     fprintf(fchk,"DISCRETIZATION IN SPACE:\t%f\n",dh);

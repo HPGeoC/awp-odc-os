@@ -172,6 +172,18 @@ public:
   real   getVelX(int_pt i_x, int_pt i_y, int_pt i_z, int_pt i_timestep);
 
   /**
+   * Maps patch & local coordinates to the x velocity of that point,
+   * at a given time index (not used for AWP-vanilla, just YASK)
+   *
+   * @param i_ptch id of patch containing this point 
+   * @param i_locX x-coordinate 
+   * @param i_locY y-coordinate 
+   * @param i_locZ z-coordinate
+   * @param i_timestep desired time index 
+   **/                
+  real   getVelX(int_pt i_ptch, int_pt i_locX, int_pt i_locY, int_pt i_locZ, int_pt i_timestep);
+
+  /**
    * Maps global coordinates to the y velocity of that point,
    * at a given time index (not used for AWP-vanilla, just YASK)
    *
@@ -183,7 +195,19 @@ public:
   real   getVelY(int_pt i_x, int_pt i_y, int_pt i_z, int_pt i_timestep);
 
   /**
-   * Maps global coordinates to the \ velocity of that point,
+   * Maps patch & local coordinates to the y velocity of that point,
+   * at a given time index (not used for AWP-vanilla, just YASK)
+   *
+   * @param i_ptch id of patch containing this point 
+   * @param i_locX x-coordinate 
+   * @param i_locY y-coordinate 
+   * @param i_locZ z-coordinate
+   * @param i_timestep desired time index 
+   **/                
+  real   getVelY(int_pt i_ptch, int_pt i_locX, int_pt i_locY, int_pt i_locZ, int_pt i_timestep);
+
+  /**
+   * Maps global coordinates to the z velocity of that point,
    * at a given time index (not used for AWP-vanilla, just YASK)
    *
    * @param x x-coordinate 
@@ -194,6 +218,223 @@ public:
   real   getVelZ(int_pt i_x, int_pt i_y, int_pt i_z, int_pt i_timestep);
 
   /**
+   * Maps patch & local coordinates to the z velocity of that point,
+   * at a given time index (not used for AWP-vanilla, just YASK)
+   *
+   * @param i_ptch id of patch containing this point 
+   * @param i_locX x-coordinate 
+   * @param i_locY y-coordinate 
+   * @param i_locZ z-coordinate
+   * @param i_timestep desired time index 
+   **/                
+  real   getVelZ(int_pt i_ptch, int_pt i_locX, int_pt i_locY, int_pt i_locZ, int_pt i_timestep);
+
+  /**
+   * Sets x velocity of the point at given patchId and local coords,
+   * at a given time index (not used for AWP-vanilla, just YASK)
+   *
+   * @param i_vel new velocity value 
+   * @param i_ptch id of patch containing this point 
+   * @param i_locX x-coordinate 
+   * @param i_locY y-coordinate 
+   * @param i_locZ z-coordinate
+   * @param i_timestep desired time index 
+   **/                
+  void   setVelX(real i_vel, int_pt i_ptch, int_pt i_locX, int_pt i_locY, int_pt i_locZ, int_pt i_timestep);
+
+  /**
+   * Sets y velocity of the point at given patchId and local coords,
+   * at a given time index (not used for AWP-vanilla, just YASK)
+   *
+   * @param i_vel new velocity value 
+   * @param i_ptch id of patch containing this point 
+   * @param i_locX x-coordinate 
+   * @param i_locY y-coordinate 
+   * @param i_locZ z-coordinate
+   * @param i_timestep desired time index 
+   **/                
+  void   setVelY(real i_vel, int_pt i_ptch, int_pt i_locX, int_pt i_locY, int_pt i_locZ, int_pt i_timestep);
+
+  /**
+   * Sets z velocity of the point at given patchId and local coords,
+   * at a given time index (not used for AWP-vanilla, just YASK)
+   *
+   * @param i_vel new velocity value 
+   * @param i_ptch id of patch containing this point 
+   * @param i_locX x-coordinate 
+   * @param i_locY y-coordinate 
+   * @param i_locZ z-coordinate
+   * @param i_timestep desired time index 
+   **/                
+  void   setVelZ(real i_vel, int_pt i_ptch, int_pt i_locX, int_pt i_locY, int_pt i_locZ, int_pt i_timestep);
+
+  /**
+   * Maps patch & local coordinates to the xx stress of that point,
+   * at a given time index (not used for AWP-vanilla, just YASK)
+   *
+   * @param i_ptch id of patch containing this point 
+   * @param i_locX x-coordinate 
+   * @param i_locY y-coordinate 
+   * @param i_locZ z-coordinate
+   * @param i_timestep desired time index 
+   **/                
+  real   getStressXX(int_pt i_ptch, int_pt i_locX, int_pt i_locY, int_pt i_locZ, int_pt i_timestep);
+  
+  /**
+   * Maps patch & local coordinates to the xy stress of that point,
+   * at a given time index (not used for AWP-vanilla, just YASK)
+   *
+   * @param i_ptch id of patch containing this point 
+   * @param i_locX x-coordinate 
+   * @param i_locY y-coordinate 
+   * @param i_locZ z-coordinate
+   * @param i_timestep desired time index 
+   **/                
+  real   getStressXY(int_pt i_ptch, int_pt i_locX, int_pt i_locY, int_pt i_locZ, int_pt i_timestep);
+  
+  /**
+   * Maps patch & local coordinates to the xz stress of that point,
+   * at a given time index (not used for AWP-vanilla, just YASK)
+   *
+   * @param i_ptch id of patch containing this point 
+   * @param i_locX x-coordinate 
+   * @param i_locY y-coordinate 
+   * @param i_locZ z-coordinate
+   * @param i_timestep desired time index 
+   **/                
+  real   getStressXZ(int_pt i_ptch, int_pt i_locX, int_pt i_locY, int_pt i_locZ, int_pt i_timestep);
+  
+  /**
+   * Maps patch & local coordinates to the yy stress of that point,
+   * at a given time index (not used for AWP-vanilla, just YASK)
+   *
+   * @param i_ptch id of patch containing this point 
+   * @param i_locX x-coordinate 
+   * @param i_locY y-coordinate 
+   * @param i_locZ z-coordinate
+   * @param i_timestep desired time index 
+   **/                
+  real   getStressYY(int_pt i_ptch, int_pt i_locX, int_pt i_locY, int_pt i_locZ, int_pt i_timestep);
+  
+  /**
+   * Maps patch & local coordinates to the yz stress of that point,
+   * at a given time index (not used for AWP-vanilla, just YASK)
+   *
+   * @param i_ptch id of patch containing this point 
+   * @param i_locX x-coordinate 
+   * @param i_locY y-coordinate 
+   * @param i_locZ z-coordinate
+   * @param i_timestep desired time index 
+   **/                
+  real   getStressYZ(int_pt i_ptch, int_pt i_locX, int_pt i_locY, int_pt i_locZ, int_pt i_timestep);
+  
+  /**
+   * Maps patch & local coordinates to the zz stress of that point,
+   * at a given time index (not used for AWP-vanilla, just YASK)
+   *
+   * @param i_ptch id of patch containing this point 
+   * @param i_locX x-coordinate 
+   * @param i_locY y-coordinate 
+   * @param i_locZ z-coordinate
+   * @param i_timestep desired time index 
+   **/                
+  real   getStressZZ(int_pt i_ptch, int_pt i_locX, int_pt i_locY, int_pt i_locZ, int_pt i_timestep);
+
+  /**
+   * Sets xx stress of the point at given patchId and local coords,
+   * at a given time index (not used for AWP-vanilla, just YASK)
+   *
+   * @param i_stress new velocity value 
+   * @param i_ptch id of patch containing this point 
+   * @param i_locX x-coordinate 
+   * @param i_locY y-coordinate 
+   * @param i_locZ z-coordinate
+   * @param i_timestep desired time index 
+   **/                
+  void   setStressXX(real i_stress, int_pt i_ptch, int_pt i_locX, int_pt i_locY, int_pt i_locZ, int_pt i_timestep);
+
+  /**
+   * Sets xy stress of the point at given patchId and local coords,
+   * at a given time index (not used for AWP-vanilla, just YASK)
+   *
+   * @param i_stress new velocity value 
+   * @param i_ptch id of patch containing this point 
+   * @param i_locX x-coordinate 
+   * @param i_locY y-coordinate 
+   * @param i_locZ z-coordinate
+   * @param i_timestep desired time index 
+   **/                
+  void   setStressXY(real i_stress, int_pt i_ptch, int_pt i_locX, int_pt i_locY, int_pt i_locZ, int_pt i_timestep);
+
+  /**
+   * Sets xz stress of the point at given patchId and local coords,
+   * at a given time index (not used for AWP-vanilla, just YASK)
+   *
+   * @param i_stress new velocity value 
+   * @param i_ptch id of patch containing this point 
+   * @param i_locX x-coordinate 
+   * @param i_locY y-coordinate 
+   * @param i_locZ z-coordinate
+   * @param i_timestep desired time index 
+   **/                
+  void   setStressXZ(real i_stress, int_pt i_ptch, int_pt i_locX, int_pt i_locY, int_pt i_locZ, int_pt i_timestep);
+
+   /**
+   * Sets yy stress of the point at given patchId and local coords,
+   * at a given time index (not used for AWP-vanilla, just YASK)
+   *
+   * @param i_stress new velocity value 
+   * @param i_ptch id of patch containing this point 
+   * @param i_locX x-coordinate 
+   * @param i_locY y-coordinate 
+   * @param i_locZ z-coordinate
+   * @param i_timestep desired time index 
+   **/                
+  void   setStressYY(real i_stress, int_pt i_ptch, int_pt i_locX, int_pt i_locY, int_pt i_locZ, int_pt i_timestep);
+
+  /**
+   * Sets yz stress of the point at given patchId and local coords,
+   * at a given time index (not used for AWP-vanilla, just YASK)
+   *
+   * @param i_stress new velocity value 
+   * @param i_ptch id of patch containing this point 
+   * @param i_locX x-coordinate 
+   * @param i_locY y-coordinate 
+   * @param i_locZ z-coordinate
+   * @param i_timestep desired time index 
+   **/                
+  void   setStressYZ(real i_stress, int_pt i_ptch, int_pt i_locX, int_pt i_locY, int_pt i_locZ, int_pt i_timestep);
+
+  /**
+   * Sets zz stress of the point at given patchId and local coords,
+   * at a given time index (not used for AWP-vanilla, just YASK)
+   *
+   * @param i_stress new velocity value 
+   * @param i_ptch id of patch containing this point 
+   * @param i_locX x-coordinate 
+   * @param i_locY y-coordinate 
+   * @param i_locZ z-coordinate
+   * @param i_timestep desired time index 
+   **/                
+  void   setStressZZ(real i_stress, int_pt i_ptch, int_pt i_locX, int_pt i_locY, int_pt i_locZ, int_pt i_timestep);
+
+  /**
+   * Perform MPI synchronization of velocity grids in a given direction.
+   *
+   * @param i_dir direction of boundaryto synchronize: 0 = x, 1 = y, 2 = z
+   * @param i_timestep timestep to copy from
+   **/                  
+  void velMpiSynchronize(int i_dir, int_pt i_timestep);
+
+  /**
+   * Perform MPI synchronization of stress grids in a given direction.
+   *
+   * @param i_dir direction of boundaryto synchronize: 0 = x, 1 = y, 2 = z
+   * @param i_timestep timestep to copy from
+   **/                  
+  void stressMpiSynchronize(int i_dir, int_pt i_timestep);  
+
+ /**
    * Copy velocities to 1D buffers, ordered as required by OutputWriter.
    *
    * @param o_bufferX buffer for x velocities
@@ -216,6 +457,54 @@ public:
                        int_pt i_firstZ, int_pt i_lastZ, int_pt i_skipZ,
                        int_pt i_timestep);
 
+  /**
+   * Copy velocity boundary to 1D buffers for MPI.
+   *
+   * @param o_buffer buffer for velocities
+   * @param i_dirX x direction of boundary
+   * @param i_dirY y direction of boundary
+   * @param i_dirZ z direction of boundary
+   * @param i_timestep timestep to copy from
+   **/                  
+  void copyVelBoundaryToBuffer(real* o_buffer, int i_dirX, int i_dirY,
+			       int i_dirZ, int_pt i_timestep);
+  
+  /**
+   * Copy velocity boundary from 1D buffers from MPI.
+   *
+   * @param o_buffer buffer for velocities
+   * @param i_dirX x direction of boundary
+   * @param i_dirY y direction of boundary
+   * @param i_dirZ z direction of boundary
+   * @param i_timestep timestep to copy to
+   **/                  
+  void copyVelBoundaryFromBuffer(real* o_buffer, int i_dirX, int i_dirY,
+			       int i_dirZ, int_pt i_timestep);
+
+  /**
+   * Copy stress boundary to 1D buffers for MPI.
+   *
+   * @param o_buffer buffer for stress
+   * @param i_dirX x direction of boundary
+   * @param i_dirY y direction of boundary
+   * @param i_dirZ z direction of boundary
+   * @param i_timestep timestep to copy from
+   **/                  
+  void copyStressBoundaryToBuffer(real* o_buffer, int i_dirX, int i_dirY,
+			       int i_dirZ, int_pt i_timestep);
+  
+  /**
+   * Copy stress boundary from 1D buffers from MPI.
+   *
+   * @param o_buffer buffer for stress
+   * @param i_dirX x direction of boundary
+   * @param i_dirY y direction of boundary
+   * @param i_dirZ z direction of boundary
+   * @param i_timestep timestep to copy to
+   **/                  
+  void copyStressBoundaryFromBuffer(real* o_buffer, int i_dirX, int i_dirY,
+			       int i_dirZ, int_pt i_timestep);
+  
   /**
    * Gets max/min tmpvs observed during mesh initialization.
    *

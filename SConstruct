@@ -108,7 +108,7 @@ elif env['parallelization'] in ['mpi_omp']:
    env.Append( CPPFLAGS = ['-fopenmp'])
    env.Append( LINKFLAGS = ['-fopenmp'] )
 elif env['parallelization'] in ['mpi_omp_yask']:
-   env.Append( CPPDEFINES = ['USE_MPI'] )
+   env.Append( CPPDEFINES = ['AWP_USE_MPI'] )
    env.Append( CPPDEFINES = ['YASK',
                              'ALIGNMENT=64',
                              'REAL_BYTES=4',

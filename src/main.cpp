@@ -17,6 +17,9 @@
  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+// TODO(Josh): verify that source term indexing matches GPU, comment thoroughly
+// TODO(Josh): add checks for READ_STEP
+
 #include "parallel/Mpi.hpp"
 #include "parallel/OpenMP.h"
 
@@ -57,10 +60,6 @@ double wall_time()
   }
   return (double) t.tv_sec + 0.000001 * (double) t.tv_usec;
 }
-
-// define statics
-int odc::parallel::Mpi::m_rank;
-int odc::parallel::Mpi::m_size;
 
 #define PATCH_X 1024
 #define PATCH_Y 1024
@@ -115,31 +114,45 @@ void applyYASKStencil(STENCIL_CONTEXT context, STENCIL_EQUATIONS *stencils, int 
 
 int main( int i_argc, char *i_argv[] ) {
 
-    std::cout << "welcome to AWP-ODC" << std::endl;    
-    
-    
-    std::cout << "starting MPI" << std::endl;
-    // Fire up MPI, dummy call for non-mpi compilation
-    odc::parallel::Mpi::initialize( i_argc, i_argv );
+    std::cout << "Welcome to AWP-ODC-OS" << std::endl;    
     
     
     // parse options
+    std::cout << "Parsing command line options" << std::endl;
     odc::io::OptionParser l_options( i_argc, i_argv );
 
+    
+#ifdef AWP_USE_MPI    
+    std::cout << "starting MPI" << std::endl;
+#endif
+    
+    // Fire up MPI, dummy call for non-mpi compilation
+    if(!odc::parallel::Mpi::initialize( i_argc, i_argv, l_options ))
+    {
+      std::cout << "\tError during MPI initialization, aborting." << std::endl;
+      return 0;
+    }
+
+    int l_rank = odc::parallel::Mpi::m_rank;
+    
+    int_pt l_rangeX = odc::parallel::Mpi::m_rangeX;
+    int_pt l_rangeY = odc::parallel::Mpi::m_rangeY;
+    int_pt l_rangeZ = odc::parallel::Mpi::m_rangeZ;
+    int_pt l_numRanks = odc::parallel::Mpi::m_size;
     
     std::cout << "setting up data structures" << std::endl;
 
     // initialize patches
     PatchDecomp patch_decomp;
-    patch_decomp.initialize(l_options, l_options.m_nX, l_options.m_nY, l_options.m_nZ,
+    patch_decomp.initialize(l_options, l_rangeX, l_rangeY, l_rangeZ,
                             PATCH_X, PATCH_Y, PATCH_Z, BDRY_SIZE);
-    
-    
+        
     // set up checkpoint writer
     odc::io::CheckpointWriter l_checkpoint(l_options.m_chkFile, l_options.m_nD,
                                            l_options.m_nTiSkp, l_options.m_nZ);
-    
-    l_checkpoint.writeInitialStats(l_options.m_nTiSkp, l_options.m_dT, l_options.m_dH,
+
+    if(l_rank == 0)
+      l_checkpoint.writeInitialStats(l_options.m_nTiSkp, l_options.m_dT, l_options.m_dH,
                                    l_options.m_nX, l_options.m_nY,
                                    l_options.m_nZ, l_options.m_numTimesteps,
                                    l_options.m_arbc, l_options.m_nPc, l_options.m_nVe,
@@ -153,11 +166,13 @@ int main( int i_argc, char *i_argv[] ) {
     
     
     // set up output writer
-    std::cout << "initialized output writer: " << std::endl;
+    if(l_rank == 0)
+      std::cout << "initialized output writer: " << std::endl;
     odc::io::OutputWriter l_output(l_options);
     
     // initialize sources
-    std::cout << "initializing sources" << std::endl;
+    if(l_rank == 0)
+      std::cout << "initializing sources" << std::endl;
     
     // TODO: Number of nodes (nx, ny, nz) should be aware of MPI partitioning.
     odc::io::Sources l_sources(l_options.m_iFault,
@@ -171,7 +186,8 @@ int main( int i_argc, char *i_argv[] ) {
     
         
     // If one or more source fault nodes are owned by this process then call "addsrc" to update the stress tensor values
-    std::cout << "Add initial rupture source" << std::endl;
+    if(l_rank == 0)
+      std::cout << "Add initial rupture source" << std::endl;
     int_pt initial_ts = 0;
 #ifdef YASK
     //TODO(Josh): why is this offset needed?
@@ -180,6 +196,9 @@ int main( int i_argc, char *i_argv[] ) {
     l_sources.addsrc(initial_ts, l_options.m_dH, l_options.m_dT, l_options.m_nSt,
                      l_options.m_readStep, 3, patch_decomp);
 
+    for(int i_dir=0; i_dir<3; i_dir++)
+      patch_decomp.stressMpiSynchronize(i_dir,0);
+    
     patch_decomp.synchronize();
     
     // Calculate strides
@@ -218,9 +237,9 @@ int main( int i_argc, char *i_argv[] ) {
         Patch* p = &patch_decomp.m_patches[p_id];
         int_pt h = p->bdry_width;
 
-        bool on_x_max_bdry = l_omp.isOnXMaxBdry(p_id);
-        bool on_y_zero_bdry = l_omp.isOnYZeroBdry(p_id);
-        bool on_z_bdry = l_omp.isOnZBdry(p_id);
+        bool on_x_max_bdry = (odc::parallel::Mpi::coords[0] == odc::parallel::Mpi::m_ranksX) && l_omp.isOnXMaxBdry(p_id);
+        bool on_y_zero_bdry = (odc::parallel::Mpi::coords[1]==0) && l_omp.isOnYZeroBdry(p_id);
+        bool on_z_bdry = (odc::parallel::Mpi::coords[2]==0) && l_omp.isOnZBdry(p_id);
         
         int_pt l_start[3];
         int_pt l_size[3];
@@ -245,10 +264,9 @@ int main( int i_argc, char *i_argv[] ) {
           else
             tstep = tloop * 1 + tval + 1;           
         
-          if(l_omp.getThreadNumAll() == 0 && ptch == 0) {
+          if(l_omp.getThreadNumAll() == 0 && ptch == 0 && l_rank == 0) {
             std::cout << "Beginning  timestep: " << tstep <<  ' ' << tval << ' ' << tloop << ' ' << startMultUpdates << std::endl;
           }
-
 
           if(l_omp.participates(ptch)) {
 #ifdef YASK
@@ -268,6 +286,11 @@ int main( int i_argc, char *i_argv[] ) {
 
           #pragma omp barrier
 
+	  // synchronize velocity over MPI in all 3 dimensions
+	  for(int i_dir=0; i_dir<3; i_dir++)
+            patch_decomp.velMpiSynchronize(i_dir,tstep+1);
+	  
+
           if(l_omp.participates(ptch) && on_z_bdry) {
 #ifdef YASK
             yask_update_free_surface_boundary_velocity((Grid_TXYZ *)p->yask_context.vel_x,
@@ -284,8 +307,9 @@ int main( int i_argc, char *i_argv[] ) {
 #endif
           }
           #pragma omp barrier
-            
 
+	  
+	      
 
           if(l_omp.participates(ptch)) {        
 #ifdef YASK
@@ -324,6 +348,9 @@ int main( int i_argc, char *i_argv[] ) {
           }
           #pragma omp barrier
 
+
+	  
+	  
           if(l_omp.participates(ptch) && on_z_bdry) {
 #ifdef YASK
             yask_update_free_surface_boundary_stress((Grid_TXYZ *)p->yask_context.stress_zz,(Grid_TXYZ *)p->yask_context.stress_xz,
@@ -337,7 +364,7 @@ int main( int i_argc, char *i_argv[] ) {
           #pragma omp barrier            
         
           
-          if (tstep < l_options.m_nSt) {
+          if (tstep < l_options.m_nSt) {  
             update_stress_from_fault_sources(tstep, l_options.m_readStep, 3,
                                              &l_sources.m_ptpSrc[0], l_sources.m_nPsrc,
                                              l_options.m_nX, l_options.m_nY, l_options.m_nZ,
@@ -345,12 +372,15 @@ int main( int i_argc, char *i_argv[] ) {
                                              &l_sources.m_ptAxx[0], &l_sources.
                                              m_ptAxy[0], &l_sources.m_ptAxz[0], &l_sources.m_ptAyy[0], &l_sources.m_ptAyz[0],
                                              &l_sources.m_ptAzz[0], l_options.m_dT, l_options.m_dH,
-                                             patch_decomp, start_x - BDRY_SIZE, start_y - BDRY_SIZE, start_z - BDRY_SIZE,
+                                             patch_decomp, start_x, start_y, start_z,
                                              size_x, size_y, size_z, p_id);
           }
 
+	  for(int i_dir=0; i_dir<3; i_dir++)
+     	    patch_decomp.stressMpiSynchronize(i_dir,tstep+1);	  
+
           if(l_omp.getThreadNumAll() == 0 && ptch == l_maxPtchsPerWgrp - 1 && tval == n_tval-1) {
-            if (tstep >= l_options.m_nSt) {
+            if (tstep >= l_options.m_nSt && l_rank == 0) {
               if (start_time < 0) {
                 start_time = wall_time();
                 start_ts = tstep;              
@@ -366,9 +396,9 @@ int main( int i_argc, char *i_argv[] ) {
             }
           
             patch_decomp.synchronize();
-            
-            l_output.update(tstep, patch_decomp, l_options.m_nZ);
-            l_checkpoint.writeUpdatedStats(tstep, patch_decomp);
+
+            l_output.update(tstep, patch_decomp);
+	    l_checkpoint.writeUpdatedStats(tstep, patch_decomp);
           }
         }
 

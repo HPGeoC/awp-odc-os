@@ -1034,6 +1034,14 @@ void odc::data::Mesh::new_inimesh(int MEDIASTART,
   printf("tau: %e,%e; %e,%e; %e,%e; %e,%e\n",
          tau[0][0][0],tau[1][0][0],tau[0][1][0],tau[1][1][0],
          tau[0][0][1],tau[1][0][1],tau[0][1][1],tau[1][1][1]);
+
+  if(MEDIASTART != 0 && odc::parallel::Mpi::m_size != 1)
+  {
+    printf("Error: Only MEDIASTART=0 is currently supported by MPI.\n");
+    printf("\tReverting to MEDIASTART=0");
+    MEDIASTART=0;
+  }
+  
   if(MEDIASTART==0)
   {
     if(IDYNA==1)
@@ -1044,18 +1052,30 @@ void odc::data::Mesh::new_inimesh(int MEDIASTART,
     }
     else
     {
-      vp=4800.0;
-      vs=2800.0;
+      vp=1800.0; // was 4800.
+      vs=1600.0; // was 2800. 
       dd=2500.0;
     }
-        
-    for(int_pt i=0;i<nxt;i++)
-      for(int_pt j=0;j<nyt;j++)
-        for(int_pt k=0;k<nzt;k++)
+
+    m_vse[0] = vs;
+    m_vse[1] = vs;
+    m_vpe[0] = vp;
+    m_vpe[1] = vp;
+    m_dde[0] = dd;
+    m_dde[1] = dd;
+    
+    for(int_pt i=-1;i<nxt+1;i++)
+      for(int_pt j=-1;j<nyt+1;j++)
+        for(int_pt k=-1;k<nzt+1;k++)
         {
           //TODO(Josh): optimize this
           int_pt offset = i * i_strideX + j * i_strideY + k * i_strideZ;
 
+	  if(NVE==1)
+	  {
+	    qp[offset] = 0.00416667;
+	    qs[offset] = 0.00833333;
+          }
           
 #ifdef YASK
           lam_grid->writeElem(1./(dd*(vp*vp - 2.*vs*vs)), i+bdry_width, j+bdry_width, k+bdry_width, 0);
