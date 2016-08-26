@@ -68,8 +68,7 @@ bool odc::parallel::Mpi::initialize( int i_argc, char *i_argv[], odc::io::Option
 
   if(thread_environment < MPI_THREAD_SERIALIZED)
   {
-    std::cerr << "Error: could not initialize correct thread level" << std::endl;
-    return false;
+    std::cerr << "Warning: could not initialize correct thread level for several threads" << std::endl;
   }
 	
   MPI_Comm_size( MPI_COMM_WORLD, &m_size);
