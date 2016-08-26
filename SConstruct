@@ -103,7 +103,7 @@ elif env['parallelization'] in ['mpi_cuda']:
    env.Append( CPPDEFINES = ['USE_CUDA'] )
    env.Append( CPPDEFINES = ['USE_MPI'] )
 elif env['parallelization'] in ['mpi_omp']:
-   env.Append( CPPDEFINES = ['USE_MPI'] )
+   env.Append( CPPDEFINES = ['AWP_USE_MPI'] )
    env.Append( CPPDEFINES = ['ALIGNMENT=64'] )
    env.Append( CPPFLAGS = ['-fopenmp'])
    env.Append( LINKFLAGS = ['-fopenmp'] )
