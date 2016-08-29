@@ -202,11 +202,11 @@ int main( int i_argc, char *i_argv[] ) {
     patch_decomp.synchronize();
     
     // Calculate strides
-    int_pt strideX = (l_options.m_nY+2*odc::constants::boundary)*(l_options.m_nZ+2*odc::constants::boundary);
-    int_pt strideY = l_options.m_nZ+2*odc::constants::boundary;
+    int_pt strideX = (odc::parallel::Mpi::m_rangeY+2*odc::constants::boundary)*(odc::parallel::Mpi::m_rangeZ+2*odc::constants::boundary);
+    int_pt strideY = odc::parallel::Mpi::m_rangeZ+2*odc::constants::boundary;
     int_pt strideZ = 1;
     
-    int_pt lamMuStrideX = l_options.m_nY+2*odc::constants::boundary;
+    int_pt lamMuStrideX = odc::parallel::Mpi::m_rangeY+2*odc::constants::boundary;
 
     int_pt numUpdatesPerIter = BDRY_SIZE/6;
     int_pt startMultUpdates = l_options.m_nSt;
@@ -218,9 +218,10 @@ int main( int i_argc, char *i_argv[] ) {
     double start_time = -1.;
     int start_ts = 0;
     
-    int tdsPerWgrp[4] = {1,16,16,16};
+    int tdsPerWgrp[4] = {2,16,16,16};
 
-    odc::parallel::OpenMP l_omp(l_options.m_nX, l_options.m_nY, l_options.m_nZ,
+    odc::parallel::OpenMP l_omp(odc::parallel::Mpi::m_rangeX, odc::parallel::Mpi::m_rangeY, 
+				odc::parallel::Mpi::m_rangeZ,
                                 1, tdsPerWgrp, patch_decomp);
     int_pt l_maxPtchsPerWgrp = l_omp.maxNumPtchsPerWgrp();
     
@@ -247,7 +248,7 @@ int main( int i_argc, char *i_argv[] ) {
 
         start_x = l_start[0]; start_y = l_start[1]; start_z = l_start[2];
         size_x = l_size[0]; size_y = l_size[1]; size_z = l_size[2];
-
+	
         #pragma omp barrier
         
 
@@ -287,8 +288,13 @@ int main( int i_argc, char *i_argv[] ) {
           #pragma omp barrier
 
 	  // synchronize velocity over MPI in all 3 dimensions
-	  for(int i_dir=0; i_dir<3; i_dir++)
-            patch_decomp.velMpiSynchronize(i_dir,tstep+1);
+	  if(l_omp.getThreadNumAll() == 0)
+          {
+	    for(int i_dir=0; i_dir<3; i_dir++)
+              patch_decomp.velMpiSynchronize(i_dir,tstep+1);
+	  }
+
+	  #pragma omp barrier
 	  
 
           if(l_omp.participates(ptch) && on_z_bdry) {
@@ -376,9 +382,16 @@ int main( int i_argc, char *i_argv[] ) {
                                              size_x, size_y, size_z, p_id);
           }
 
-	  for(int i_dir=0; i_dir<3; i_dir++)
-     	    patch_decomp.stressMpiSynchronize(i_dir,tstep+1);	  
+	  #pragma omp barrier
+	  
+	  if(l_omp.getThreadNumAll() == 0)
+	  {
+	    for(int i_dir=0; i_dir<3; i_dir++)
+     	      patch_decomp.stressMpiSynchronize(i_dir,tstep+1);	  
+	  }
 
+	  #pragma omp barrier
+	  
           if(l_omp.getThreadNumAll() == 0 && ptch == l_maxPtchsPerWgrp - 1 && tval == n_tval-1) {
             if (tstep >= l_options.m_nSt && l_rank == 0) {
               if (start_time < 0) {
@@ -401,8 +414,6 @@ int main( int i_argc, char *i_argv[] ) {
 	    l_checkpoint.writeUpdatedStats(tstep, patch_decomp);
           }
         }
-
-//        #pragma omp barrier
       }
     }
 }
