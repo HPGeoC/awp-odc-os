@@ -36,7 +36,7 @@ namespace odc {
     class WorkPackage;
     class OmpManager;
 
-    enum WorkPackageType;
+    enum WorkPackageType : unsigned short;
   }
 }
 
@@ -359,7 +359,7 @@ public:
  * Labels for the different types of work packages.  
  * Note(Josh): The long names make me squirm but that seems to be the style we are going with.
  **/
-enum odc::parallel::WorkPackageType
+enum odc::parallel::WorkPackageType : unsigned short
 {
   WP_VelUpdate,
   WP_StressUpdate,
