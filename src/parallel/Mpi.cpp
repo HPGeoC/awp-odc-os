@@ -127,6 +127,8 @@ bool odc::parallel::Mpi::initialize( int i_argc, char *i_argv[], odc::io::Option
       }
     }
   }
+  //m_neighborRanks[0][1][1] = m_neighborRanks[2][1][1] = 1;
+  //m_neighborRanks[1][0][1] = m_neighborRanks[1][2][1] = 1; // PPP: remove this
 	
   if(m_endX > i_options.m_nX)
     m_endX = i_options.m_nX;
@@ -150,7 +152,7 @@ bool odc::parallel::Mpi::initialize( int i_argc, char *i_argv[], odc::io::Option
     m_buffRecvSize[2][1][1] = m_rangeY * m_rangeZ * 2;
     m_buffSend[2][1][1] = (real*) malloc(max_num_grids * sizeof(real) * m_rangeY * m_rangeZ * 2);
     m_buffRecv[2][1][1] = (real*) malloc(max_num_grids * sizeof(real) * m_rangeY * m_rangeZ * 2);
-    }
+  }
 
   if(m_neighborRanks[1][0][1] != -1)
   {

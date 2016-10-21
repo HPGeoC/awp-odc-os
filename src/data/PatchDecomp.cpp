@@ -108,7 +108,6 @@ void PatchDecomp::initialize(odc::io::OptionParser i_options, int_pt xSize, int_
     if(patch_end_z > zSize)
       patch_end_z = zSize;
 
-    std::cout << "about to initialize patch..." << std::endl;
     int_pt buffer_offset = ( patch_start_z * m_numYGridPoints * m_numXGridPoints
                            + patch_start_y * m_numXGridPoints
                            + patch_start_x ) * nvar;
@@ -549,6 +548,138 @@ void PatchDecomp::copyVelBoundaryToBuffer(real* o_buffer, int i_dirX, int i_dirY
   }
 }
 
+void PatchDecomp::copyVelBoundaryToBuffer(real* o_buffer, int i_dirX, int i_dirY,
+			                  int i_dirZ, int_pt i_startX, int_pt i_startY, int_pt i_startZ,
+					  int_pt i_endX, int_pt i_endY, int_pt i_endZ, int_pt i_timestep)
+{
+  int_pt l_sizeX = m_numXGridPoints;
+  int_pt l_sizeY = m_numYGridPoints;
+  int_pt l_sizeZ = m_numZGridPoints;
+
+  if(i_dirX == -1)
+  {
+    i_startX = 0;
+    i_endX = 2;
+  }
+  if(i_dirX == 1)
+  {
+    i_startX = l_sizeX-2;
+    i_endX = l_sizeX;
+  }
+  if(i_dirY == -1)
+  {
+    i_startY = 0;
+    i_endY = 2;
+  }
+  if(i_dirY == 1)
+  {
+    i_startY = l_sizeY-2;
+    i_endY = l_sizeY;
+  }
+  if(i_dirZ == -1)
+  {
+    i_startZ = 0;
+    i_endZ = 2;
+  }
+  if(i_dirZ == 1)
+  {
+    i_startZ = l_sizeZ-2;
+    i_endZ = l_sizeZ;
+  }
+  
+  if(i_dirX)
+    l_sizeX = 2;
+  if(i_dirY)
+    l_sizeY = 2;
+  if(i_dirZ)
+    l_sizeZ = 2;
+
+  int_pt l_strideZ = 1;
+  int_pt l_strideY = l_strideZ * l_sizeZ;
+  int_pt l_strideX = l_strideY * l_sizeY;
+  
+  int_pt l_initialBufInd = 0;
+  int_pt l_oneDimSize = 0;
+
+  if(i_dirX)
+  {
+    l_initialBufInd = i_startY * l_strideY + i_startZ * l_strideZ;
+  }
+  if(i_dirY)
+  {
+    l_initialBufInd = i_startX * l_strideX + i_startZ * l_strideZ;
+  }
+  if(i_dirZ)
+  {
+    l_initialBufInd = i_startX * l_strideX + i_startY * l_strideY;
+  }
+
+  l_oneDimSize = l_sizeX * l_strideX;
+  
+
+  // Note(Josh): Assumes everything is within a single patch
+  int l_patchId = globalToPatch(i_startX,i_startY,i_startZ);
+  
+  int_pt l_h = m_patches[l_patchId].bdry_width;
+  
+  i_startX += l_h;
+  i_startY += l_h;
+  i_startZ += l_h;
+  
+  i_endX += l_h;
+  i_endY += l_h;
+  i_endZ += l_h;
+
+  int_pt l_skipY = l_strideY - (i_endZ - i_startZ);
+  int_pt l_skipX = l_strideX - (i_endY - i_startY) * l_strideY;
+
+  int_pt l_bufInd = l_initialBufInd;
+  for(int_pt ix=i_startX; ix<i_endX; ix++)
+  {
+    for(int_pt iy=i_startY; iy<i_endY; iy++)
+    {
+      for(int_pt iz=i_startZ; iz<i_endZ; iz++)
+      {
+	o_buffer[l_bufInd] = getVelX(l_patchId, ix, iy, iz, i_timestep);
+	l_bufInd += l_strideZ;
+      }
+      l_bufInd += l_skipY;
+    }
+    l_bufInd += l_skipX;
+  }
+
+  l_bufInd = l_initialBufInd + l_oneDimSize;
+  for(int_pt ix=i_startX; ix<i_endX; ix++)
+  {
+    for(int_pt iy=i_startY; iy<i_endY; iy++)
+    {
+      for(int_pt iz=i_startZ; iz<i_endZ; iz++)
+      {
+	o_buffer[l_bufInd] = getVelY(l_patchId, ix, iy, iz, i_timestep);
+	l_bufInd += l_strideZ;
+      }
+      l_bufInd += l_skipY;      
+    }
+    l_bufInd += l_skipX;
+  }
+
+  l_bufInd = l_initialBufInd + 2 * l_oneDimSize;
+  for(int_pt ix=i_startX; ix<i_endX; ix++)
+  {
+    for(int_pt iy=i_startY; iy<i_endY; iy++)
+    {
+      for(int_pt iz=i_startZ; iz<i_endZ; iz++)
+      {
+	o_buffer[l_bufInd] = getVelZ(l_patchId, ix, iy, iz, i_timestep);
+	l_bufInd += l_strideZ;
+      }
+      l_bufInd += l_skipY;      
+    }
+    l_bufInd += l_skipX;
+  }
+}
+
+
 void PatchDecomp::copyVelBoundaryFromBuffer(real* o_buffer, int i_dirX, int i_dirY,
 			                  int i_dirZ, int_pt timestep)
 {
@@ -629,6 +760,148 @@ void PatchDecomp::copyVelBoundaryFromBuffer(real* o_buffer, int i_dirX, int i_di
   }
 }
 
+void PatchDecomp::copyVelBoundaryFromBuffer(real* o_buffer, int i_dirX, int i_dirY,
+			                  int i_dirZ, int_pt i_startX, int_pt i_startY, int_pt i_startZ,
+					  int_pt i_endX, int_pt i_endY, int_pt i_endZ, int_pt i_timestep)
+{
+  int_pt l_sizeX = m_numXGridPoints;
+  int_pt l_sizeY = m_numYGridPoints;
+  int_pt l_sizeZ = m_numZGridPoints;
+
+  int_pt l_patchShiftX = 0;
+  int_pt l_patchShiftY = 0;
+  int_pt l_patchShiftZ = 0;  
+  
+  if(i_dirX == -1)
+  {
+    i_startX = -2;
+    i_endX = 0;
+    l_patchShiftX = 2;
+  }
+  if(i_dirX == 1)
+  {
+    i_startX = l_sizeX;
+    i_endX = l_sizeX+2;
+    l_patchShiftX = -2;    
+  }
+  if(i_dirY == -1)
+  {
+    i_startY = -2;
+    i_endY = 0;
+    l_patchShiftY = 2;
+  }
+  if(i_dirY == 1)
+  {
+    i_startY = l_sizeY;
+    i_endY = l_sizeY+2;
+    l_patchShiftY = -2;
+  }
+  if(i_dirZ == -1)
+  {
+    i_startZ = -2;
+    i_endZ = 0;
+    l_patchShiftZ = 2;
+  }
+  if(i_dirZ == 1)
+  {
+    i_startZ = l_sizeZ;
+    i_endZ = l_sizeZ+2;
+    l_patchShiftZ = -2;
+  }
+  
+  if(i_dirX)
+    l_sizeX = 2;
+  if(i_dirY)
+    l_sizeY = 2;
+  if(i_dirZ)
+    l_sizeZ = 2;
+
+  int_pt l_strideZ = 1;
+  int_pt l_strideY = l_strideZ * l_sizeZ;
+  int_pt l_strideX = l_strideY * l_sizeY;
+  
+  int_pt l_initialBufInd = 0;
+  int_pt l_oneDimSize = 0;
+
+  if(i_dirX)
+  {
+    l_initialBufInd = i_startY * l_strideY + i_startZ * l_strideZ;
+  }
+  if(i_dirY)
+  {
+    l_initialBufInd = i_startX * l_strideX + i_startZ * l_strideZ;
+  }
+  if(i_dirZ)
+  {
+    l_initialBufInd = i_startX * l_strideX + i_startY * l_strideY;
+  }
+
+  l_oneDimSize = l_sizeX * l_strideX;
+  
+
+  // Note(Josh): Assumes everything is within a single patch
+  int l_patchId = globalToPatch(i_startX+l_patchShiftX,i_startY+l_patchShiftY,i_startZ+l_patchShiftZ);
+  
+  int_pt l_h = m_patches[l_patchId].bdry_width;
+  
+  i_startX += l_h;
+  i_startY += l_h;
+  i_startZ += l_h;
+  
+  i_endX += l_h;
+  i_endY += l_h;
+  i_endZ += l_h;
+
+  int_pt l_skipY = l_strideY - (i_endZ - i_startZ);
+  int_pt l_skipX = l_strideX - (i_endY - i_startY) * l_strideY;
+
+  int_pt l_bufInd = l_initialBufInd;
+  for(int_pt ix=i_startX; ix<i_endX; ix++)
+  {
+    for(int_pt iy=i_startY; iy<i_endY; iy++)
+    {
+      for(int_pt iz=i_startZ; iz<i_endZ; iz++)
+      {
+	setVelX(o_buffer[l_bufInd], l_patchId, ix, iy, iz, i_timestep);
+	l_bufInd += l_strideZ;
+      }
+      l_bufInd += l_skipY;
+    }
+    l_bufInd += l_skipX;
+  }
+
+  l_bufInd = l_initialBufInd + l_oneDimSize;
+  for(int_pt ix=i_startX; ix<i_endX; ix++)
+  {
+    for(int_pt iy=i_startY; iy<i_endY; iy++)
+    {
+      for(int_pt iz=i_startZ; iz<i_endZ; iz++)
+      {
+	setVelY(o_buffer[l_bufInd], l_patchId, ix, iy, iz, i_timestep);
+	l_bufInd += l_strideZ;
+      }
+      l_bufInd += l_skipY;      
+    }
+    l_bufInd += l_skipX;
+  }
+
+  l_bufInd = l_initialBufInd + 2 * l_oneDimSize;
+  for(int_pt ix=i_startX; ix<i_endX; ix++)
+  {
+    for(int_pt iy=i_startY; iy<i_endY; iy++)
+    {
+      for(int_pt iz=i_startZ; iz<i_endZ; iz++)
+      {
+	setVelZ(o_buffer[l_bufInd], l_patchId, ix, iy, iz, i_timestep);
+	l_bufInd += l_strideZ;
+      }
+      l_bufInd += l_skipY;      
+    }
+    l_bufInd += l_skipX;
+  }
+}
+
+
 void PatchDecomp::copyStressBoundaryToBuffer(real* o_buffer, int i_dirX, int i_dirY,
 			                  int i_dirZ, int_pt timestep)
 {
@@ -686,6 +959,183 @@ void PatchDecomp::copyStressBoundaryToBuffer(real* o_buffer, int i_dirX, int i_d
     }
   }
 }
+
+void PatchDecomp::copyStressBoundaryToBuffer(real* o_buffer, int i_dirX, int i_dirY,
+			                  int i_dirZ, int_pt i_startX, int_pt i_startY, int_pt i_startZ,
+					  int_pt i_endX, int_pt i_endY, int_pt i_endZ, int_pt i_timestep)
+{
+  int_pt l_sizeX = m_numXGridPoints;
+  int_pt l_sizeY = m_numYGridPoints;
+  int_pt l_sizeZ = m_numZGridPoints;
+
+  if(i_dirX == -1)
+  {
+    i_startX = 0;
+    i_endX = 2;
+  }
+  if(i_dirX == 1)
+  {
+    i_startX = l_sizeX-2;
+    i_endX = l_sizeX;
+  }
+  if(i_dirY == -1)
+  {
+    i_startY = 0;
+    i_endY = 2;
+  }
+  if(i_dirY == 1)
+  {
+    i_startY = l_sizeY-2;
+    i_endY = l_sizeY;
+  }
+  if(i_dirZ == -1)
+  {
+    i_startZ = 0;
+    i_endZ = 2;
+  }
+  if(i_dirZ == 1)
+  {
+    i_startZ = l_sizeZ-2;
+    i_endZ = l_sizeZ;
+  }
+  
+  if(i_dirX)
+    l_sizeX = 2;
+  if(i_dirY)
+    l_sizeY = 2;
+  if(i_dirZ)
+    l_sizeZ = 2;
+
+  int_pt l_strideZ = 1;
+  int_pt l_strideY = l_strideZ * l_sizeZ;
+  int_pt l_strideX = l_strideY * l_sizeY;
+  
+  int_pt l_initialBufInd = 0;
+  int_pt l_oneDimSize = 0;
+
+  if(i_dirX)
+  {
+    l_initialBufInd = i_startY * l_strideY + i_startZ * l_strideZ;
+  }
+  if(i_dirY)
+  {
+    l_initialBufInd = i_startX * l_strideX + i_startZ * l_strideZ;
+  }
+  if(i_dirZ)
+  {
+    l_initialBufInd = i_startX * l_strideX + i_startY * l_strideY;
+  }
+
+  l_oneDimSize = l_sizeX * l_strideX;
+  
+
+  // Note(Josh): Assumes everything is within a single patch
+  int l_patchId = globalToPatch(i_startX,i_startY,i_startZ);
+  
+  int_pt l_h = m_patches[l_patchId].bdry_width;
+  
+  i_startX += l_h;
+  i_startY += l_h;
+  i_startZ += l_h;
+  
+  i_endX += l_h;
+  i_endY += l_h;
+  i_endZ += l_h;
+
+  int_pt l_skipY = l_strideY - (i_endZ - i_startZ);
+  int_pt l_skipX = l_strideX - (i_endY - i_startY) * l_strideY;
+
+  int_pt l_bufInd = l_initialBufInd;
+  for(int_pt ix=i_startX; ix<i_endX; ix++)
+  {
+    for(int_pt iy=i_startY; iy<i_endY; iy++)
+    {
+      for(int_pt iz=i_startZ; iz<i_endZ; iz++)
+      {
+	o_buffer[l_bufInd] = getStressXX(l_patchId, ix, iy, iz, i_timestep);
+	l_bufInd += l_strideZ;
+      }
+      l_bufInd += l_skipY;
+    }
+    l_bufInd += l_skipX;
+  }
+
+  l_bufInd = l_initialBufInd + l_oneDimSize;
+  for(int_pt ix=i_startX; ix<i_endX; ix++)
+  {
+    for(int_pt iy=i_startY; iy<i_endY; iy++)
+    {
+      for(int_pt iz=i_startZ; iz<i_endZ; iz++)
+      {
+	o_buffer[l_bufInd] = getStressXY(l_patchId, ix, iy, iz, i_timestep);
+	l_bufInd += l_strideZ;
+      }
+      l_bufInd += l_skipY;      
+    }
+    l_bufInd += l_skipX;
+  }
+
+  l_bufInd = l_initialBufInd + 2 * l_oneDimSize;
+  for(int_pt ix=i_startX; ix<i_endX; ix++)
+  {
+    for(int_pt iy=i_startY; iy<i_endY; iy++)
+    {
+      for(int_pt iz=i_startZ; iz<i_endZ; iz++)
+      {
+	o_buffer[l_bufInd] = getStressXZ(l_patchId, ix, iy, iz, i_timestep);
+	l_bufInd += l_strideZ;
+      }
+      l_bufInd += l_skipY;      
+    }
+    l_bufInd += l_skipX;
+  }
+
+  l_bufInd = l_initialBufInd + 3 * l_oneDimSize;
+  for(int_pt ix=i_startX; ix<i_endX; ix++)
+  {
+    for(int_pt iy=i_startY; iy<i_endY; iy++)
+    {
+      for(int_pt iz=i_startZ; iz<i_endZ; iz++)
+      {
+	o_buffer[l_bufInd] = getStressYY(l_patchId, ix, iy, iz, i_timestep);
+	l_bufInd += l_strideZ;
+      }
+      l_bufInd += l_skipY;      
+    }
+    l_bufInd += l_skipX;
+  }
+
+  l_bufInd = l_initialBufInd + 4 * l_oneDimSize;
+  for(int_pt ix=i_startX; ix<i_endX; ix++)
+  {
+    for(int_pt iy=i_startY; iy<i_endY; iy++)
+    {
+      for(int_pt iz=i_startZ; iz<i_endZ; iz++)
+      {
+	o_buffer[l_bufInd] = getStressYZ(l_patchId, ix, iy, iz, i_timestep);
+	l_bufInd += l_strideZ;
+      }
+      l_bufInd += l_skipY;      
+    }
+    l_bufInd += l_skipX;
+  }
+
+  l_bufInd = l_initialBufInd + 5 * l_oneDimSize;
+  for(int_pt ix=i_startX; ix<i_endX; ix++)
+  {
+    for(int_pt iy=i_startY; iy<i_endY; iy++)
+    {
+      for(int_pt iz=i_startZ; iz<i_endZ; iz++)
+      {
+	o_buffer[l_bufInd] = getStressZZ(l_patchId, ix, iy, iz, i_timestep);
+	l_bufInd += l_strideZ;
+      }
+      l_bufInd += l_skipY;      
+    }
+    l_bufInd += l_skipX;
+  }
+}
+
 
 void PatchDecomp::copyStressBoundaryFromBuffer(real* o_buffer, int i_dirX, int i_dirY,
 			                  int i_dirZ, int_pt timestep)
@@ -773,6 +1223,191 @@ void PatchDecomp::copyStressBoundaryFromBuffer(real* o_buffer, int i_dirX, int i
   }
 }
 
+void PatchDecomp::copyStressBoundaryFromBuffer(real* o_buffer, int i_dirX, int i_dirY,
+			                  int i_dirZ, int_pt i_startX, int_pt i_startY, int_pt i_startZ,
+					  int_pt i_endX, int_pt i_endY, int_pt i_endZ, int_pt i_timestep)
+{
+  int_pt l_sizeX = m_numXGridPoints;
+  int_pt l_sizeY = m_numYGridPoints;
+  int_pt l_sizeZ = m_numZGridPoints;
+
+  int_pt l_patchShiftX = 0;
+  int_pt l_patchShiftY = 0;
+  int_pt l_patchShiftZ = 0;  
+  
+  if(i_dirX == -1)
+  {
+    i_startX = -2;
+    i_endX = 0;
+    l_patchShiftX = 2;
+  }
+  if(i_dirX == 1)
+  {
+    i_startX = l_sizeX;
+    i_endX = l_sizeX+2;
+    l_patchShiftX = -2;    
+  }
+  if(i_dirY == -1)
+  {
+    i_startY = -2;
+    i_endY = 0;
+    l_patchShiftY = 2;
+  }
+  if(i_dirY == 1)
+  {
+    i_startY = l_sizeY;
+    i_endY = l_sizeY+2;
+    l_patchShiftY = -2;
+  }
+  if(i_dirZ == -1)
+  {
+    i_startZ = -2;
+    i_endZ = 0;
+    l_patchShiftZ = 2;
+  }
+  if(i_dirZ == 1)
+  {
+    i_startZ = l_sizeZ;
+    i_endZ = l_sizeZ+2;
+    l_patchShiftZ = -2;
+  }
+  
+  if(i_dirX)
+    l_sizeX = 2;
+  if(i_dirY)
+    l_sizeY = 2;
+  if(i_dirZ)
+    l_sizeZ = 2;
+
+  int_pt l_strideZ = 1;
+  int_pt l_strideY = l_strideZ * l_sizeZ;
+  int_pt l_strideX = l_strideY * l_sizeY;
+  
+  int_pt l_initialBufInd = 0;
+  int_pt l_oneDimSize = 0;
+
+  if(i_dirX)
+  {
+    l_initialBufInd = i_startY * l_strideY + i_startZ * l_strideZ;
+  }
+  if(i_dirY)
+  {
+    l_initialBufInd = i_startX * l_strideX + i_startZ * l_strideZ;
+  }
+  if(i_dirZ)
+  {
+    l_initialBufInd = i_startX * l_strideX + i_startY * l_strideY;
+  }
+
+  l_oneDimSize = l_sizeX * l_strideX;
+  
+
+  // Note(Josh): Assumes everything is within a single patch
+  int l_patchId = globalToPatch(i_startX+l_patchShiftX,i_startY+l_patchShiftY,i_startZ+l_patchShiftZ);
+  
+  int_pt l_h = m_patches[l_patchId].bdry_width;
+  
+  i_startX += l_h;
+  i_startY += l_h;
+  i_startZ += l_h;
+  
+  i_endX += l_h;
+  i_endY += l_h;
+  i_endZ += l_h;
+
+  int_pt l_skipY = l_strideY - (i_endZ - i_startZ);
+  int_pt l_skipX = l_strideX - (i_endY - i_startY) * l_strideY;
+
+  int_pt l_bufInd = l_initialBufInd;
+  for(int_pt ix=i_startX; ix<i_endX; ix++)
+  {
+    for(int_pt iy=i_startY; iy<i_endY; iy++)
+    {
+      for(int_pt iz=i_startZ; iz<i_endZ; iz++)
+      {
+	setStressXX(o_buffer[l_bufInd], l_patchId, ix, iy, iz, i_timestep);
+	l_bufInd += l_strideZ;
+      }
+      l_bufInd += l_skipY;
+    }
+    l_bufInd += l_skipX;
+  }
+
+  l_bufInd = l_initialBufInd + l_oneDimSize;
+  for(int_pt ix=i_startX; ix<i_endX; ix++)
+  {
+    for(int_pt iy=i_startY; iy<i_endY; iy++)
+    {
+      for(int_pt iz=i_startZ; iz<i_endZ; iz++)
+      {
+	setStressXY(o_buffer[l_bufInd], l_patchId, ix, iy, iz, i_timestep);
+	l_bufInd += l_strideZ;
+      }
+      l_bufInd += l_skipY;      
+    }
+    l_bufInd += l_skipX;
+  }
+
+  l_bufInd = l_initialBufInd + 2 * l_oneDimSize;
+  for(int_pt ix=i_startX; ix<i_endX; ix++)
+  {
+    for(int_pt iy=i_startY; iy<i_endY; iy++)
+    {
+      for(int_pt iz=i_startZ; iz<i_endZ; iz++)
+      {
+	setStressXZ(o_buffer[l_bufInd], l_patchId, ix, iy, iz, i_timestep);
+	l_bufInd += l_strideZ;
+      }
+      l_bufInd += l_skipY;      
+    }
+    l_bufInd += l_skipX;
+  }
+
+  l_bufInd = l_initialBufInd + 3 * l_oneDimSize;
+  for(int_pt ix=i_startX; ix<i_endX; ix++)
+  {
+    for(int_pt iy=i_startY; iy<i_endY; iy++)
+    {
+      for(int_pt iz=i_startZ; iz<i_endZ; iz++)
+      {
+	setStressYY(o_buffer[l_bufInd], l_patchId, ix, iy, iz, i_timestep);
+	l_bufInd += l_strideZ;
+      }
+      l_bufInd += l_skipY;      
+    }
+    l_bufInd += l_skipX;
+  }
+
+  l_bufInd = l_initialBufInd + 4 * l_oneDimSize;
+  for(int_pt ix=i_startX; ix<i_endX; ix++)
+  {
+    for(int_pt iy=i_startY; iy<i_endY; iy++)
+    {
+      for(int_pt iz=i_startZ; iz<i_endZ; iz++)
+      {
+	setStressYZ(o_buffer[l_bufInd], l_patchId, ix, iy, iz, i_timestep);
+	l_bufInd += l_strideZ;
+      }
+      l_bufInd += l_skipY;      
+    }
+    l_bufInd += l_skipX;
+  }
+  
+  l_bufInd = l_initialBufInd + 5 * l_oneDimSize;
+  for(int_pt ix=i_startX; ix<i_endX; ix++)
+  {
+    for(int_pt iy=i_startY; iy<i_endY; iy++)
+    {
+      for(int_pt iz=i_startZ; iz<i_endZ; iz++)
+      {
+	setStressZZ(o_buffer[l_bufInd], l_patchId, ix, iy, iz, i_timestep);
+	l_bufInd += l_strideZ;
+      }
+      l_bufInd += l_skipY;      
+    }
+    l_bufInd += l_skipX;
+  }
+}
 
 real PatchDecomp::getVse(bool max)
 {

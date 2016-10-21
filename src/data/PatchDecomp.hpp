@@ -468,6 +468,28 @@ public:
    **/                  
   void copyVelBoundaryToBuffer(real* o_buffer, int i_dirX, int i_dirY,
 			       int i_dirZ, int_pt i_timestep);
+
+  /**
+   * Copy portion of velocity boundary to 1D buffers for MPI.
+   * Note that the start and end values for the dimension orthogonal
+   * to the slice to be copied are _ignored_
+   *
+   * @param o_buffer buffer for velocities
+   * @param i_dirX x direction of boundary
+   * @param i_dirY y direction of boundary
+   * @param i_dirZ z direction of boundary
+   * @param i_startX first x val to copy
+   * @param i_startY first y val to copy
+   * @param i_startZ first z val to copy
+   * @param i_endX last x val to copy
+   * @param i_endY last y val to copy
+   * @param i_endZ last z val to copy
+   * @param i_timestep timestep to copy from
+   **/                  
+  void copyVelBoundaryToBuffer(real* o_buffer, int i_dirX, int i_dirY,
+        	               int i_dirZ, int_pt i_startX, int_pt i_startY, int_pt i_startZ,
+			       int_pt i_endX, int_pt i_endY, int_pt i_endZ, int_pt i_timestep);
+
   
   /**
    * Copy velocity boundary from 1D buffers from MPI.
@@ -482,6 +504,27 @@ public:
 			       int i_dirZ, int_pt i_timestep);
 
   /**
+   * Copy portion of velocity boundary from 1D buffers for MPI.
+   * Note that the start and end values for the dimension orthogonal
+   * to the slice to be copied are _ignored_
+   *
+   * @param o_buffer buffer for velocities
+   * @param i_dirX x direction of boundary
+   * @param i_dirY y direction of boundary
+   * @param i_dirZ z direction of boundary
+   * @param i_startX first x val to copy
+   * @param i_startY first y val to copy
+   * @param i_startZ first z val to copy
+   * @param i_endX last x val to copy
+   * @param i_endY last y val to copy
+   * @param i_endZ last z val to copy
+   * @param i_timestep timestep to copy from
+   **/                  
+  void copyVelBoundaryFromBuffer(real* o_buffer, int i_dirX, int i_dirY,
+        	               int i_dirZ, int_pt i_startX, int_pt i_startY, int_pt i_startZ,
+			       int_pt i_endX, int_pt i_endY, int_pt i_endZ, int_pt i_timestep);
+
+  /**
    * Copy stress boundary to 1D buffers for MPI.
    *
    * @param o_buffer buffer for stress
@@ -492,6 +535,27 @@ public:
    **/                  
   void copyStressBoundaryToBuffer(real* o_buffer, int i_dirX, int i_dirY,
 			       int i_dirZ, int_pt i_timestep);
+
+  /**
+   * Copy portion of stress boundary to 1D buffers for MPI.
+   * Note that the start and end values for the dimension orthogonal
+   * to the slice to be copied are _ignored_
+   *
+   * @param o_buffer buffer for stress
+   * @param i_dirX x direction of boundary
+   * @param i_dirY y direction of boundary
+   * @param i_dirZ z direction of boundary
+   * @param i_startX first x val to copy
+   * @param i_startY first y val to copy
+   * @param i_startZ first z val to copy
+   * @param i_endX last x val to copy
+   * @param i_endY last y val to copy
+   * @param i_endZ last z val to copy
+   * @param i_timestep timestep to copy from
+   **/                  
+  void copyStressBoundaryToBuffer(real* o_buffer, int i_dirX, int i_dirY,
+        	               int i_dirZ, int_pt i_startX, int_pt i_startY, int_pt i_startZ,
+			       int_pt i_endX, int_pt i_endY, int_pt i_endZ, int_pt i_timestep);
   
   /**
    * Copy stress boundary from 1D buffers from MPI.
@@ -504,6 +568,28 @@ public:
    **/                  
   void copyStressBoundaryFromBuffer(real* o_buffer, int i_dirX, int i_dirY,
 			       int i_dirZ, int_pt i_timestep);
+
+  /**
+   * Copy portion of stress boundary from 1D buffers for MPI.
+   * Note that the start and end values for the dimension orthogonal
+   * to the slice to be copied are _ignored_
+   *
+   * @param o_buffer buffer for stress
+   * @param i_dirX x direction of boundary
+   * @param i_dirY y direction of boundary
+   * @param i_dirZ z direction of boundary
+   * @param i_startX first x val to copy
+   * @param i_startY first y val to copy
+   * @param i_startZ first z val to copy
+   * @param i_endX last x val to copy
+   * @param i_endY last y val to copy
+   * @param i_endZ last z val to copy
+   * @param i_timestep timestep to copy from
+   **/                  
+  void copyStressBoundaryFromBuffer(real* o_buffer, int i_dirX, int i_dirY,
+        	               int i_dirZ, int_pt i_startX, int_pt i_startY, int_pt i_startZ,
+			       int_pt i_endX, int_pt i_endY, int_pt i_endZ, int_pt i_timestep);
+
   
   /**
    * Gets max/min tmpvs observed during mesh initialization.

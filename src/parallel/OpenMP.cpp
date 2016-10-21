@@ -29,118 +29,349 @@
 #include <vector>
 #include <deque>
 
+static inline void makeAssignment(int x, int y, int z, int m_nWPX, int m_nWPY, int m_nWPZ, int indexVel, int l_nWP_oneKernel, odc::parallel::WorkPackage* m_workPackages,
+				  int_pt startX, int_pt startY, int_pt startZ, int_pt endX, int_pt endY, int_pt endZ,
+				  bool mpiNbrXLeft, bool mpiNbrXRight, bool mpiNbrYLeft, bool mpiNbrYRight, bool mpiNbrZLeft, bool mpiNbrZRight)
+{
+  // the stress WP are offset by the number of vel WPs plus one MPI WP
+  int indexStress = indexVel + 1 + l_nWP_oneKernel;
+
+  m_workPackages[indexVel].type    = odc::parallel::WorkPackageType::WP_VelUpdate;
+  m_workPackages[indexStress].type = odc::parallel::WorkPackageType::WP_StressUpdate;
+	
+  m_workPackages[indexVel].start[0] = m_workPackages[indexStress].start[0] = startX;
+  m_workPackages[indexVel].start[1] = m_workPackages[indexStress].start[1] = startY;
+  m_workPackages[indexVel].start[2] = m_workPackages[indexStress].start[2] = startZ;
+
+  m_workPackages[indexVel].end[0] = m_workPackages[indexStress].end[0] = endX;
+  m_workPackages[indexVel].end[1] = m_workPackages[indexStress].end[1] = endY;
+  m_workPackages[indexVel].end[2] = m_workPackages[indexStress].end[2] = endZ;
+
+  // initially assume that every WorkPackage is innocent of being on free surface / x,y boundaries
+  m_workPackages[indexVel].freeSurface = false;
+  m_workPackages[indexVel].xMaxBdry = false;
+  m_workPackages[indexVel].yMinBdry = false;
+
+  
+  for(int i=0; i<3; i++)
+    for(int j=0; j<3; j++)
+      for(int k=0; k<3; k++)
+        m_workPackages[indexVel].mpiDir[i][j][k] = m_workPackages[indexStress].mpiDir[i][j][k] = false;
+	
+  bool onMpiBdry = false;
+  if(x == 0 && mpiNbrXLeft)
+  {
+    onMpiBdry = true;
+    m_workPackages[indexVel].mpiDir[0][1][1] = m_workPackages[indexStress].mpiDir[0][1][1] = true;
+  }
+  if(x == m_nWPX-1 && mpiNbrXRight)
+  {
+    onMpiBdry = true;
+    m_workPackages[indexVel].mpiDir[2][1][1] = m_workPackages[indexStress].mpiDir[2][1][1] = true;
+  }
+  if(y == 0 && mpiNbrYLeft)
+  {
+    onMpiBdry = true;
+    m_workPackages[indexVel].mpiDir[1][0][1] = m_workPackages[indexStress].mpiDir[1][0][1] = true;
+  }
+  if(y == m_nWPY-1 && mpiNbrYRight)
+  {
+    onMpiBdry = true;
+    m_workPackages[indexVel].mpiDir[1][2][1] = m_workPackages[indexStress].mpiDir[1][2][1] = true;
+  }
+  if(z == 0 && mpiNbrZLeft)
+  {
+    onMpiBdry = true;
+    m_workPackages[indexVel].mpiDir[1][1][0] = m_workPackages[indexStress].mpiDir[1][1][0] = true;
+  }
+  if(z == m_nWPZ-1 && mpiNbrZRight)
+  {
+    onMpiBdry = true;
+    m_workPackages[indexVel].mpiDir[1][1][2] = m_workPackages[indexStress].mpiDir[1][1][2] = true;
+  }
+
+  if(z == m_nWPZ-1 && !mpiNbrZRight)
+  {
+    m_workPackages[indexStress].freeSurface = true;
+  }
+
+  if(y == 0 && !mpiNbrYLeft)
+  {
+    m_workPackages[indexStress].yMinBdry = true;
+  }
+
+  if(x == m_nWPX-1 && !mpiNbrXRight)
+  {
+    m_workPackages[indexStress].xMaxBdry = true;
+  }  
+
+  m_workPackages[indexVel].copyFromBuffer = m_workPackages[indexStress].copyFromBuffer = onMpiBdry;
+  m_workPackages[indexVel].copyToBuffer = m_workPackages[indexStress].copyToBuffer = onMpiBdry;
+}
+
 odc::parallel::OpenMP::OpenMP( int_pt       i_nPtsX,
                                int_pt       i_nPtsY,
                                int_pt       i_nPtsZ,
-                               int          i_nWgrps,
-                               int         *i_tdsPerWgrp,
+                               int          i_nManageThreads,
+                               int          i_nCompThreads,
                                PatchDecomp& i_ptchDec):
-m_nWgrpsAll(i_nWgrps), m_ptchDec(i_ptchDec) {
-  //if( !omp_in_parallel() )
-  //  std::cerr << "Error: OpenMP constructor should be called in a parallel region." << std::endl;
+  m_nWgrpsAll(0), m_ptchDec(i_ptchDec), m_nPtsX(i_nPtsX), m_nPtsY(i_nPtsY), m_nPtsZ(i_nPtsZ) {
 
-  // copy threads per work group data
-  m_nTdsPerWgrpAll = (int*) malloc( m_nWgrpsAll * sizeof( int ) );
-  for( int l_wg = 0; l_wg < m_nWgrpsAll; l_wg++ ) {
-    m_nTdsPerWgrpAll[l_wg] = i_tdsPerWgrp[l_wg];
-  }
 
   m_trdNumAll = omp_get_thread_num();
+
   m_nThreadsAll = omp_get_num_threads();
 
-  // check for valid number of threads for temporal shared memory parallelization
-  int l_nThreads = 0;
-  for( int l_gr = 0; l_gr < m_nWgrpsAll; l_gr++ ) {
-    l_nThreads += std::abs( m_nTdsPerWgrpAll[l_gr] );
-  }
-
-  //#pragma omp critical
-  //{
-  // std::cout << "num threads: " << m_nThreadsAll << ' ' << l_nThreads << std::endl;
-  //}
-  if(l_nThreads != m_nThreadsAll) {
+  if(i_nManageThreads + i_nCompThreads != m_nThreadsAll)
+  {
     std::cerr << "Error: number of threads requested does not equal number of threads provided by system." << std::endl;
-  }
-
-  // derive number of work groups participating in computation
-  m_nWgrpsComp = 0;
-  m_nThreadsComp = 0;
-  for( int l_gr = 0; l_gr < m_nWgrpsAll; l_gr++ ) {
-    if( m_nTdsPerWgrpAll[l_gr] > 0 ) {
-      m_nWgrpsComp++;
-      m_nThreadsComp += m_nTdsPerWgrpAll[l_gr];
-    }
-    else if( m_nTdsPerWgrpAll[l_gr] == 0 ) assert(false);
-  }
-  assert( m_nWgrpsComp > 0 );
-
-  // store thread info for comp work groups only
-  m_nTdsPerWgrpComp = (int*) malloc( m_nWgrpsComp * sizeof(int) );
-  int l_compWgrp = 0;
-  for( int l_gr = 0; l_gr < m_nWgrpsAll; l_gr++ ) {
-    if( m_nTdsPerWgrpAll[l_gr] > 0 ) {
-      m_nTdsPerWgrpComp[l_compWgrp] = m_nTdsPerWgrpAll[l_gr];
-      l_compWgrp++;
-    }
-  }
-
-  // derive charactericistics of this thread
-  int l_prevThreads = 0;
-  int l_touchedWgrpsComp = 0;
-  for( int l_gr = 0; l_gr < m_nWgrpsAll; l_gr++ ) {
-    if( m_trdNumAll >= l_prevThreads &&
-        m_trdNumAll <  l_prevThreads + std::abs( m_nTdsPerWgrpAll[l_gr] ) ) {
-      m_trdWgrpAll = l_gr;
-
-      if( m_nTdsPerWgrpAll[l_gr] > 0 ) {
-        // thread is part of a computational work group
-        m_trdWgrpFun = l_touchedWgrpsComp;
-        m_trdWgrpComp = true;
-      }
-      else {
-        // thread is not part of a computational work group
-        m_trdWgrpFun = l_gr - l_touchedWgrpsComp;
-        m_trdWgrpComp = false;
-      }
-
-      // get thread id in the local work group
-      m_trdNumGrp = m_trdNumAll - l_prevThreads;
-    }
-
-    // increased #touched wgrps if required
-    if( m_nTdsPerWgrpAll[l_gr] > 0 ) l_touchedWgrpsComp++;
-
-    // add #threads for this wgrp to counter
-    l_prevThreads += std::abs( m_nTdsPerWgrpAll[l_gr] );
-  }
+  }  
   
-  deriveLayout( i_nPtsX,
-                i_nPtsY,
-                i_nPtsZ,
-                m_nWgrpsComp,
-                m_nTdsPerWgrpComp);
+  m_packageSizeX = WP_SIZE_X;
+  m_packageSizeY = WP_SIZE_Y;
+  m_packageSizeZ = WP_SIZE_Z;
 
+  m_nWPX = (int) ((i_nPtsX + m_packageSizeX-1) / m_packageSizeX);
+  m_nWPY = (int) ((i_nPtsY + m_packageSizeY-1) / m_packageSizeY);
+  m_nWPZ = (int) ((i_nPtsZ + m_packageSizeZ-1) / m_packageSizeZ);
+
+  // the number of work packages is given by those for the vel and stress updates and
+  // two additional WPs for the MPI communications
+  int l_nWP_oneKernel = m_nWPX * m_nWPY * m_nWPZ;
+  m_nWP  = l_nWP_oneKernel * 2 + 2;
+
+  m_workPackages  = (odc::parallel::WorkPackage*) malloc(m_nWP * sizeof(odc::parallel::WorkPackage));
+  
+  // first create the WPs for the velocity update
+  int curTopX = 0, curBotX = 0, curTopY = 0, curBotY = 0, curTopZ = 0, curBotZ = 0;
+
+  // left means in the negative direction, right means positive dir
+  bool mpiNbrXLeft  = (odc::parallel::Mpi::m_neighborRanks[0][1][1] != -1);
+  bool mpiNbrXRight = (odc::parallel::Mpi::m_neighborRanks[2][1][1] != -1);
+  bool mpiNbrYLeft  = (odc::parallel::Mpi::m_neighborRanks[1][0][1] != -1);
+  bool mpiNbrYRight = (odc::parallel::Mpi::m_neighborRanks[1][2][1] != -1);
+  bool mpiNbrZLeft  = (odc::parallel::Mpi::m_neighborRanks[1][1][0] != -1);
+  bool mpiNbrZRight = (odc::parallel::Mpi::m_neighborRanks[1][1][2] != -1);
+
+  int indexVel = 0;
+
+  for(int y=0; y<m_nWPY; y++)
+    for(int z=0; z<m_nWPZ; z++)
+    {
+      int x = 0;
+      int_pt startX = x*m_packageSizeX;
+      int_pt endX   = (x+1)*m_packageSizeX;
+      int_pt startY = y*m_packageSizeY;
+      int_pt endY   = (y+1)*m_packageSizeY;
+      int_pt startZ = z*m_packageSizeZ;
+      int_pt endZ   = (z+1)*m_packageSizeZ;
+      if(endX > i_nPtsX)
+        endX = i_nPtsX;
+      if(endY > i_nPtsY)
+        endY = i_nPtsY;
+      if(endZ > i_nPtsZ)
+        endZ = i_nPtsZ;
+      
+      makeAssignment(x, y, z, m_nWPX, m_nWPY, m_nWPZ, indexVel, l_nWP_oneKernel, m_workPackages, startX, startY, startZ, endX, endY, endZ,
+		       mpiNbrXLeft, mpiNbrXRight, mpiNbrYLeft, mpiNbrYRight, mpiNbrZLeft, mpiNbrZRight);
+      indexVel++;
+    }
+
+  m_endOfStressBdryXZero = indexVel + l_nWP_oneKernel + 1 - 1;
+
+  
+  for(int y=0; y<m_nWPY; y++) 
+    for(int z=0; z<m_nWPZ; z++)
+    {
+      int x = m_nWPX-1;
+      int_pt startX = x*m_packageSizeX;
+      int_pt endX   = (x+1)*m_packageSizeX;
+      int_pt startY = y*m_packageSizeY;
+      int_pt endY   = (y+1)*m_packageSizeY;
+      int_pt startZ = z*m_packageSizeZ;
+      int_pt endZ   = (z+1)*m_packageSizeZ;
+      if(endX > i_nPtsX)
+        endX = i_nPtsX;
+      if(endY > i_nPtsY)
+        endY = i_nPtsY;
+      if(endZ > i_nPtsZ)
+        endZ = i_nPtsZ;
+
+      makeAssignment(x, y, z, m_nWPX, m_nWPY, m_nWPZ, indexVel, l_nWP_oneKernel, m_workPackages, startX, startY, startZ, endX, endY, endZ,
+		       mpiNbrXLeft, mpiNbrXRight, mpiNbrYLeft, mpiNbrYRight, mpiNbrZLeft, mpiNbrZRight);
+      indexVel++;
+    }
+
+  for(int x=1; x<m_nWPX-1; x++)
+    for(int z=0; z<m_nWPZ; z++)
+    {
+      int y = 0;
+      int_pt startX = x*m_packageSizeX;
+      int_pt endX   = (x+1)*m_packageSizeX;
+      int_pt startY = y*m_packageSizeY;
+      int_pt endY   = (y+1)*m_packageSizeY;
+      int_pt startZ = z*m_packageSizeZ;
+      int_pt endZ   = (z+1)*m_packageSizeZ;
+      if(endX > i_nPtsX)
+        endX = i_nPtsX;
+      if(endY > i_nPtsY)
+        endY = i_nPtsY;
+      if(endZ > i_nPtsZ)
+        endZ = i_nPtsZ;
+      
+      makeAssignment(x, y, z, m_nWPX, m_nWPY, m_nWPZ, indexVel, l_nWP_oneKernel, m_workPackages, startX, startY, startZ, endX, endY, endZ,
+		       mpiNbrXLeft, mpiNbrXRight, mpiNbrYLeft, mpiNbrYRight, mpiNbrZLeft, mpiNbrZRight);
+      indexVel++;
+    }
+  
+  for(int x=1; x<m_nWPX-1; x++)
+    for(int z=0; z<m_nWPZ; z++)
+    {
+      int y = m_nWPY-1;
+      int_pt startX = x*m_packageSizeX;
+      int_pt endX   = (x+1)*m_packageSizeX;
+      int_pt startY = y*m_packageSizeY;
+      int_pt endY   = (y+1)*m_packageSizeY;
+      int_pt startZ = z*m_packageSizeZ;
+      int_pt endZ   = (z+1)*m_packageSizeZ;
+      if(endX > i_nPtsX)
+        endX = i_nPtsX;
+      if(endY > i_nPtsY)
+        endY = i_nPtsY;
+      if(endZ > i_nPtsZ)
+        endZ = i_nPtsZ;
+      
+      makeAssignment(x, y, z, m_nWPX, m_nWPY, m_nWPZ, indexVel, l_nWP_oneKernel, m_workPackages, startX, startY, startZ, endX, endY, endZ,
+		       mpiNbrXLeft, mpiNbrXRight, mpiNbrYLeft, mpiNbrYRight, mpiNbrZLeft, mpiNbrZRight);
+      indexVel++;
+    }
+
+  m_nBdry = indexVel;
+  m_endOfVelBdry = indexVel-1;
+  m_endOfStressBdry = indexVel + l_nWP_oneKernel + 1 - 1;
+
+  int total_since_bdry = 0;
+
+  for(int y=1; y<m_nWPY-1; y++)
+    for(int z=0; z<m_nWPZ; z++)
+    {
+      int x = 1;
+      int_pt startX = x*m_packageSizeX;
+      int_pt endX   = (x+1)*m_packageSizeX;
+      int_pt startY = y*m_packageSizeY;
+      int_pt endY   = (y+1)*m_packageSizeY;
+      int_pt startZ = z*m_packageSizeZ;
+      int_pt endZ   = (z+1)*m_packageSizeZ;
+      if(endX > i_nPtsX)
+        endX = i_nPtsX;
+      if(endY > i_nPtsY)
+        endY = i_nPtsY;
+      if(endZ > i_nPtsZ)
+        endZ = i_nPtsZ;
+      
+      makeAssignment(x, y, z, m_nWPX, m_nWPY, m_nWPZ, indexVel, l_nWP_oneKernel, m_workPackages, startX, startY, startZ, endX, endY, endZ,
+		       mpiNbrXLeft, mpiNbrXRight, mpiNbrYLeft, mpiNbrYRight, mpiNbrZLeft, mpiNbrZRight);
+      indexVel++;
+    }
+
+  m_velMpiWP    = indexVel;
+  m_stressMpiWP = indexVel + l_nWP_oneKernel + 1;
+    
+  m_workPackages[m_velMpiWP].type     = WP_MPI_Vel;
+  m_workPackages[m_stressMpiWP].type  = WP_MPI_Stress;
+  indexVel++;
+  
+
+  
+  // Ideally we would like to place some work packages between the end of the boundary computation and
+  // the mpi communication.  If there are too few work packages in the domain this isn't possible,
+  // in which case just put the mpi communication right after the boundary is done (this basically
+  // guarantees some stalling of cores)
+  /*if(indexVel + i_nCompThreads * 3 > l_nWP_oneKernel + 1 - 1)
+  {
+    std::cout << "this is happening: " << indexVel  << ' ' << i_nCompThreads << ' ' << l_nWP_oneKernel << std::endl;
+    
+    m_velMpiWP    = indexVel;
+    m_stressMpiWP = indexVel + l_nWP_oneKernel + 1;
+    
+    m_workPackages[m_velMpiWP].type     = WP_MPI_Vel;
+    m_workPackages[m_stressMpiWP].type  = WP_MPI_Stress;
+    indexVel++;
+
+    // make the total_since_bdry large so that we don't try to place the MPI communication WPs again
+    total_since_bdry = i_nCompThreads * 10;
+    }*/
+
+
+  //std::cout << "index before body: " << indexVel << std::endl;
+  
+  for(int x=2; x<m_nWPX-1; x++)
+  {
+    int_pt startX = x*m_packageSizeX;
+    int_pt endX   = (x+1)*m_packageSizeX;
+    if(endX > i_nPtsX)
+      endX = i_nPtsX;
+    
+    for(int y=1; y<m_nWPY-1; y++)
+    {
+      int_pt startY = y*m_packageSizeY;
+      int_pt endY   = (y+1)*m_packageSizeY;
+      if(endY > i_nPtsY)
+        endY = i_nPtsY;
+      
+      for(int z=0; z<m_nWPZ; z++)
+      {
+	int_pt startZ = z*m_packageSizeZ;
+        int_pt endZ   = (z+1)*m_packageSizeZ;
+        if(endZ > i_nPtsZ)
+          endZ = i_nPtsZ;
+
+	makeAssignment(x, y, z, m_nWPX, m_nWPY, m_nWPZ, indexVel, l_nWP_oneKernel, m_workPackages, startX, startY, startZ, endX, endY, endZ,
+		       mpiNbrXLeft, mpiNbrXRight, mpiNbrYLeft, mpiNbrYRight, mpiNbrZLeft, mpiNbrZRight);
+	indexVel++;
+	total_since_bdry++;
+
+/*	if(total_since_bdry == 2*i_nCompThreads)
+	{
+          m_velMpiWP    = indexVel;
+          m_stressMpiWP = indexVel + l_nWP_oneKernel + 1;
+	  
+          m_workPackages[m_velMpiWP].type     = WP_MPI_Vel;
+          m_workPackages[m_stressMpiWP].type  = WP_MPI_Stress;
+          indexVel++;	  
+	  }*/
+      }
+    }
+  }
+
+  // useful for debugging:
+#if 0
+  #pragma omp critical
+  {
+    std::cout << "WP layout: " << std::endl << std::endl;
+
+    for(int i=0; i<m_nWP; i++)
+    {
+      std::cout << i << " ";
+      if(m_workPackages[i].type == WP_VelUpdate)
+	std::cout << "vel kernel " << ' ' << m_workPackages[i].start[0] / m_packageSizeX << ' ' << m_workPackages[i].start[1] / m_packageSizeY << ' ' << m_workPackages[i].start[2] / m_packageSizeZ << std::endl;
+      else if(m_workPackages[i].type == WP_StressUpdate)
+	std::cout << "stress kernel" << ' ' << m_workPackages[i].start[0] / m_packageSizeX << ' ' << m_workPackages[i].start[1] / m_packageSizeY << ' ' << m_workPackages[i].start[2] / m_packageSizeZ << std::endl;
+      else if(m_workPackages[i].type == WP_MPI_Vel)
+	std::cout << "vel mpi" << std::endl;
+      else if(m_workPackages[i].type == WP_MPI_Stress)
+	std::cout << "stress mpi" << std::endl;
+      else
+	std::cout << "?????" << std::endl;
+      
+    }
+  }
+#endif  
 }
 
-odc::parallel::OpenMP::~OpenMP() {
-
-  free( m_nTdsPerWgrpAll  );
-  free( m_nTdsPerWgrpComp );
-  free( m_nPtchsPerWgrpComp );
-  free( m_ptchToWgrpComp  );
-
-  int_pt numPatches = m_ptchDec.m_numPatches;
-  for( int_pt l_ptch = 0; l_ptch < numPatches; l_ptch++ ) {
-    free(m_domDecCompTds[l_ptch]);
-    free(m_rangeCompTds[l_ptch]);
-  }
-  free(m_domDecCompTds);
-  free(m_rangeCompTds);
-
-  for( int l_wgrp = 0; l_wgrp < m_nWgrpsComp; l_wgrp++ ) {
-    free(m_wgrpPtchList[l_wgrp]);
-  }
-  free(m_wgrpPtchList);
+odc::parallel::OpenMP::~OpenMP()
+{
+  free(m_workPackages);
 }
 
 void odc::parallel::OpenMP::partDomain( int_pt   i_nParts,
@@ -411,77 +642,3 @@ bool odc::parallel::OpenMP::isOnZBdry(int i_ptch)
 }
 
 
-
-/*void odc::parallel::OpenMP::printLayoutPart( int      i_nParts,
-                                             int    (*i_domDec)[3],
-                                             int_pt (*i_range)[3][2]  ) {
-  // get n-regions
-  int l_nRegX = 0;
-  int l_nRegY = 0;
-  int l_nRegZ = 0;
-
-  for( int l_part = 0; l_part < i_nParts; l_part++ ) {
-    l_nRegX = std::max( i_domDec[l_part][0], l_nRegX );
-    l_nRegY = std::max( i_domDec[l_part][1], l_nRegY );
-    l_nRegZ = std::max( i_domDec[l_part][2], l_nRegZ );
-  }
-  l_nRegX+=1; l_nRegY+=1; l_nRegZ+=1;
-
-  // print the thread layout
-  for( int l_y = l_nRegY-1; l_y >= 0; l_y-- ) {
-    for( unsigned int l_dim = 0; l_dim < 3; l_dim++ ) {
-      for( int l_z = 0; l_z < l_nRegZ; l_z++ ) {
-        for( int l_x = 0; l_x < l_nRegX; l_x++ ) {
-
-          // find partition
-          int l_part = -1;
-          for( int l_do = 0; l_do < i_nParts; l_do++ ) {
-            if( i_domDec[l_do][0] == l_x &&
-                i_domDec[l_do][1] == l_y &&
-                i_domDec[l_do][2] == l_z ) l_part = l_do;
-          }
-          if( l_dim == 0 ) std::cout << std::setw(3) << l_part << ": ";
-          else  std::cout << std::setw(5) << " ";
-          std::cout << std::setw(5) << i_range[l_part][l_dim][0] << " "
-                    << std::setw(5) << i_range[l_part][l_dim][1] << " |";
-        }
-
-        std::cout << " -" << ( (l_dim==0) ? "x" : (l_dim==1 ?  "y" : "z") ) << "- ";
-      }
-      std::cout << std::endl;
-    }
-    std::cout << std::endl;
-  }
-  }*/
-
-/*void odc::parallel::OpenMP::printLayout() {
-  std::cout << "printing omp layout" << std::endl;
-  std::cout << "#wgrps: " << m_nWgrpsAll << " #(comp wgrps:) " << m_nWgrpsComp << std::endl;
-
-  std::cout << std::endl << "here's the decomposition into work groups" << std::endl;
-  printLayoutPart( m_nWgrpsComp,
-                   m_domDecCompWgrps,
-                  m_rangeCompWgrps );
-
-  std::cout << std::endl << "time for the layout of the individual workgroups into patches" << std::endl;
-
-  for( int l_wg = 0; l_wg < m_nWgrpsComp; l_wg++ ) {
-    std::cout << "wg: " << l_wg << std::endl;
-    printLayoutPart( m_nPtchsPerWgrpComp[l_wg],
-                   m_domDecCompPtchs[l_wg],
-                   m_rangeCompPtchs[l_wg] );
-  }
-
-  std::cout << std::endl << "time for the layout of the individual patches into threads" << std::endl;
-
-  for( int l_wg = 0; l_wg < m_nWgrpsComp; l_wg++ ) {
-    for( int l_ptch = 0; l_ptch < m_nPtchsPerWgrpComp[l_wg]; l_ptch++) {
-      std::cout << "wg: " << l_wg << "; ptch: " << l_ptch << std::endl;
-      printLayoutPart( m_nTdsPerWgrpComp[l_wg],
-                     m_domDecCompTds[l_wg][l_ptch],
-                     m_rangeCompTds[l_wg][l_ptch]);
-    }
-  }
-  
-  
-  }*/

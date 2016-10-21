@@ -19,6 +19,7 @@
 
 // TODO(Josh): verify that source term indexing matches GPU, comment thoroughly
 // TODO(Josh): add checks for READ_STEP
+// TODO(Josh): handle buffer-term source term insertions
 
 #include "parallel/Mpi.hpp"
 #include "parallel/OpenMP.h"
@@ -75,9 +76,9 @@ void applyYASKStencil(STENCIL_CONTEXT context, STENCIL_EQUATIONS *stencils, int 
                       int_pt numX, int_pt numY, int_pt numZ) {
   const idx_t step_rt = 1;
   const idx_t step_rn = 1;
-  const idx_t step_rx = 96;
-  const idx_t step_ry = 96;
-  const idx_t step_rz = 32;
+  const idx_t step_rx = 16;
+  const idx_t step_ry = 16;
+  const idx_t step_rz = 64;
 
 
   int_pt end_x = start_x + numX;
@@ -196,68 +197,74 @@ int main( int i_argc, char *i_argv[] ) {
     l_sources.addsrc(initial_ts, l_options.m_dH, l_options.m_dT, l_options.m_nSt,
                      l_options.m_readStep, 3, patch_decomp);
 
-    for(int i_dir=0; i_dir<3; i_dir++)
-      patch_decomp.stressMpiSynchronize(i_dir,0);
+    // PPP: bring this back
+    //for(int i_dir=0; i_dir<3; i_dir++)
+    //  patch_decomp.stressMpiSynchronize(i_dir,0);
     
     patch_decomp.synchronize();
     
     // Calculate strides
-    int_pt strideX = (odc::parallel::Mpi::m_rangeY+2*odc::constants::boundary)*(odc::parallel::Mpi::m_rangeZ+2*odc::constants::boundary);
-    int_pt strideY = odc::parallel::Mpi::m_rangeZ+2*odc::constants::boundary;
+    int_pt strideX = (l_options.m_nY+2*odc::constants::boundary)*(l_options.m_nZ+2*odc::constants::boundary);
+    int_pt strideY = l_options.m_nZ+2*odc::constants::boundary;
     int_pt strideZ = 1;
     
-    int_pt lamMuStrideX = odc::parallel::Mpi::m_rangeY+2*odc::constants::boundary;
+    int_pt lamMuStrideX = l_options.m_nY+2*odc::constants::boundary;
 
     int_pt numUpdatesPerIter = BDRY_SIZE/6;
     int_pt startMultUpdates = l_options.m_nSt;
     if((l_options.m_nSt % numUpdatesPerIter) != 0)
       startMultUpdates += (l_options.m_nSt - (l_options.m_nSt % numUpdatesPerIter));
-      
-#pragma omp parallel
+
+    const int numCompThreads = 4;
+    int tdsPerWgrp[2] = {numCompThreads,1};
+
+    // TODO(Josh): make this an int_pt?
+    volatile int nextWP[numCompThreads][2];
+ 
+    
+#pragma omp parallel num_threads(5)
 {
     double start_time = -1.;
     int start_ts = 0;
     
-    int tdsPerWgrp[4] = {2,16,16,16};
 
-    odc::parallel::OpenMP l_omp(odc::parallel::Mpi::m_rangeX, odc::parallel::Mpi::m_rangeY, 
-				odc::parallel::Mpi::m_rangeZ,
-                                1, tdsPerWgrp, patch_decomp);
-    int_pt l_maxPtchsPerWgrp = l_omp.maxNumPtchsPerWgrp();
+    odc::parallel::OpenMP l_omp(odc::parallel::Mpi::m_rangeX, odc::parallel::Mpi::m_rangeY, odc::parallel::Mpi::m_rangeZ, 1, tdsPerWgrp[0], patch_decomp);
+
+    int_pt l_maxPtchsPerWgrp = 1;//l_omp.maxNumPtchsPerWgrp();
     
     int_pt start_x, start_y, start_z;
+    int_pt end_x, end_y, end_z;
     int_pt size_x, size_y, size_z;
 
+    bool amCompThread = l_omp.isComputationThread();
+    bool amManageThread = !amCompThread;
+
+    odc::parallel::OmpManager l_ompManager(numCompThreads, l_omp.m_nWP, l_omp);
+
+    int compThreadId = -1;
+    if(amCompThread)
+      compThreadId = l_omp.getThreadNumGrp();
+
+    int lastAssignment = 0;
+    
+
+    #pragma omp barrier
     
     //  Main LOOP Starts
     for (int_pt tloop=0; tloop<=l_options.m_numTimesteps / numUpdatesPerIter; tloop++) {
       for(int_pt ptch = 0; ptch < l_maxPtchsPerWgrp; ptch++) {
 
-        int_pt p_id = l_omp.getPatchNumber(ptch);
+        int_pt p_id = 0;//l_omp.getPatchNumber(ptch);
 
         Patch* p = &patch_decomp.m_patches[p_id];
         int_pt h = p->bdry_width;
+                
 
-        bool on_x_max_bdry = (odc::parallel::Mpi::coords[0] == odc::parallel::Mpi::m_ranksX) && l_omp.isOnXMaxBdry(p_id);
-        bool on_y_zero_bdry = (odc::parallel::Mpi::coords[1]==0) && l_omp.isOnYZeroBdry(p_id);
-        bool on_z_bdry = (odc::parallel::Mpi::coords[2]==0) && l_omp.isOnZBdry(p_id);
-        
-        int_pt l_start[3];
-        int_pt l_size[3];
-        l_omp.getTrdExtent(p_id, l_start, l_size);
-
-        start_x = l_start[0]; start_y = l_start[1]; start_z = l_start[2];
-        size_x = l_size[0]; size_y = l_size[1]; size_z = l_size[2];
-	
-        #pragma omp barrier
-        
-
-        int_pt n_tval = numUpdatesPerIter;
+        int_pt n_tval = 1;//numUpdatesPerIter;
         if(tloop < startMultUpdates)
           n_tval = 1;
         
         for(int_pt tval=0; tval < n_tval; tval++) {
-
           
           int_pt tstep = 0;
           if(tloop > startMultUpdates)
@@ -265,112 +272,255 @@ int main( int i_argc, char *i_argv[] ) {
           else
             tstep = tloop * 1 + tval + 1;           
         
-          if(l_omp.getThreadNumAll() == 0 && ptch == 0 && l_rank == 0) {
+          if(amManageThread && ptch == 0 && l_rank == 0)
+	  {
             std::cout << "Beginning  timestep: " << tstep <<  ' ' << tval << ' ' << tloop << ' ' << startMultUpdates << std::endl;
-          }
-
-          if(l_omp.participates(ptch)) {
-#ifdef YASK
-            applyYASKStencil(p->yask_context, &(p->yask_stencils), 0, tstep, start_x, start_y, start_z,
-                             size_x, size_y, size_z);
-#else
-            odc::kernels::SCB::update_velocity(&p->soa.m_velocityX[start_x][start_y][start_z], &p->soa.m_velocityY[start_x][start_y][start_z],
-                        &p->soa.m_velocityZ[start_x][start_y][start_z], size_x, size_y,
-                        size_z, p->strideX, p->strideY, p->strideZ, &p->soa.m_stressXX[start_x][start_y][start_z],
-                        &p->soa.m_stressXY[start_x][start_y][start_z], &p->soa.m_stressXZ[start_x][start_y][start_z],
-                        &p->soa.m_stressYY[start_x][start_y][start_z], &p->soa.m_stressYZ[start_x][start_y][start_z],
-                        &p->soa.m_stressZZ[start_x][start_y][start_z], &p->cerjan.m_spongeCoeffX[start_x],
-                        &p->cerjan.m_spongeCoeffY[start_y], &p->cerjan.m_spongeCoeffZ[start_z],
-                        &p->mesh.m_density[start_x][start_y][start_z], l_options.m_dT, l_options.m_dH);
-#endif
-          }
-
-          #pragma omp barrier
-
-	  // synchronize velocity over MPI in all 3 dimensions
-	  if(l_omp.getThreadNumAll() == 0)
-          {
-	    for(int i_dir=0; i_dir<3; i_dir++)
-              patch_decomp.velMpiSynchronize(i_dir,tstep+1);
 	  }
 
+          if(amManageThread)
+          {
+            l_ompManager.initialWorkPackages(&nextWP[0][0]);
+          }
 	  #pragma omp barrier
+
 	  
 
-          if(l_omp.participates(ptch) && on_z_bdry) {
+	  lastAssignment = 0;
+          while(amCompThread)
+	  {
+	    int nextWPId = nextWP[compThreadId][lastAssignment];
+	    while(nextWPId < 0)
+	    {
+	      if(nextWP[compThreadId][1-lastAssignment] > 0)
+		lastAssignment = 1-lastAssignment;	      
+	      nextWPId = nextWP[compThreadId][lastAssignment];
+	    }
+	    
+
+	    if(nextWPId > l_omp.m_nWP)
+	    {
+	      if(nextWP[compThreadId][1-lastAssignment] <= l_omp.m_nWP)
+	      {
+		lastAssignment = 1-lastAssignment;
+		continue;
+	      }
+	      else
+	        break;
+	    }
+	    
+	    odc::parallel::WorkPackage& l_curWP = l_omp.m_workPackages[nextWPId-1];
+
+	    start_x = l_curWP.start[0] + h;
+	    start_y = l_curWP.start[1] + h;
+	    start_z = l_curWP.start[2] + h;
+
+	    end_x = l_curWP.end[0] + h;
+	    end_y = l_curWP.end[1] + h;
+	    end_z = l_curWP.end[2] + h;
+
+	    size_x = end_x - start_x;
+	    size_y = end_y - start_y;
+	    size_z = end_z - start_z;
+
+	    if(l_curWP.type == odc::parallel::WP_VelUpdate)
+	    {
+	      if(l_curWP.copyFromBuffer)
+	      {
+		for(int l_x = 0; l_x <= 2; l_x++)
+		{
+		  for(int l_y = 0; l_y <= 2; l_y++)
+		  {
+		    for(int l_z = 0; l_z <= 2; l_z++)
+		    {
+		      if(l_curWP.mpiDir[l_x][l_y][l_z])
+		        patch_decomp.copyStressBoundaryFromBuffer(odc::parallel::Mpi::m_buffRecv[l_x][l_y][l_z], l_x-1, l_y-1, l_z-1, start_x-h, start_y-h, start_z-h, end_x-h, end_y-h, end_z-h, tstep+1);
+		    }
+		  }
+		}
+	      }
+	    
 #ifdef YASK
-            yask_update_free_surface_boundary_velocity((Grid_TXYZ *)p->yask_context.vel_x,
-                                                       (Grid_TXYZ *)p->yask_context.vel_y,
-                                                       (Grid_TXYZ *)p->yask_context.vel_z,
-                                                       start_x, start_y, start_z,
-                                                       size_x, size_y, size_z,
-                                                       &p->mesh.m_lam_mu[0][0][0], p->lamMuStrideX,
-                                                       tstep+1,on_x_max_bdry, on_y_zero_bdry);
-#else
-              update_free_surface_boundary_velocity(&p->soa.m_velocityX[start_x][start_y][start_z], &p->soa.m_velocityY[start_x][start_y][start_z], &p->soa.m_velocityZ[start_x][start_y][start_z], p->strideX, p->strideY, p->strideZ,
-                                                         size_x, size_y, size_z, &p->mesh.m_lam_mu[start_x][start_y][0], p->lamMuStrideX,
-                                                         on_x_max_bdry, on_y_zero_bdry);
+              applyYASKStencil(p->yask_context, &(p->yask_stencils), 0, tstep, start_x, start_y, start_z,
+                               size_x, size_y, size_z);
+#else  
+              odc::kernels::SCB::update_velocity(&p->soa.m_velocityX[start_x][start_y][start_z], &p->soa.m_velocityY[start_x][start_y][start_z],
+                          &p->soa.m_velocityZ[start_x][start_y][start_z], size_x, size_y,
+                          size_z, p->strideX, p->strideY, p->strideZ, &p->soa.m_stressXX[start_x][start_y][start_z],
+                          &p->soa.m_stressXY[start_x][start_y][start_z], &p->soa.m_stressXZ[start_x][start_y][start_z],
+                          &p->soa.m_stressYY[start_x][start_y][start_z], &p->soa.m_stressYZ[start_x][start_y][start_z],
+                          &p->soa.m_stressZZ[start_x][start_y][start_z], &p->cerjan.m_spongeCoeffX[start_x],
+                          &p->cerjan.m_spongeCoeffY[start_y], &p->cerjan.m_spongeCoeffZ[start_z],
+                          &p->mesh.m_density[start_x][start_y][start_z], l_options.m_dT, l_options.m_dH);
 #endif
-          }
-          #pragma omp barrier
 
-	  
+	      if(l_curWP.copyToBuffer)
+	      {
+		for(int l_x = 0; l_x <= 2; l_x++)
+		{
+		  for(int l_y = 0; l_y <= 2; l_y++)
+		  {
+		    for(int l_z = 0; l_z <= 2; l_z++)
+		    {
+		      if(l_curWP.mpiDir[l_x][l_y][l_z])
+		      {
+		        patch_decomp.copyVelBoundaryToBuffer(odc::parallel::Mpi::m_buffSend[l_x][l_y][l_z], l_x-1, l_y-1, l_z-1, start_x-h, start_y-h, start_z-h, end_x-h, end_y-h, end_z-h, tstep+1);
+		      }
+		    }
+		  }
+		}
+	      }
 	      
+	    }
 
-          if(l_omp.participates(ptch)) {        
+	    else if(l_curWP.type == odc::parallel::WP_StressUpdate)
+	    {
+
+	      if(l_curWP.copyFromBuffer)
+	      {
+		for(int l_x = 0; l_x <= 2; l_x++)
+		{
+		  for(int l_y = 0; l_y <= 2; l_y++)
+		  {
+		    for(int l_z = 0; l_z <= 2; l_z++)
+		    {
+		      if(l_curWP.mpiDir[l_x][l_y][l_z])
+		        patch_decomp.copyVelBoundaryFromBuffer(odc::parallel::Mpi::m_buffRecv[l_x][l_y][l_z], l_x-1, l_y-1, l_z-1, start_x-h, start_y-h, start_z-h, end_x-h, end_y-h, end_z-h, tstep+1);
+		    }
+		  }
+		}
+	      }
+
+	      if(l_curWP.freeSurface)
+	      {
 #ifdef YASK
-            applyYASKStencil(p->yask_context, &(p->yask_stencils), 1, tstep, start_x, start_y, start_z,
-                             size_x, size_y, size_z);
+                yask_update_free_surface_boundary_velocity((Grid_TXYZ *)p->yask_context.vel_x,
+                                                           (Grid_TXYZ *)p->yask_context.vel_y,
+                                                           (Grid_TXYZ *)p->yask_context.vel_z,
+                                                           start_x, start_y, start_z,
+                                                           size_x, size_y, size_z,
+                                                           &p->mesh.m_lam_mu[0][0][0], p->lamMuStrideX,
+                                                           tstep+1, l_curWP.xMaxBdry, l_curWP.yMinBdry);
 #else
-            update_stress_visco(&p->soa.m_velocityX[start_x][start_y][start_z], &p->soa.m_velocityY[start_x][start_y][start_z],
-                            &p->soa.m_velocityZ[start_x][start_y][start_z], size_x, size_y,
-                            size_z, p->strideX, p->strideY, p->strideZ, p->lamMuStrideX,
-                            &p->soa.m_stressXX[start_x][start_y][start_z],
-                            &p->soa.m_stressXY[start_x][start_y][start_z], &p->soa.m_stressXZ[start_x][start_y][start_z],
-                            &p->soa.m_stressYY[start_x][start_y][start_z], &p->soa.m_stressYZ[start_x][start_y][start_z],
-                            &p->soa.m_stressZZ[start_x][start_y][start_z], &p->mesh.m_coeff[0],
-                            &p->cerjan.m_spongeCoeffX[start_x], &p->cerjan.m_spongeCoeffY[start_y],
-                            &p->cerjan.m_spongeCoeffZ[start_z], &p->mesh.m_density[start_x][start_y][start_z],
-                            &p->mesh.m_tau1[start_x][start_y][start_z], &p->mesh.m_tau2[start_x][start_y][start_z],
-                            &p->mesh.m_weight_index[start_x][start_y][start_z], &p->mesh.m_weights[start_x][start_y][start_z],
-                            &p->mesh.m_lam[start_x][start_y][start_z], &p->mesh.m_mu[start_x][start_y][start_z],
-                            &p->mesh.m_lam_mu[start_x][start_y][0], &p->mesh.m_qp[start_x][start_y][start_z],
-                            &p->mesh.m_qs[start_x][start_y][start_z], l_options.m_dT, l_options.m_dH,
-                            &p->soa.m_memXX[start_x][start_y][start_z], &p->soa.m_memYY[start_x][start_y][start_z], &p->soa.m_memZZ[start_x][start_y][start_z],
-                            &p->soa.m_memXY[start_x][start_y][start_z], &p->soa.m_memXZ[start_x][start_y][start_z], &p->soa.m_memYZ[start_x][start_y][start_z]);
-            
-/*            odc::kernels::SCB::update_stress_elastic(&p->soa.m_velocityX[start_x][start_y][start_z], &p->soa.m_velocityY[start_x][start_y][start_z],
-                            &p->soa.m_velocityZ[start_x][start_y][start_z], size_x, size_y,
-                            size_z, p->strideX, p->strideY, p->strideZ,
-                            &p->soa.m_stressXX[start_x][start_y][start_z],
-                            &p->soa.m_stressXY[start_x][start_y][start_z], &p->soa.m_stressXZ[start_x][start_y][start_z],
-                            &p->soa.m_stressYY[start_x][start_y][start_z], &p->soa.m_stressYZ[start_x][start_y][start_z],
-                            &p->soa.m_stressZZ[start_x][start_y][start_z], &p->mesh.m_coeff[0],
-                            &p->cerjan.m_spongeCoeffX[start_x], &p->cerjan.m_spongeCoeffY[start_y],
-                            &p->cerjan.m_spongeCoeffZ[start_z], &p->mesh.m_density[start_x][start_y][start_z],
-                            &p->mesh.m_lam[start_x][start_y][start_z], &p->mesh.m_mu[start_x][start_y][start_z],
-                            &p->mesh.m_lam_mu[start_x][start_y][0], l_options.m_dT, l_options.m_dH);*/
+                update_free_surface_boundary_velocity(&p->soa.m_velocityX[start_x][start_y][start_z], &p->soa.m_velocityY[start_x][start_y][start_z], &p->soa.m_velocityZ[start_x][start_y][start_z],
+						      p->strideX, p->strideY, p->strideZ,
+                                                      size_x, size_y, size_z, &p->mesh.m_lam_mu[start_x][start_y][0], p->lamMuStrideX,
+                                                      l_curWP.xMaxBdry, l_curWP.yMinBdry);
+#endif		
+	      }
+
+	      
+#ifdef YASK
+              applyYASKStencil(p->yask_context, &(p->yask_stencils), 1, tstep, start_x, start_y, start_z,
+                               size_x, size_y, size_z);
+#else
+              update_stress_visco(&p->soa.m_velocityX[start_x][start_y][start_z], &p->soa.m_velocityY[start_x][start_y][start_z],
+                              &p->soa.m_velocityZ[start_x][start_y][start_z], size_x, size_y,
+                              size_z, p->strideX, p->strideY, p->strideZ, p->lamMuStrideX,
+                              &p->soa.m_stressXX[start_x][start_y][start_z],
+                              &p->soa.m_stressXY[start_x][start_y][start_z], &p->soa.m_stressXZ[start_x][start_y][start_z],
+                              &p->soa.m_stressYY[start_x][start_y][start_z], &p->soa.m_stressYZ[start_x][start_y][start_z],
+                              &p->soa.m_stressZZ[start_x][start_y][start_z], &p->mesh.m_coeff[0],
+                              &p->cerjan.m_spongeCoeffX[start_x], &p->cerjan.m_spongeCoeffY[start_y],
+                              &p->cerjan.m_spongeCoeffZ[start_z], &p->mesh.m_density[start_x][start_y][start_z],
+                              &p->mesh.m_tau1[start_x][start_y][start_z], &p->mesh.m_tau2[start_x][start_y][start_z],
+                              &p->mesh.m_weight_index[start_x][start_y][start_z], &p->mesh.m_weights[start_x][start_y][start_z],
+                              &p->mesh.m_lam[start_x][start_y][start_z], &p->mesh.m_mu[start_x][start_y][start_z],
+                              &p->mesh.m_lam_mu[start_x][start_y][0], &p->mesh.m_qp[start_x][start_y][start_z],
+                              &p->mesh.m_qs[start_x][start_y][start_z], l_options.m_dT, l_options.m_dH,
+                              &p->soa.m_memXX[start_x][start_y][start_z], &p->soa.m_memYY[start_x][start_y][start_z], &p->soa.m_memZZ[start_x][start_y][start_z],
+                              &p->soa.m_memXY[start_x][start_y][start_z], &p->soa.m_memXZ[start_x][start_y][start_z], &p->soa.m_memYZ[start_x][start_y][start_z]);
 #endif
+
+	      if(l_curWP.freeSurface)
+	      {
+#ifdef YASK
+                yask_update_free_surface_boundary_stress((Grid_TXYZ *)p->yask_context.stress_zz,(Grid_TXYZ *)p->yask_context.stress_xz,
+                                                         (Grid_TXYZ *)p->yask_context.stress_yz, start_x, start_y, start_z,
+                                                         size_x, size_y, size_z, tstep+1);            
+#else
+                update_free_surface_boundary_stress(&p->soa.m_stressZZ[start_x][start_y][start_z], &p->soa.m_stressXZ[start_x][start_y][start_z], &p->soa.m_stressYZ[start_x][start_y][start_z],
+                                                    p->strideX, p->strideY, p->strideZ, size_x, size_y, size_z);
+#endif		
+	      }
+
+	      if(l_curWP.copyToBuffer)
+	      {
+		for(int l_x = 0; l_x <= 2; l_x++)
+		{
+		  for(int l_y = 0; l_y <= 2; l_y++)
+		  {
+		    for(int l_z = 0; l_z <= 2; l_z++)
+		    {
+		      if(l_curWP.mpiDir[l_x][l_y][l_z])
+		        patch_decomp.copyStressBoundaryToBuffer(odc::parallel::Mpi::m_buffSend[l_x][l_y][l_z], l_x-1, l_y-1, l_z-1, start_x-h, start_y-h, start_z-h, end_x-h, end_y-h, end_z-h, tstep+1);
+		    }
+		  }
+		}
+	      }	      
+	      
+	    }
+
+  	    else if(l_curWP.type == odc::parallel::WP_MPI_Vel)
+	    {
+	      for(int i=0; i<3; i++)
+                odc::parallel::Mpi::sendRecvBuffers(3, i);
+	    }
+
+	    else if(l_curWP.type == odc::parallel::WP_MPI_Stress)
+	    {
+	      for(int i=0; i<3; i++)
+                odc::parallel::Mpi::sendRecvBuffers(6, i);
+	    }
+	    
+
+	    nextWP[compThreadId][lastAssignment] = -nextWP[compThreadId][lastAssignment]; 
+	    lastAssignment = 1 - lastAssignment;
           }
+
+
+	  
+	  if(amManageThread)
+	  {
+	    int num_abort = 0;
+	    int next_task;
+	    while(num_abort < numCompThreads)
+	    {
+	      num_abort = 0;
+	      for(int l_td = 0; l_td < numCompThreads; l_td++)
+	      {
+	        for(int l_task=0; l_task<2; l_task++)
+	        {
+		  if(nextWP[l_td][l_task] < 0)
+	  	  {
+		    l_ompManager.setDone(-nextWP[l_td][l_task]);
+		    if(l_ompManager.tasksLeft())
+		    {
+		      next_task = l_ompManager.nextTask();
+		      if(next_task >= 0)
+		        nextWP[l_td][l_task] = next_task + 1;
+		    }
+		    else
+		    {
+		      nextWP[l_td][l_task] = l_omp.m_nWP+1;
+		    }
+		  }
+	        }
+
+		if(nextWP[l_td][0] > l_omp.m_nWP && nextWP[l_td][1] > l_omp.m_nWP)
+		  num_abort++;
+	      }
+	    }
+	    if(l_ompManager.tasksLeft())
+	    {
+	      std::cerr << "!!Error: quitting but tasks left..." << std::endl;
+	    }
+	  }
+
+	  
           #pragma omp barrier
-
-
 	  
-	  
-          if(l_omp.participates(ptch) && on_z_bdry) {
-#ifdef YASK
-            yask_update_free_surface_boundary_stress((Grid_TXYZ *)p->yask_context.stress_zz,(Grid_TXYZ *)p->yask_context.stress_xz,
-                                                     (Grid_TXYZ *)p->yask_context.stress_yz, start_x, start_y,start_z,
-                                                     size_x, size_y, size_z, tstep+1);            
-#else
-            update_free_surface_boundary_stress(&p->soa.m_stressZZ[start_x][start_y][start_z], &p->soa.m_stressXZ[start_x][start_y][start_z], &p->soa.m_stressYZ[start_x][start_y][start_z],
-                                             p->strideX, p->strideY, p->strideZ, size_x, size_y, size_z);
-#endif
-          }
-          #pragma omp barrier            
-        
-          
-          if (tstep < l_options.m_nSt) {  
+          // PPP: parallelize this
+          if (tstep < l_options.m_nSt && amManageThread) {  
             update_stress_from_fault_sources(tstep, l_options.m_readStep, 3,
                                              &l_sources.m_ptpSrc[0], l_sources.m_nPsrc,
                                              l_options.m_nX, l_options.m_nY, l_options.m_nZ,
@@ -378,22 +528,15 @@ int main( int i_argc, char *i_argv[] ) {
                                              &l_sources.m_ptAxx[0], &l_sources.
                                              m_ptAxy[0], &l_sources.m_ptAxz[0], &l_sources.m_ptAyy[0], &l_sources.m_ptAyz[0],
                                              &l_sources.m_ptAzz[0], l_options.m_dT, l_options.m_dH,
-                                             patch_decomp, start_x, start_y, start_z,
-                                             size_x, size_y, size_z, p_id);
+                                             patch_decomp, 0, 0, 0,
+                                             odc::parallel::Mpi::m_rangeX + 2*h, odc::parallel::Mpi::m_rangeY + 2*h,
+					     odc::parallel::Mpi::m_rangeZ + 2*h, p_id);
           }
 
 	  #pragma omp barrier
-	  
-	  if(l_omp.getThreadNumAll() == 0)
-	  {
-	    for(int i_dir=0; i_dir<3; i_dir++)
-     	      patch_decomp.stressMpiSynchronize(i_dir,tstep+1);	  
-	  }
 
-	  #pragma omp barrier
-	  
           if(l_omp.getThreadNumAll() == 0 && ptch == l_maxPtchsPerWgrp - 1 && tval == n_tval-1) {
-            if (tstep >= l_options.m_nSt && l_rank == 0) {
+            if (tstep > 10 && l_rank == 0) {
               if (start_time < 0) {
                 start_time = wall_time();
                 start_ts = tstep;              
@@ -410,10 +553,12 @@ int main( int i_argc, char *i_argv[] ) {
           
             patch_decomp.synchronize();
 
-            l_output.update(tstep, patch_decomp);
+            //l_output.update(tstep, patch_decomp);
 	    l_checkpoint.writeUpdatedStats(tstep, patch_decomp);
           }
         }
+
+//        #pragma omp barrier
       }
     }
 }
@@ -426,5 +571,7 @@ int main( int i_argc, char *i_argv[] ) {
     
     // close mpi
     std::cout << "closing mpi" << std::endl;
-    odc::parallel::Mpi::finalize();    
+    odc::parallel::Mpi::finalize();
+
+    return 0;
 }
