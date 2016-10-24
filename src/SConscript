@@ -30,6 +30,7 @@ if env['parallelization'] in ['cuda', 'mpi_cuda' ]:
 # CPU-version
 elif env['parallelization'] in ['mpi_omp']:
   env.Program( 'pmcl3d', source = [ 'main.cpp',
+                                    'util.cpp',
                                     'data/Grid.cpp',
                                     'data/Mesh.cpp',
                                     'data/Cerjan.cpp',
@@ -46,6 +47,7 @@ elif env['parallelization'] in ['mpi_omp']:
                                     ] )
 else:
   env.Program( 'pmcl3d', source = [ 'main.cpp',
+                                    'util.cpp',
                                     'data/Grid.cpp',
                                     'data/Mesh.cpp',
                                     'data/Cerjan.cpp',

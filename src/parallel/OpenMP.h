@@ -438,8 +438,10 @@ public:
     m_barrierDependency[3] = m_omp.m_endOfStressBdry;
     m_barrierLeft[3] = m_barrierDependency[3] + 1;
 
-    #pragma omp critical
-    {
+    // Useful for debugging 
+#if 0
+#pragma omp critical
+{
     std::cout << "barriers: " << std::endl;
     for(int i=0; i<nWP; i++)
     {
@@ -448,7 +450,9 @@ public:
 	std::cout << i << ' ' << m_barrierDependency[m_indexToBarrier[i]] << std::endl;
       }
     }
-    }
+}
+#endif
+
   }
 
   ~OmpManager()

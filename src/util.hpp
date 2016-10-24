@@ -1,8 +1,8 @@
 /**
- @author Alexander Breuer (anbreuer AT ucsd.edu)
+ @author Josh Tobin (rjtobin AT ucsd.edu)
  
  @section DESCRIPTION
- Definition of compile time constants.
+ Misc utility functions.
  
  @section LICENSE
  Copyright (c) 2015-2016, Regents of the University of California
@@ -17,50 +17,22 @@
  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef CONSTANTS_HPP
-#define CONSTANTS_HPP
+#if !defined(UTIL_H)
+#define UTIL_H
 
+#include <time.h>
+#include <sys/time.h>
 
-// constants of shared code - start
-#ifdef __RESTRICT
-#define RESTRICT restrict
-#else
-#define RESTRICT
-#endif
+#include "data/PatchDecomp.hpp"
 
-#ifdef USE_CUDA
-#define LOOP 1
-#define ALIGN 32
-#endif
+double wall_time();
 
-typedef float *RESTRICT *RESTRICT *RESTRICT Grid3D;
-typedef int   *RESTRICT *RESTRICT *RESTRICT Grid3Dww;
-typedef float *RESTRICT                     Grid1D;
-typedef int   *RESTRICT                     PosInf;
-// constants of shared code - end
-
-// floating point precision
-typedef float real;
-#define AWP_MPI_REAL MPI_FLOAT
-
-// int for grid points
-typedef long long int_pt;
-#define AWP_PT_FORMAT_STRING "lld"
-
-// constants used in patch decomposition
-#define PATCH_X 1024
-#define PATCH_Y 1024
-#define PATCH_Z 512
-#define BDRY_SIZE 24
-
-
-#ifdef __cplusplus
-namespace odc {
-    namespace constants {
-        static const int_pt boundary = 2;
-    }
-}
+#ifdef YASK
+void applyYASKStencil(STENCIL_CONTEXT context, STENCIL_EQUATIONS *stencils, int stencil_index, int_pt t,
+                      int_pt start_x, int_pt start_y, int_pt start_z,
+                      int_pt numX, int_pt numY, int_pt numZ);
 #endif
 
 
 #endif
+

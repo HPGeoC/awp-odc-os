@@ -458,7 +458,7 @@ public:
                        int_pt i_timestep);
 
   /**
-   * Copy velocity boundary to 1D buffers for MPI.
+   * Copy velocity boundary to 1D buffers for MPI (DEPRECATED).
    *
    * @param o_buffer buffer for velocities
    * @param i_dirX x direction of boundary
@@ -492,7 +492,7 @@ public:
 
   
   /**
-   * Copy velocity boundary from 1D buffers from MPI.
+   * Copy velocity boundary from 1D buffers from MPI (DEPRECATED).
    *
    * @param o_buffer buffer for velocities
    * @param i_dirX x direction of boundary
@@ -525,7 +525,7 @@ public:
 			       int_pt i_endX, int_pt i_endY, int_pt i_endZ, int_pt i_timestep);
 
   /**
-   * Copy stress boundary to 1D buffers for MPI.
+   * Copy stress boundary to 1D buffers for MPI (DEPRECATED).
    *
    * @param o_buffer buffer for stress
    * @param i_dirX x direction of boundary
@@ -558,7 +558,7 @@ public:
 			       int_pt i_endX, int_pt i_endY, int_pt i_endZ, int_pt i_timestep);
   
   /**
-   * Copy stress boundary from 1D buffers from MPI.
+   * Copy stress boundary from 1D buffers from MPI (DEPRECATED).
    *
    * @param o_buffer buffer for stress
    * @param i_dirX x direction of boundary
@@ -590,7 +590,6 @@ public:
         	               int i_dirZ, int_pt i_startX, int_pt i_startY, int_pt i_startZ,
 			       int_pt i_endX, int_pt i_endY, int_pt i_endZ, int_pt i_timestep);
 
-  
   /**
    * Gets max/min tmpvs observed during mesh initialization.
    *
