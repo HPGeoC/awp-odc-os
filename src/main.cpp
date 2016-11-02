@@ -119,7 +119,8 @@ int main( int i_argc, char *i_argv[] )
 			     l_options.m_nZ,
 			     l_options.m_nX, l_options.m_nY, l_options.m_nZ,
 			     l_options.m_inSrc,
-			     l_options.m_inSrcI2 );
+			     l_options.m_inSrcI2,
+                             patch_decomp);
     
         
   // If one or more source fault nodes are owned by this process then call "addsrc" to update the stress tensor values
@@ -146,7 +147,7 @@ int main( int i_argc, char *i_argv[] )
   int_pt lamMuStrideX = l_options.m_nY+2*odc::constants::boundary;
 
   // Set the number of computational threads we will use
-  const int numCompThreads = 4;
+  const int numCompThreads = 62;
   // PPP: This is LEGACY and should be removed:
   int tdsPerWgrp[2] = {numCompThreads,1};
 
@@ -456,9 +457,11 @@ int main( int i_argc, char *i_argv[] )
 					 &l_sources.m_ptpSrc[0], l_sources.m_nPsrc,
 					 l_options.m_nX, l_options.m_nY, l_options.m_nZ,
 					 strideX, strideY, strideZ,
-					 &l_sources.m_ptAxx[0], &l_sources.
-					 m_ptAxy[0], &l_sources.m_ptAxz[0], &l_sources.m_ptAyy[0], &l_sources.m_ptAyz[0],
-					 &l_sources.m_ptAzz[0], l_options.m_dT, l_options.m_dH,
+					 &l_sources.m_ptAxx[0], &l_sources.m_ptAxy[0], &l_sources.m_ptAxz[0],
+					 &l_sources.m_ptAyy[0], &l_sources.m_ptAyz[0], &l_sources.m_ptAzz[0],
+					 &l_sources.m_locStrXX[0], &l_sources.m_locStrXY[0], &l_sources.m_locStrXZ[0],
+					 &l_sources.m_locStrYY[0], &l_sources.m_locStrYZ[0], &l_sources.m_locStrZZ[0],
+					 l_options.m_dT, l_options.m_dH,
 					 patch_decomp, 0, 0, 0,
 					 odc::parallel::Mpi::m_rangeX + 2*h, odc::parallel::Mpi::m_rangeY + 2*h,
 					 odc::parallel::Mpi::m_rangeZ + 2*h, p_id);

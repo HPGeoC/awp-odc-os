@@ -37,7 +37,7 @@ void applyYASKStencil(STENCIL_CONTEXT context, STENCIL_EQUATIONS *stencils, int 
   const idx_t step_rt = 1;
   const idx_t step_rn = 1;
   const idx_t step_rx = 16;
-  const idx_t step_ry = 16;
+  const idx_t step_ry = 8;
   const idx_t step_rz = 64;
 
 

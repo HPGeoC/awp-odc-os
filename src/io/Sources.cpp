@@ -30,13 +30,77 @@ odc::io::Sources::Sources(int   i_iFault,
                  int_pt   i_nZ,
                  int      i_nXt, int i_nYt, int i_nZt,
                  char     *i_inSrc,
-                 char     *i_inSrcI2 ) {
+		 char     *i_inSrcI2,
+                 PatchDecomp& i_pd ) {
+
+    const int dim = 3;
     
-    
-    inisource(i_iFault, i_nSrc, i_readStep, i_nSt, &m_srcProc, 3,
+    inisource(i_iFault, i_nSrc, i_readStep, i_nSt, &m_srcProc, dim,
               &m_nPsrc, i_nZ, &m_ptpSrc,&m_ptAxx, &m_ptAyy, &m_ptAzz, &m_ptAxz,
               &m_ptAyz, &m_ptAxy, i_inSrc, i_inSrcI2 );
 
+
+    // Establish pointers to the various stress components
+
+    m_locStrXX = new real*[m_nPsrc];
+    m_locStrXY = new real*[m_nPsrc];
+    m_locStrXZ = new real*[m_nPsrc];
+    m_locStrYY = new real*[m_nPsrc];
+    m_locStrYZ = new real*[m_nPsrc];
+    m_locStrZZ = new real*[m_nPsrc];
+
+    for(int j=0; j<m_nPsrc; j++)
+    {
+        int_pt idx = m_ptpSrc[j*dim]-1;
+        int_pt idy = m_ptpSrc[j*dim+1]-1;
+        int_pt idz = m_ptpSrc[j*dim+2]-1;
+
+        int patch_id = i_pd.globalToPatch(idx,idy,idz);
+        int_pt x = i_pd.globalToLocalX(idx,idy,idz);
+        int_pt y = i_pd.globalToLocalY(idx,idy,idz);
+        int_pt z = i_pd.globalToLocalZ(idx,idy,idz);
+
+	//TODO(Josh): mpi boundary terms CURP
+
+#ifdef YASK
+        Patch& p = i_pd.m_patches[patch_id];
+
+	// Make sure YASK's real equals size of AWP real
+	assert(sizeof(real) == sizeof(real_t));
+
+	// The zero constants in the below correspond to timestep and grid_num,
+	// which are irrelevant for our usage of YASK (make sure that the YASK
+	// TIMESTEP constant is set to 1!)
+
+	m_locStrXX[j] = (real*) p.yask_context.stress_xx->getElemPtr(0,x,y,z,0); 
+	m_locStrXY[j] = (real*) p.yask_context.stress_xy->getElemPtr(0,x,y,z,0);
+	m_locStrXZ[j] = (real*) p.yask_context.stress_xz->getElemPtr(0,x,y,z,0);
+	m_locStrYY[j] = (real*) p.yask_context.stress_yy->getElemPtr(0,x,y,z,0);
+	m_locStrYZ[j] = (real*) p.yask_context.stress_yz->getElemPtr(0,x,y,z,0);
+	m_locStrZZ[j] = (real*) p.yask_context.stress_zz->getElemPtr(0,x,y,z,0);
+#else
+	m_locStrXX[j] = &i_pd.m_patches[patch_id].soa.m_stressXX[x][y][z];
+	m_locStrXY[j] = &i_pd.m_patches[patch_id].soa.m_stressXY[x][y][z];
+	m_locStrXZ[j] = &i_pd.m_patches[patch_id].soa.m_stressXZ[x][y][z];
+	m_locStrYY[j] = &i_pd.m_patches[patch_id].soa.m_stressYY[x][y][z];
+	m_locStrYZ[j] = &i_pd.m_patches[patch_id].soa.m_stressYZ[x][y][z];
+	m_locStrZZ[j] = &i_pd.m_patches[patch_id].soa.m_stressZZ[x][y][z];
+#endif        
+    }
+
+    
+}
+
+odc::io::Sources::~Sources()
+{
+  //TODO(Josh): deal with other source term data
+  
+  delete[] m_locStrXX;
+  delete[] m_locStrXY;
+  delete[] m_locStrXZ;
+  delete[] m_locStrYY;
+  delete[] m_locStrYZ;
+  delete[] m_locStrZZ;
 }
 
 
@@ -269,6 +333,7 @@ int inisource(int     IFAULT, int     NSRC,   int     READ_STEP, int     NST,   
         std::cerr << "Error: IFAULT == 2 is not implemented in CPU version.  Please use IFAULT=1 instead" << std::endl;
         return 1;
     }
+    
     return 0;
 }
 

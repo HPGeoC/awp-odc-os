@@ -50,6 +50,18 @@ class odc::io::Sources {
     // <tt>psrc[i*maxdim+2]</tt> = z node index of source fault @c i
     PosInf m_ptpSrc;
 
+    // Pointers to the location of each source node's stress components.
+    // This approach might seem unnecessarily dangerous, but source terms
+    // can exist either inside a plain 3d array, a YASK array, or a boundary
+    // MPI array.  This approach unifies the later code, and avoids costly
+    // lookups during the main loop.
+    real** m_locStrXX;
+    real** m_locStrXY;
+    real** m_locStrXZ;
+    real** m_locStrYY;
+    real** m_locStrYZ;
+    real** m_locStrZZ;
+
     // TODO: documentation
     Grid1D m_ptAxx;
     Grid1D m_ptAyy;
@@ -71,9 +83,15 @@ class odc::io::Sources {
              int_pt   i_nZ,
              int   i_nXt, int i_nYt, int i_nZt,
              char *i_inSrc,
-            char *i_inSrcI2 );
-    
-    
+             char *i_inSrcI2,
+             PatchDecomp& i_pd);
+
+    ~Sources();
+  
+    // Add source to all stress components at time step i, DH, DT, NST, READ_STEP all
+    // correspond to the eponymous input parameters.  dim is number of dimensions
+    // (always 3), pd is the PatchDecomposition for this rank.
+    // TODO: remove the dim parameter, this is always going to be 3.
     void addsrc(int_pt i, float DH,   float DT,   int NST,  int READ_STEP, int dim, PatchDecomp& pd);
     
 };

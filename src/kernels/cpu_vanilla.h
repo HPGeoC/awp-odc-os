@@ -53,7 +53,10 @@ void update_stress_from_fault_sources(int_pt source_timestep, int READ_STEP, int
                                       int *fault_nodes, int num_fault_nodes, int_pt dim_x, int_pt dim_y, int_pt dim_z,
                                       int_pt stride_x, int_pt  stride_y, int_pt stride_z,
                                       real *stress_xx_update, real *stress_xy_update, real *stress_xz_update, real *stress_yy_update,
-                                      real *stress_yz_update, real *stress_zz_update, real dt, real dh,
+                                      real *stress_yz_update, real *stress_zz_update,
+                                      real **stress_xx_ptr, real **stress_xy_ptr, real **stress_xz_ptr, real **stress_yy_ptr,
+                                      real **stress_yz_ptr, real **stress_zz_ptr,
+				      real dt, real dh,
                                       PatchDecomp& pd, int_pt start_x, int_pt start_y, int_pt start_z,
                                       int_pt size_x, int_pt size_y, int_pt size_z, int_pt ptch);
 

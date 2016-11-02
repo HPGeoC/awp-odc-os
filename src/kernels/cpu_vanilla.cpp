@@ -572,12 +572,14 @@ void update_stress_visco(real *velocity_x, real *velocity_y, real *velocity_z,
 
 // Reference implementation (replaces addsrc_cu)
 
-
 void update_stress_from_fault_sources(int_pt source_timestep, int READ_STEP, int num_model_dimensions,
                                       int *fault_nodes, int num_fault_nodes, int_pt dim_x, int_pt dim_y, int_pt dim_z,
                                       int_pt  xstep, int_pt ystep, int_pt zstep,
                                       real *stress_xx_update, real *stress_xy_update, real *stress_xz_update, real *stress_yy_update,
-                                      real *stress_yz_update, real *stress_zz_update, real dt, real dh,
+                                      real *stress_yz_update, real *stress_zz_update,
+                                      real **stress_xx_ptr, real **stress_xy_ptr, real **stress_xz_ptr, real **stress_yy_ptr,
+                                      real **stress_yz_ptr, real **stress_zz_ptr,
+				      real dt, real dh,
                                       PatchDecomp& pd, int_pt start_x, int_pt start_y, int_pt start_z,
                                       int_pt size_x, int_pt size_y, int_pt size_z, int_pt ptch) {
     
@@ -585,61 +587,19 @@ void update_stress_from_fault_sources(int_pt source_timestep, int READ_STEP, int
     
     for (int_pt j=0; j < num_fault_nodes; j++) {
 
-        // Find index (idx, idy, idz) of fault node
-        int_pt idx = fault_nodes[j*num_model_dimensions]-1;
-        int_pt idy = fault_nodes[j*num_model_dimensions+1]-1;
-        int_pt idz = fault_nodes[j*num_model_dimensions+2]-1;
-	
-        // Index of source node at position (idx,idy,idz)
-        int_pt pos = idx*xstep + idy*ystep + idz*zstep;
+        real* sXX = stress_xx_ptr[j];
+        real* sXY = stress_xy_ptr[j];
+        real* sXZ = stress_xz_ptr[j];
+        real* sYY = stress_yy_ptr[j];
+        real* sYZ = stress_yz_ptr[j];
+        real* sZZ = stress_zz_ptr[j];
 
-        int_pt patch_id = pd.globalToPatch(idx,idy,idz);
-        int_pt x = pd.globalToLocalX(idx,idy,idz);
-        int_pt y = pd.globalToLocalY(idx,idy,idz);
-        int_pt z = pd.globalToLocalZ(idx,idy,idz);
-
-        if(ptch != patch_id)
-          continue;
-        
-        if(x < start_x || x >= start_x + size_x)
-          continue;
-        if(y < start_y || y >= start_y + size_y)
-          continue;
-        if(z < start_z || z >= start_z + size_z)
-          continue;
-
-        
-        // Calculate stress updates
-#ifdef YASK
-        Patch& p = pd.m_patches[patch_id];
-        double new_xx = p.yask_context.stress_xx->readElem(source_timestep+1,x,y,z, 0)
-                        - coeff*stress_xx_update[j*READ_STEP+source_timestep];
-        double new_xy = p.yask_context.stress_xy->readElem(source_timestep+1,x,y,z, 0)
-                        - coeff*stress_xy_update[j*READ_STEP+source_timestep];
-        double new_xz = p.yask_context.stress_xz->readElem(source_timestep+1,x,y,z, 0)
-                        - coeff*stress_xz_update[j*READ_STEP+source_timestep];
-        double new_yy = p.yask_context.stress_yy->readElem(source_timestep+1,x,y,z, 0) 
-                        - coeff*stress_yy_update[j*READ_STEP+source_timestep];
-        double new_yz = p.yask_context.stress_yz->readElem(source_timestep+1,x,y,z, 0) 
-                        - coeff*stress_yz_update[j*READ_STEP+source_timestep];
-        double new_zz = p.yask_context.stress_zz->readElem(source_timestep+1,x,y,z, 0) 
-                        - coeff*stress_zz_update[j*READ_STEP+source_timestep];
-                        
-        p.yask_context.stress_xx->writeElem(new_xx,source_timestep+1,x,y,z, 0);
-        p.yask_context.stress_xy->writeElem(new_xy,source_timestep+1,x,y,z, 0);
-        p.yask_context.stress_xz->writeElem(new_xz,source_timestep+1,x,y,z, 0);
-        p.yask_context.stress_yy->writeElem(new_yy,source_timestep+1,x,y,z, 0);
-        p.yask_context.stress_yz->writeElem(new_yz,source_timestep+1,x,y,z, 0);
-        p.yask_context.stress_zz->writeElem(new_zz,source_timestep+1,x,y,z, 0);
-        
-#else
-        pd.m_patches[patch_id].soa.m_stressXX[x][y][z] -= coeff*stress_xx_update[j*READ_STEP+source_timestep];
-        pd.m_patches[patch_id].soa.m_stressXY[x][y][z] -= coeff*stress_xy_update[j*READ_STEP+source_timestep];
-        pd.m_patches[patch_id].soa.m_stressXZ[x][y][z] -= coeff*stress_xz_update[j*READ_STEP+source_timestep];
-        pd.m_patches[patch_id].soa.m_stressYY[x][y][z] -= coeff*stress_yy_update[j*READ_STEP+source_timestep];
-        pd.m_patches[patch_id].soa.m_stressYZ[x][y][z] -= coeff*stress_yz_update[j*READ_STEP+source_timestep];
-        pd.m_patches[patch_id].soa.m_stressZZ[x][y][z] -= coeff*stress_zz_update[j*READ_STEP+source_timestep];
-#endif        
+        *sXX -= coeff*stress_xx_update[j*READ_STEP+source_timestep];
+        *sXY -= coeff*stress_xy_update[j*READ_STEP+source_timestep];
+        *sXZ -= coeff*stress_xz_update[j*READ_STEP+source_timestep];
+        *sYY -= coeff*stress_yy_update[j*READ_STEP+source_timestep];
+        *sYZ -= coeff*stress_yz_update[j*READ_STEP+source_timestep];
+        *sZZ -= coeff*stress_zz_update[j*READ_STEP+source_timestep];      
     }
 }
 
