@@ -48,9 +48,9 @@ typedef long long int_pt;
 #define AWP_PT_FORMAT_STRING "lld"
 
 // constants used in patch decomposition
-#define PATCH_X 1024
-#define PATCH_Y 1024
-#define PATCH_Z 512
+#define PATCH_X 2048
+#define PATCH_Y 2048
+#define PATCH_Z 2048
 #define BDRY_SIZE 8
 
 

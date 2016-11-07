@@ -599,7 +599,7 @@ void update_stress_from_fault_sources(int_pt source_timestep, int READ_STEP, int
         *sXZ -= coeff*stress_xz_update[j*READ_STEP+source_timestep];
         *sYY -= coeff*stress_yy_update[j*READ_STEP+source_timestep];
         *sYZ -= coeff*stress_yz_update[j*READ_STEP+source_timestep];
-        *sZZ -= coeff*stress_zz_update[j*READ_STEP+source_timestep];      
+        *sZZ -= coeff*stress_zz_update[j*READ_STEP+source_timestep];
     }
 }
 

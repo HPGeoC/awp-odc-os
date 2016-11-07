@@ -55,12 +55,102 @@ odc::io::Sources::Sources(int   i_iFault,
         int_pt idy = m_ptpSrc[j*dim+1]-1;
         int_pt idz = m_ptpSrc[j*dim+2]-1;
 
+	// check if this source term is on one of the MPI boundaries
+	// PPP: are these upper bounds correct?
+        if(idx < 0 || idx >= i_pd.m_numXGridPoints
+         ||idy < 0 || idy >= i_pd.m_numYGridPoints
+         ||idz < 0 || idz >= i_pd.m_numZGridPoints)
+	{
+	  // We are on an MPI boundary.  First determine which one.
+
+	  int dir_x = 1, dir_y = 1, dir_z = 1;
+
+	  if(idx < 0)
+	    dir_x = 0;
+	  if(idx >= i_pd.m_numXGridPoints)
+	    dir_x = 2;
+	  if(idy < 0)
+	    dir_y = 0;
+	  if(idy >= i_pd.m_numYGridPoints)
+	    dir_y = 2;
+	  if(idz < 0)
+	    dir_z = 0;
+	  if(idz >= i_pd.m_numZGridPoints)
+	    dir_z = 2;
+
+	  
+	  // Determine the extent of this MPI buffer
+
+          int_pt startX = 0;
+          int_pt endX = i_pd.m_numXGridPoints;
+          int_pt startY = 0;
+          int_pt endY = i_pd.m_numYGridPoints;
+          int_pt startZ = 0;
+          int_pt endZ = i_pd.m_numZGridPoints;
+
+          if(dir_x == 0)
+	  {
+	    startX = -2;
+            endX   = 0;
+	  }
+	  if(dir_x == 2)
+	  {
+	    startX = endX;
+	    endX = endX+2;
+	  }
+          if(dir_y == 0)
+	  {
+	    startY = -2;
+            endY   = 0;
+	  }
+	  if(dir_y == 2)
+	  {
+	    startY = endY;
+	    endY = endY+2;
+	  }
+          if(dir_z == 0)
+	  {
+	    startZ = -2;
+            endZ   = 0;
+	  }
+	  if(dir_z == 2)
+	  {
+	    startZ = endZ;
+	    endZ = endZ+2;
+	  }
+
+
+	  // Determine buffer offset for XX stress element
+
+	  int_pt strideOneGrid = (endX-startX) * (endY-startY) * (endZ-startZ);
+	  int_pt strideZ = 1;
+	  int_pt strideY = (endZ-startZ) * strideZ;
+	  int_pt strideX = (endY-startY) * strideY;
+
+	  int_pt xxOffset = (idx - startX) * strideX + (idy - startY) * strideY + (idz - startZ) * strideZ;
+	  
+	  // Every other stress component is offset by a multiple of strideOneGrid
+	  real* buffer = odc::parallel::Mpi::m_buffRecv[dir_x][dir_y][dir_z];
+	  m_locStrXX[j] = &buffer[xxOffset];
+	  m_locStrXY[j] = &buffer[xxOffset + 1*strideOneGrid];
+	  m_locStrXZ[j] = &buffer[xxOffset + 2*strideOneGrid];
+	  m_locStrYY[j] = &buffer[xxOffset + 3*strideOneGrid];
+	  m_locStrYZ[j] = &buffer[xxOffset + 4*strideOneGrid];
+	  m_locStrZZ[j] = &buffer[xxOffset + 5*strideOneGrid];
+	  
+
+	  // We are done with this index, move along
+	  continue;
+	}
+
+
+	// We're not on an MPI boundary, this case is easy
+	
         int patch_id = i_pd.globalToPatch(idx,idy,idz);
         int_pt x = i_pd.globalToLocalX(idx,idy,idz);
         int_pt y = i_pd.globalToLocalY(idx,idy,idz);
         int_pt z = i_pd.globalToLocalZ(idx,idy,idz);
 
-	//TODO(Josh): mpi boundary terms CURP
 
 #ifdef YASK
         Patch& p = i_pd.m_patches[patch_id];
@@ -270,9 +360,30 @@ int inisource(int     IFAULT, int     NSRC,   int     READ_STEP, int     NST,   
 
         for(i=0;i<NSRC;i++)
         {
+	    int boundary = 0;
+	    int within = 0;
+	    if(tpsrc[i*maxdim] >= nbx-2 && tpsrc[i*maxdim] <= nbx-1)
+	      boundary++;
+	    if(tpsrc[i*maxdim] >= nex+1 && tpsrc[i*maxdim] <= nex+2)
+	      boundary++;
+	    if(tpsrc[i*maxdim+1] >= nby-2 && tpsrc[i*maxdim+1] <= nby-1)
+	      boundary++;
+	    if(tpsrc[i*maxdim+1] >= ney+1 && tpsrc[i*maxdim+1] <= ney+2)
+	      boundary++;
+	    if(tpsrc[i*maxdim+2] >= nbz-2 && tpsrc[i*maxdim+2] <= nbz-1)
+	      boundary++;
+	    if(tpsrc[i*maxdim+2] >= nez+1 && tpsrc[i*maxdim+2] <= nez+2)
+	      boundary++;
+	    
+	    if(tpsrc[i*maxdim]   >= nbx && tpsrc[i*maxdim]   <= nex)
+	      within++;
+	    if(tpsrc[i*maxdim+1] >= nby  && tpsrc[i*maxdim+1] <= ney)
+	      within++;
+	    if(tpsrc[i*maxdim+2] >= nbz && tpsrc[i*maxdim+2] <= nez)
+	      within++;
+	      	    
             // Count number of source nodes owned by calling process. If no nodes are owned by calling process then srcproc remains set to -1
-            if( tpsrc[i*maxdim]   >= nbx && tpsrc[i*maxdim]   <= nex && tpsrc[i*maxdim+1] >= nby
-               && tpsrc[i*maxdim+1] <= ney && tpsrc[i*maxdim+2] >= nbz && tpsrc[i*maxdim+2] <= nez)
+	    if((boundary==1 && within == 2) || within == 3)
             {
                 srcproc = rank;
                 npsrc ++;
@@ -281,7 +392,7 @@ int inisource(int     IFAULT, int     NSRC,   int     READ_STEP, int     NST,   
         
         // Copy data for all source nodes owned by calling process into variables with postfix "p" (e.g. "tpsrc" gets copied to "tpsrcp")
         if(npsrc > 0)
-        {
+        {	  
             tpsrcp = odc::data::Alloc1P(npsrc*maxdim);
             taxxp  = odc::data::Alloc1D(npsrc*READ_STEP);
             tayyp  = odc::data::Alloc1D(npsrc*READ_STEP);
@@ -292,23 +403,44 @@ int inisource(int     IFAULT, int     NSRC,   int     READ_STEP, int     NST,   
             k      = 0;
             for(i=0;i<NSRC;i++)
             {
-                if( tpsrc[i*maxdim]   >= nbx && tpsrc[i*maxdim]   <= nex && tpsrc[i*maxdim+1] >= nby
-                   && tpsrc[i*maxdim+1] <= ney && tpsrc[i*maxdim+2] >= nbz && tpsrc[i*maxdim+2] <= nez)
+	      int boundary = 0;
+	      int within = 0;
+	      if(tpsrc[i*maxdim] >= nbx-2 && tpsrc[i*maxdim] <= nbx-1)
+	        boundary++;
+	      if(tpsrc[i*maxdim] >= nex+1 && tpsrc[i*maxdim] <= nex+2)
+	        boundary++;
+	      if(tpsrc[i*maxdim+1] >= nby-2 && tpsrc[i*maxdim+1] <= nby-1)
+	        boundary++;
+	      if(tpsrc[i*maxdim+1] >= ney+1 && tpsrc[i*maxdim+1] <= ney+2)
+	        boundary++;
+	      if(tpsrc[i*maxdim+2] >= nbz-2 && tpsrc[i*maxdim+2] <= nbz-1)
+	        boundary++;
+  	      if(tpsrc[i*maxdim+2] >= nez+1 && tpsrc[i*maxdim+2] <= nez+2)
+	        boundary++;
+
+	      if(tpsrc[i*maxdim]   >= nbx && tpsrc[i*maxdim]   <= nex)
+		within++;
+	      if(tpsrc[i*maxdim+1] >= nby  && tpsrc[i*maxdim+1] <= ney)
+		within++;
+	      if(tpsrc[i*maxdim+2] >= nbz && tpsrc[i*maxdim+2] <= nez)
+		within++;
+	      
+	      if((boundary==1 && within == 2) || within == 3)
+              {
+		tpsrcp[k*maxdim]   = tpsrc[i*maxdim]   - nbx + 1; 
+		tpsrcp[k*maxdim+1] = tpsrc[i*maxdim+1] - nby + 1;
+		tpsrcp[k*maxdim+2] = tpsrc[i*maxdim+2] - nbz + 1;
+                for(j=0;j<READ_STEP;j++)
                 {
-		  tpsrcp[k*maxdim]   = tpsrc[i*maxdim]   - nbx + 1; 
-		  tpsrcp[k*maxdim+1] = tpsrc[i*maxdim+1] - nby + 1;
-		  tpsrcp[k*maxdim+2] = tpsrc[i*maxdim+2] - nbz + 1;
-                    for(j=0;j<READ_STEP;j++)
-                    {
-		        taxxp[k*READ_STEP+j] = taxx[i*READ_STEP+j]; 
-                        tayyp[k*READ_STEP+j] = tayy[i*READ_STEP+j];
-                        tazzp[k*READ_STEP+j] = tazz[i*READ_STEP+j];
-                        taxzp[k*READ_STEP+j] = taxz[i*READ_STEP+j];
-                        tayzp[k*READ_STEP+j] = tayz[i*READ_STEP+j];
-                        taxyp[k*READ_STEP+j] = taxy[i*READ_STEP+j];
-                    }
-                    k++;
+		  taxxp[k*READ_STEP+j] = taxx[i*READ_STEP+j]; 
+                  tayyp[k*READ_STEP+j] = tayy[i*READ_STEP+j];
+                  tazzp[k*READ_STEP+j] = tazz[i*READ_STEP+j];
+                  taxzp[k*READ_STEP+j] = taxz[i*READ_STEP+j];
+                  tayzp[k*READ_STEP+j] = tayz[i*READ_STEP+j];
+                  taxyp[k*READ_STEP+j] = taxy[i*READ_STEP+j];
                 }
+                k++;
+              }
             }
         }
         odc::data::Delloc1D(taxx);
@@ -385,6 +517,22 @@ void odc::io::Sources::addsrc(int_pt i,      float DH,   float DT,   int NST,  i
         y = pd.globalToLocalY(idx,idy,idz);
         z = pd.globalToLocalZ(idx,idy,idz);
 
+        real* sXX = m_locStrXX[j];
+        real* sXY = m_locStrXY[j];
+        real* sXZ = m_locStrXZ[j];
+        real* sYY = m_locStrYY[j];
+        real* sYZ = m_locStrYZ[j];
+        real* sZZ = m_locStrZZ[j];
+
+        *sXX -= vtst*m_ptAxx[j*READ_STEP+i];
+        *sXY -= vtst*m_ptAxy[j*READ_STEP+i];
+        *sXZ -= vtst*m_ptAxz[j*READ_STEP+i];
+        *sYY -= vtst*m_ptAyy[j*READ_STEP+i];
+        *sYZ -= vtst*m_ptAyz[j*READ_STEP+i];
+        *sZZ -= vtst*m_ptAzz[j*READ_STEP+i];
+	
+
+#if 0
 #ifdef YASK
         Patch& p = pd.m_patches[patch_id];
         double new_xx = p.yask_context.stress_xx->readElem(i,x,y,z, 0) - vtst*m_ptAxx[j*READ_STEP+i];
@@ -407,7 +555,8 @@ void odc::io::Sources::addsrc(int_pt i,      float DH,   float DT,   int NST,  i
         pd.m_patches[patch_id].soa.m_stressXZ[x][y][z] -= vtst*m_ptAxz[j*READ_STEP+i];
         pd.m_patches[patch_id].soa.m_stressYZ[x][y][z] -= vtst*m_ptAyz[j*READ_STEP+i];
         pd.m_patches[patch_id].soa.m_stressXY[x][y][z] -= vtst*m_ptAxy[j*READ_STEP+i];
-#endif        
+#endif
+#endif
     }
     return;
 }
