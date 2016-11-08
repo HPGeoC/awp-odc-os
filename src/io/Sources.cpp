@@ -18,6 +18,7 @@
 #include <mpi.h>
 #include <stdio.h>
 #include <iostream>
+#include <fstream>
 #include "constants.hpp"
 #include "io/Sources.hpp"
 #include "parallel/Mpi.hpp"
@@ -39,9 +40,11 @@ odc::io::Sources::Sources(int   i_iFault,
               &m_nPsrc, i_nZ, &m_ptpSrc,&m_ptAxx, &m_ptAyy, &m_ptAzz, &m_ptAxz,
               &m_ptAyz, &m_ptAxy, i_inSrc, i_inSrcI2 );
 
-
     // Establish pointers to the various stress components
 
+    if(m_nPsrc == 0)
+      return;
+    
     m_locStrXX = new real*[m_nPsrc];
     m_locStrXY = new real*[m_nPsrc];
     m_locStrXZ = new real*[m_nPsrc];
@@ -290,6 +293,11 @@ int inisource(int     IFAULT, int     NSRC,   int     READ_STEP, int     NST,   
         taxy  = odc::data::Alloc1D(NSRC*READ_STEP);
         
         // Read rupture function data from input file
+	// In the GPU code this processing is done on master rank only
+	// and MPI bcast'ed out.  For the moment the CPU code does not
+	// do this (might be worthwhile for large runs with large source 
+	// term file).  The "1" is ugly but acts as a reminder that we
+	// may switch this.
         if(1||rank==master)
         {
             FILE   *file;
@@ -306,7 +314,6 @@ int inisource(int     IFAULT, int     NSRC,   int     READ_STEP, int     NST,   
                 return 0;
             }
             
-            // TODO: seems like we don't need separate for loops for IFAULT==1 and IFAULT==0
             if(IFAULT == 1){
                 for(i=0;i<NSRC;i++)
                 {
@@ -465,6 +472,115 @@ int inisource(int     IFAULT, int     NSRC,   int     READ_STEP, int     NST,   
         std::cerr << "Error: IFAULT == 2 is not implemented in CPU version.  Please use IFAULT=1 instead" << std::endl;
         return 1;
     }
+    else if(IFAULT == 3){
+        std::cerr << "Warning: IFAULT == 3 specified, this is EXPERIMENTAL." << std::endl;
+	std::ifstream in;
+	in.open(INSRC);
+	if(!in.is_open())
+	{
+	  std::cerr << "Error: Could not open source input file." << std::endl;
+	  return 1;
+	}
+
+	int_pt x,y,z;
+	in >> x >> y >> z;
+
+	int boundary = 0, within = 0;
+
+	if(x >= nbx-2 && x <= nbx-1)
+	  boundary++;
+	if(x >= nex+1 && x <= nex+2)
+	  boundary++;
+	if(y >= nby-2 && y <= nby-1)
+	  boundary++;
+	if(y >= ney+1 && y <= ney+2)
+	  boundary++;
+	if(z >= nbz-2 && z <= nbz-1)
+	  boundary++;
+	if(z >= nez+1 && z <= nez+2)
+	  boundary++;
+	    
+	if(x >= nbx && x <= nex)
+	  within++;
+	if(y >= nby && y <= ney)
+	  within++;
+	if(z >= nbz && z <= nez)
+	  within++;
+
+
+	// check if the point source is not in the MPI rank (or halo)
+        if((within != 3) && (within != 2 || boundary != 1))
+	{
+          *SRCPROC = -1;
+          *NPSRC   = 0;
+          *ptpsrc  = NULL;
+          *ptaxx   = NULL;
+          *ptayy   = NULL;
+          *ptazz   = NULL;
+          *ptaxz   = NULL;
+          *ptayz   = NULL;
+          *ptaxy   = NULL;
+	  return 1;
+	}
+	
+	real strike, dip, rake;
+	in >> strike >> dip >> rake;
+	int_pt num_timesteps;
+	in >> num_timesteps;
+
+	real* moment = new real[num_timesteps];
+
+	for(int i=0; i<num_timesteps; i++)
+	{
+	  in >> moment[i];
+	}
+
+	
+        real axx = - sin(dip) * cos(rake) * sin(2. * strike)
+	  - sin(2. * dip) * sin(rake) * sin(2. * strike);
+
+	real axy = sin(dip) * cos(rake) * cos(2. * strike)
+	  + sin(2. * dip) * sin(rake) * sin(strike) * cos(strike);
+
+	real axz = - cos(dip) * cos(rake) * cos(strike)
+	  - cos(2. * dip) * sin(rake) * sin(strike);
+
+	real ayy = sin(dip) * cos(rake) * sin(2. * strike)
+	  - sin(2. * dip) * sin(rake) * cos(2. * strike);
+
+	real ayz = - cos(dip) * cos(rake) * sin(strike)
+	  + cos(2*dip) * sin(rake) * cos(strike);
+
+	real azz = sin(2. * dip) * sin(rake);
+
+	
+        *SRCPROC = 1;
+        *NPSRC   = 1;
+        *ptpsrc  = odc::data::Alloc1P(*NPSRC*maxdim+3);
+        *ptaxx   = odc::data::Alloc1D(*NPSRC*num_timesteps);
+        *ptayy   = odc::data::Alloc1D(*NPSRC*num_timesteps);
+        *ptazz   = odc::data::Alloc1D(*NPSRC*num_timesteps);
+        *ptaxz   = odc::data::Alloc1D(*NPSRC*num_timesteps);
+        *ptayz   = odc::data::Alloc1D(*NPSRC*num_timesteps);
+        *ptaxy   = odc::data::Alloc1D(*NPSRC*num_timesteps);
+
+	(*ptpsrc)[0] = x;
+	(*ptpsrc)[1] = y;
+	(*ptpsrc)[2] = z;
+	
+	for(int i=0; i<num_timesteps; i++)
+	{
+	  (*ptaxx)[i] = moment[i] * axx;
+	  (*ptaxy)[i] = moment[i] * axy;
+	  (*ptaxz)[i] = moment[i] * axz;
+	  (*ptayy)[i] = moment[i] * ayy;
+	  (*ptayz)[i] = moment[i] * ayz;
+	  (*ptazz)[i] = moment[i] * azz;	  
+	}
+
+	
+	delete[] moment;
+    }
     
     return 0;
 }
@@ -531,32 +647,6 @@ void odc::io::Sources::addsrc(int_pt i,      float DH,   float DT,   int NST,  i
         *sYZ -= vtst*m_ptAyz[j*READ_STEP+i];
         *sZZ -= vtst*m_ptAzz[j*READ_STEP+i];
 	
-
-#if 0
-#ifdef YASK
-        Patch& p = pd.m_patches[patch_id];
-        double new_xx = p.yask_context.stress_xx->readElem(i,x,y,z, 0) - vtst*m_ptAxx[j*READ_STEP+i];
-        double new_xy = p.yask_context.stress_xy->readElem(i,x,y,z, 0) - vtst*m_ptAxy[j*READ_STEP+i];
-        double new_xz = p.yask_context.stress_xz->readElem(i,x,y,z, 0) - vtst*m_ptAxz[j*READ_STEP+i];
-        double new_yy = p.yask_context.stress_yy->readElem(i,x,y,z, 0) - vtst*m_ptAyy[j*READ_STEP+i];
-        double new_yz = p.yask_context.stress_yz->readElem(i,x,y,z, 0) - vtst*m_ptAyz[j*READ_STEP+i];
-        double new_zz = p.yask_context.stress_zz->readElem(i,x,y,z, 0) - vtst*m_ptAzz[j*READ_STEP+i];
-
-        p.yask_context.stress_xx->writeElem(new_xx,i,x,y,z, 0);
-        p.yask_context.stress_xy->writeElem(new_xy,i,x,y,z, 0);
-        p.yask_context.stress_xz->writeElem(new_xz,i,x,y,z, 0);
-        p.yask_context.stress_yy->writeElem(new_yy,i,x,y,z, 0);
-        p.yask_context.stress_yz->writeElem(new_yz,i,x,y,z, 0);
-        p.yask_context.stress_zz->writeElem(new_zz,i,x,y,z, 0);
-#else
-        pd.m_patches[patch_id].soa.m_stressXX[x][y][z] -= vtst*m_ptAxx[j*READ_STEP+i];
-        pd.m_patches[patch_id].soa.m_stressYY[x][y][z] -= vtst*m_ptAyy[j*READ_STEP+i];
-        pd.m_patches[patch_id].soa.m_stressZZ[x][y][z] -= vtst*m_ptAzz[j*READ_STEP+i];
-        pd.m_patches[patch_id].soa.m_stressXZ[x][y][z] -= vtst*m_ptAxz[j*READ_STEP+i];
-        pd.m_patches[patch_id].soa.m_stressYZ[x][y][z] -= vtst*m_ptAyz[j*READ_STEP+i];
-        pd.m_patches[patch_id].soa.m_stressXY[x][y][z] -= vtst*m_ptAxy[j*READ_STEP+i];
-#endif
-#endif
     }
     return;
 }
