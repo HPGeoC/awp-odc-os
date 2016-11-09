@@ -20,6 +20,8 @@
 #ifndef SOURCES_H_
 #define SOURCES_H_
 
+#include <cmath>
+
 // TODO: Required for sources
 #include "parallel/Mpi.hpp"
 
