@@ -418,7 +418,7 @@ void PatchDecomp::copyVelToBuffer(real* o_bufferX, real* o_bufferY, real* o_buff
 {
   // TODO(Josh): optimize this very slow code...
   int_pt bufInd = 0;
-  for (int_pt iz = m_numZGridPoints - i_firstZ - 1; iz >= m_numZGridPoints - i_lastZ; iz -= i_skipZ)
+  for (int_pt iz = m_numZGridPoints - i_firstZ - 1; iz >= m_numZGridPoints - i_lastZ - 1; iz -= i_skipZ)
   {
     for (int_pt iy = i_firstY; iy <= i_lastY; iy += i_skipY)
     {

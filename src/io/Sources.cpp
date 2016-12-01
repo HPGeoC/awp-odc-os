@@ -54,9 +54,9 @@ odc::io::Sources::Sources(int   i_iFault,
 
     for(int j=0; j<m_nPsrc; j++)
     {
-        int_pt idx = m_ptpSrc[j*dim]-1;
-        int_pt idy = m_ptpSrc[j*dim+1]-1;
-        int_pt idz = m_ptpSrc[j*dim+2]-1;
+        int_pt idx = m_ptpSrc[j*dim];
+        int_pt idy = m_ptpSrc[j*dim+1];
+        int_pt idz = m_ptpSrc[j*dim+2];
 
 	// check if this source term is on one of the MPI boundaries
 	// PPP: are these upper bounds correct?
@@ -248,9 +248,9 @@ int inisource(int     IFAULT, int     NSRC,   int     READ_STEP, int     NST,   
     // In the above diagram, nbx+2 seems misplaced?  Seems like the first real (non-ghost) point in the domain corresponds to index 0, in the fault
     // indexing, so that's what I'm going with below.
     
-    int_pt nbx = odc::parallel::Mpi::m_startX + 2;
+    int_pt nbx = odc::parallel::Mpi::m_startX + 1;
     int_pt nex = nbx + odc::parallel::Mpi::m_rangeX - 1;
-    int_pt nby = odc::parallel::Mpi::m_startY + 2;
+    int_pt nby = odc::parallel::Mpi::m_startY + 1;
     int_pt ney = nby + odc::parallel::Mpi::m_rangeY - 1;
     int_pt nbz = odc::parallel::Mpi::m_startZ;
     int_pt nez = nbz + odc::parallel::Mpi::m_rangeZ - 1;
@@ -434,9 +434,9 @@ int inisource(int     IFAULT, int     NSRC,   int     READ_STEP, int     NST,   
 	      
 	      if((boundary==1 && within == 2) || within == 3)
               {
-		tpsrcp[k*maxdim]   = tpsrc[i*maxdim]   - nbx + 1; 
-		tpsrcp[k*maxdim+1] = tpsrc[i*maxdim+1] - nby + 1;
-		tpsrcp[k*maxdim+2] = tpsrc[i*maxdim+2] - nbz + 1;
+		tpsrcp[k*maxdim]   = tpsrc[i*maxdim]   - nbx; 
+		tpsrcp[k*maxdim+1] = tpsrc[i*maxdim+1] - nby;
+		tpsrcp[k*maxdim+2] = tpsrc[i*maxdim+2] - nbz - 1;
                 for(j=0;j<READ_STEP;j++)
                 {
 		  taxxp[k*READ_STEP+j] = taxx[i*READ_STEP+j]; 
@@ -624,9 +624,9 @@ void odc::io::Sources::addsrc(int_pt i,      float DH,   float DT,   int NST,  i
     
     for(j=0; j<m_nPsrc; j++)
     {
-        idx = m_ptpSrc[j*dim]-1;
-        idy = m_ptpSrc[j*dim+1]-1;
-        idz = m_ptpSrc[j*dim+2]-1;
+        idx = m_ptpSrc[j*dim];
+        idy = m_ptpSrc[j*dim+1];
+        idz = m_ptpSrc[j*dim+2];
 
         int patch_id = pd.globalToPatch(idx,idy,idz);
         x = pd.globalToLocalX(idx,idy,idz);
