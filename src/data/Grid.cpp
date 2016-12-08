@@ -57,7 +57,7 @@ Grid3D odc::data::Alloc3D(int_pt nx, int_pt ny, int_pt nz, int_pt boundary, bool
 
     else
     {
-#ifdef YASK      
+#if defined YASK && !defined CACHE_MODE
         const unsigned int alignment = 4096;
         void *ptr = numa_alloc_onnode(sizeof(real**)*(nx+2*boundary) +
 				      sizeof(real *)*(nx+2*boundary)*(ny+2*boundary) +
@@ -66,6 +66,7 @@ Grid3D odc::data::Alloc3D(int_pt nx, int_pt ny, int_pt nz, int_pt boundary, bool
         uintptr_t mask = ~((uintptr_t) (alignment - 1));
         U = (Grid3D) (((uintptr_t)ptr + (alignment-1)) & mask);
 #else
+
         U = (Grid3D)malloc(sizeof(real**)*(nx+2*boundary) +
                            sizeof(real *)*(nx+2*boundary)*(ny+2*boundary) +
                            sizeof(real)*(nx+2*boundary)*(ny+2*boundary)*(nz+2*boundary));
