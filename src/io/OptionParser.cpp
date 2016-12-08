@@ -37,7 +37,7 @@ extern "C" {
 
 odc::io::OptionParser::OptionParser( int i_argc, char **i_argv ) {
   // TODO: Log
-  std::cout << "parsing command line options" << std::endl;
+  //std::cout << "parsing command line options" << std::endl;
 
   // initialize options from command line arguments
   command( i_argc, i_argv,
@@ -78,6 +78,7 @@ odc::io::OptionParser::OptionParser( int i_argc, char **i_argv ) {
 
   // print options
   // TODO: Log
+#if 0
   std::cout << "parsed options successfully:"            << std::endl
             << "\t" << "timesteps:\t\t" << m_numTimesteps<< std::endl
             << "\t" << "tMax:\t\t"      << m_tMax        << std::endl
@@ -122,6 +123,6 @@ odc::io::OptionParser::OptionParser( int i_argc, char **i_argv ) {
             << "\t" << "out:\t\t"       << m_out         << std::endl
             << "\t" << "inSrcI2:\t"     << m_inSrcI2     << std::endl
             << "\t" << "chkFile:\t"     << m_chkFile     << std::endl;
-    
+#endif    
     
 }

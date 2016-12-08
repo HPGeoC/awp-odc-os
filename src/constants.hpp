@@ -51,7 +51,7 @@ typedef long long int_pt;
 #define PATCH_X 2048
 #define PATCH_Y 2048
 #define PATCH_Z 2048
-#define BDRY_SIZE 8
+#define BDRY_SIZE 4
 
 
 #ifdef __cplusplus

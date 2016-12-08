@@ -31,8 +31,14 @@ double wall_time();
 void applyYASKStencil(STENCIL_CONTEXT context, STENCIL_EQUATIONS *stencils, int stencil_index, int_pt t,
                       int_pt start_x, int_pt start_y, int_pt start_z,
                       int_pt numX, int_pt numY, int_pt numZ);
+void applyYASKStencilBdry(STENCIL_CONTEXT context, STENCIL_EQUATIONS *stencils, int stencil_index, int_pt t,
+                          int_pt start_x, int_pt start_y, int_pt start_z,
+			  int_pt numX, int_pt numY, int_pt numZ, bool xBdryMin, bool xBdryMax,
+			  bool yBdryMin, bool yBdryMax, bool zBdryMin, bool zBdryMax,
+                          PatchDecomp& patch_decomp);
+#endif
+
 #endif
 
 
-#endif
 

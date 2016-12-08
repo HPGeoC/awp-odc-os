@@ -188,12 +188,15 @@ odc::io::Sources::~Sources()
 {
   //TODO(Josh): deal with other source term data
   
-  delete[] m_locStrXX;
-  delete[] m_locStrXY;
-  delete[] m_locStrXZ;
-  delete[] m_locStrYY;
-  delete[] m_locStrYZ;
-  delete[] m_locStrZZ;
+  if(m_nPsrc > 0)
+  {
+    delete[] m_locStrXX;
+    delete[] m_locStrXY;
+    delete[] m_locStrXZ;
+    delete[] m_locStrYY;
+    delete[] m_locStrYZ;
+    delete[] m_locStrZZ;
+  }
 }
 
 

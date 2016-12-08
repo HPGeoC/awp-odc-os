@@ -1,3 +1,4 @@
+
 /**
  @author Alexander Breuer (anbreuer AT ucsd.edu)
  
@@ -52,10 +53,12 @@
 
 int main( int i_argc, char *i_argv[] )
 {
+  double mpi_time = 0.;
+
   std::cout << "Welcome to AWP-ODC-OS" << std::endl;    
     
   // parse options
-  std::cout << "Parsing command line options" << std::endl;
+  //std::cout << "Parsing command line options" << std::endl;
   odc::io::OptionParser l_options( i_argc, i_argv );
 
     
@@ -77,7 +80,7 @@ int main( int i_argc, char *i_argv[] )
   const int_pt l_rangeZ = odc::parallel::Mpi::m_rangeZ;
   const int_pt l_numRanks = odc::parallel::Mpi::m_size;
     
-  std::cout << "setting up data structures" << std::endl;
+  //std::cout << "setting up data structures" << std::endl;
 
   // initialize patches
   PatchDecomp patch_decomp;
@@ -131,8 +134,10 @@ int main( int i_argc, char *i_argv[] )
   //TODO(Josh): why is this offset needed?
   initial_ts = 0;
 #endif
+
+  // PPP: bring this back
   l_sources.addsrc(initial_ts, l_options.m_dH, l_options.m_dT, l_options.m_nSt,
-		   l_options.m_readStep, 3, patch_decomp);
+  		   l_options.m_readStep, 3, patch_decomp);
 
   // PPP: bring this back
   //for(int i_dir=0; i_dir<3; i_dir++)
@@ -147,13 +152,12 @@ int main( int i_argc, char *i_argv[] )
   int_pt lamMuStrideX = l_options.m_nY+2*odc::constants::boundary;
 
   // Set the number of computational threads we will use
-  const int numCompThreads = 62;
+  const int numCompThreads = 63; //66
   // PPP: This is LEGACY and should be removed:
   int tdsPerWgrp[2] = {numCompThreads,1};
 
   // TODO(Josh): make this an int_pt?
   volatile int nextWP[numCompThreads][2];
- 
     
 #pragma omp parallel num_threads(numCompThreads+1)
   {
@@ -171,17 +175,23 @@ int main( int i_argc, char *i_argv[] )
     bool amCompThread = l_omp.isComputationThread();
     bool amManageThread = !amCompThread;
 
-    odc::parallel::OmpManager l_ompManager(numCompThreads, l_omp.m_nWP, l_omp);
-
+#ifdef DEDICATED_COMM_THREAD
+    int communicationThreadId = 0;
+#else
+    int communicationThreadId = -1;
+#endif
     int compThreadId = -1;
     if(amCompThread)
       compThreadId = l_omp.getThreadNumGrp();
+
+    odc::parallel::OmpManager l_ompManager(numCompThreads, l_omp.m_nWP, l_omp, (communicationThreadId >= 0));
 
     // For computational threads, this keeps track of last WP assigned
     int lastAssignment = 0;    
 
 #pragma omp barrier
     
+
     //  Main LOOP Starts
     for (int_pt tstep=1; tstep<=l_options.m_numTimesteps; tstep++)
     {
@@ -193,16 +203,16 @@ int main( int i_argc, char *i_argv[] )
         
       if(amManageThread && l_rank == 0)
       {
-        std::cout << "Beginning  timestep: " << tstep << std::endl;
+        ;//std::cout << "Beginning  timestep: " << tstep << std::endl;
       }
 
       if(amManageThread)
       {
-        l_ompManager.initialWorkPackages(&nextWP[0][0]);
+        l_ompManager.initialWorkPackages(&nextWP[0][0], communicationThreadId);
       }
 
       // Barrier until we have assigned initial work packages
-#pragma omp barrier	  
+      #pragma omp barrier	  
 
 
       // Main computation thread process loop
@@ -211,6 +221,7 @@ int main( int i_argc, char *i_argv[] )
       {
         int nextWPId = nextWP[compThreadId][lastAssignment];
 	// Negative WP IDs signal that management thread has yet to assign
+	// PPP is this logic ok for comm thread?
 	while(nextWPId < 0)
 	{
 	  // Check the other WP slot for this thread
@@ -224,7 +235,7 @@ int main( int i_argc, char *i_argv[] )
 	// this thread doesn't contain an unfinished WP
 	if(nextWPId > l_omp.m_nWP)
 	{
-	  if(nextWP[compThreadId][1-lastAssignment] <= l_omp.m_nWP)
+	  if(nextWP[compThreadId][1-lastAssignment] <= l_omp.m_nWP && compThreadId != communicationThreadId)
 	  {
 	    // We have found a new WP to do, jump back to start
 	    lastAssignment = 1-lastAssignment;
@@ -234,6 +245,8 @@ int main( int i_argc, char *i_argv[] )
 	  {
 	    // All slots for this thread are done, and management thread
 	    // has signalled to quit.  So let's get out of here.
+	    //if(compThreadId == communicationThreadId)
+	    //std::cout << "thread id quitting " << compThreadId << std::endl; 
 	    break;
 	  }
 	}
@@ -273,8 +286,7 @@ int main( int i_argc, char *i_argv[] )
 	  }
 	    
 #ifdef YASK
-	  applyYASKStencil(p->yask_context, &(p->yask_stencils), 0, tstep, start_x, start_y, start_z,
-			   size_x, size_y, size_z);
+	  applyYASKStencil(p->yask_context, &(p->yask_stencils), 0, tstep, start_x, start_y, start_z, size_x, size_y, size_z);
 #else  
 	  odc::kernels::SCB::update_velocity(&p->soa.m_velocityX[start_x][start_y][start_z], &p->soa.m_velocityY[start_x][start_y][start_z],
 					     &p->soa.m_velocityZ[start_x][start_y][start_z], size_x, size_y,
@@ -343,8 +355,7 @@ int main( int i_argc, char *i_argv[] )
 
 	      
 #ifdef YASK
-	  applyYASKStencil(p->yask_context, &(p->yask_stencils), 1, tstep, start_x, start_y, start_z,
-			   size_x, size_y, size_z);
+	  applyYASKStencil(p->yask_context, &(p->yask_stencils), 1, tstep, start_x, start_y, start_z, size_x, size_y, size_z);
 #else
 	  update_stress_visco(&p->soa.m_velocityX[start_x][start_y][start_z], &p->soa.m_velocityY[start_x][start_y][start_z],
                               &p->soa.m_velocityZ[start_x][start_y][start_z], size_x, size_y,
@@ -395,14 +406,16 @@ int main( int i_argc, char *i_argv[] )
 
 	else if(l_curWP.type == odc::parallel::WP_MPI_Vel)
 	{
-	  for(int i=0; i<3; i++)
-	    odc::parallel::Mpi::sendRecvBuffers(3, i);
+          double smpitime = wall_time();
+	  odc::parallel::Mpi::sendRecvBuffers(3);
+          mpi_time += wall_time() - smpitime;
 	}
 
 	else if(l_curWP.type == odc::parallel::WP_MPI_Stress)
 	{
-	  for(int i=0; i<3; i++)
-	    odc::parallel::Mpi::sendRecvBuffers(6, i);
+          double smpitime = wall_time();
+	  odc::parallel::Mpi::sendRecvBuffers(6);
+          mpi_time += wall_time() - smpitime;
 	}
 	    
 
@@ -410,6 +423,7 @@ int main( int i_argc, char *i_argv[] )
 	// that it is complete
 	nextWP[compThreadId][lastAssignment] = -nextWP[compThreadId][lastAssignment]; 
 	lastAssignment = 1 - lastAssignment;
+
       }
 
 
@@ -421,37 +435,72 @@ int main( int i_argc, char *i_argv[] )
 	while(num_abort < numCompThreads)
 	{
 	  num_abort = 0;
-	  for(int l_td = 0; l_td < numCompThreads; l_td++)
+	  for(int l_task=0; l_task<2; l_task++)
 	  {
-	    for(int l_task=0; l_task<2; l_task++)
+	    for(int l_td = 0; l_td < numCompThreads; l_td++)
 	    {
+	      // scheduling logic for dedicated communication thread is different
+	      // from a regular computation thread
+	      if(l_td == communicationThreadId)
+	      {
+		if(nextWP[l_td][0] < 0 && nextWP[l_td][0] >= -l_omp.m_nWP)
+		{
+		  l_ompManager.setDone(-nextWP[l_td][0]);
+		  nextWP[l_td][0] = -l_omp.m_nWP - 100;
+		}
+		if(nextWP[l_td][0] < -l_omp.m_nWP)
+		{
+		  if(l_ompManager.velMpiReady())
+		    nextWP[l_td][0] = l_ompManager.m_velMpiWP + 1;
+		  else if(l_ompManager.stressMpiReady())
+		    nextWP[l_td][0] = l_ompManager.m_stressMpiWP + 1;
+		  else if(l_ompManager.doneMpi())
+		    nextWP[l_td][0] = l_omp.m_nWP + 1;
+		}
+		continue;
+	      }
+
+	      // logic for regular computation thread
 	      if(nextWP[l_td][l_task] < 0)
 	      {
 		l_ompManager.setDone(-nextWP[l_td][l_task]);
 		if(l_ompManager.tasksLeft())
 		{
 		  next_task = l_ompManager.nextTask();
+		  if(communicationThreadId >=0 && (next_task == l_omp.m_velMpiWP || next_task == l_omp.m_stressMpiWP))
+		  {
+		    next_task = l_ompManager.nextTask();
+		  }
+
 		  if(next_task >= 0)
+		  {
 		    nextWP[l_td][l_task] = next_task + 1;
+		    //std::cout << "assigned: " << next_task << ' ' << l_omp.m_nWP << std::endl;
+		  }
 		}
 		else
 		{
 		  nextWP[l_td][l_task] = l_omp.m_nWP+1;
 		}
 	      }
-	    }
 
-	    if(nextWP[l_td][0] > l_omp.m_nWP && nextWP[l_td][1] > l_omp.m_nWP)
-	      num_abort++;
+	      if(l_task == 1 && nextWP[l_td][0] > l_omp.m_nWP && nextWP[l_td][1] > l_omp.m_nWP)
+	        num_abort++;
+	    }
+	  }
+
+	  if(communicationThreadId >= 0 && l_ompManager.doneMpi())
+	  {
+	    num_abort++;
 	  }
 	}
       }
 
 
       // We are done with the main updates of this loop.  Just remains to update source and handle output
-#pragma omp barrier
+      #pragma omp barrier
 	  
-      // PPP: parallelize this
+      // PPP: put source terms in HBW
       if (tstep < l_options.m_nSt && amManageThread) {  
 	update_stress_from_fault_sources(tstep, l_options.m_readStep, 3,
 					 &l_sources.m_ptpSrc[0], l_sources.m_nPsrc,
@@ -467,7 +516,7 @@ int main( int i_argc, char *i_argv[] )
 					 odc::parallel::Mpi::m_rangeZ + 2*h, p_id);
       }
 
-#pragma omp barrier
+      #pragma omp barrier
 
       // For one thread on each rank, handle output / management
       if(l_omp.getThreadNumAll() == 0)
@@ -481,7 +530,7 @@ int main( int i_argc, char *i_argv[] )
 	    std::cout << "start time is " << start_time << std::endl;
 	  }
 
-	  else
+	  else if(0)
 	  {
 	    double cur_time = wall_time();
 	    double avg = (cur_time - start_time) / (tstep - start_ts);
@@ -493,17 +542,31 @@ int main( int i_argc, char *i_argv[] )
 	patch_decomp.synchronize();
 
 	//l_output.update(tstep, patch_decomp);
-	l_checkpoint.writeUpdatedStats(tstep, patch_decomp);
+        if(l_rank == 0)
+	  l_checkpoint.writeUpdatedStats(tstep, patch_decomp);
       }
     }
-#pragma omp barrier     
+#pragma omp barrier
+    if(l_omp.getThreadNumAll() == 0 && l_rank == 0)
+    {
+      double cur_time = wall_time();
+      double avg = (cur_time - start_time) / (l_options.m_numTimesteps - start_ts);
+      std::cout << "Final time per timestep: " << avg <<  "; mpi time: " << mpi_time / l_options.m_numTimesteps << std::endl;
+      double mlups = (double) l_rangeX * (double) l_rangeY * (double) l_rangeZ / (avg * 1e6);
+      std::cout << "Final MLUPS: " << mlups << std::endl;
+    }
+#pragma omp barrier
   }
     
+
+  odc::parallel::Mpi::barrier();
+
+
   // release memory
   std::cout << "releasing memory" << std::endl;
   patch_decomp.finalize();
   l_checkpoint.finalize();
-  l_output.finalize();
+  //l_output.finalize();
     
   // close mpi
   std::cout << "closing mpi" << std::endl;

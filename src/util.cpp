@@ -37,8 +37,8 @@ void applyYASKStencil(STENCIL_CONTEXT context, STENCIL_EQUATIONS *stencils, int 
   const idx_t step_rt = 1;
   const idx_t step_rn = 1;
   const idx_t step_rx = 16;
-  const idx_t step_ry = 8;
-  const idx_t step_rz = 64;
+  const idx_t step_ry = 16;
+  const idx_t step_rz = 128;
 
 
   int_pt end_x = start_x + numX;
@@ -67,8 +67,154 @@ void applyYASKStencil(STENCIL_CONTEXT context, STENCIL_EQUATIONS *stencils, int 
   idx_t rt = t;
   
 #include "yask/stencil_region_loops.hpp"
+}
 
- }
+void applyYASKStencilBdry(STENCIL_CONTEXT context, STENCIL_EQUATIONS *stencils, int stencil_index, int_pt t,
+                          int_pt start_x, int_pt start_y, int_pt start_z,
+			  int_pt numX, int_pt numY, int_pt numZ, bool xBdryMin, bool xBdryMax,
+			  bool yBdryMin, bool yBdryMax, bool zBdryMin, bool zBdryMax,
+                          PatchDecomp& patch_decomp)
+{
+  int_pt h = patch_decomp.m_patches[0].bdry_width;
+  
+  const idx_t step_rt = 1;
+  const idx_t step_rn = 1;
+  const idx_t step_rx = 4;
+  const idx_t step_ry = 4;
+  const idx_t step_rz = 8;
+
+  // PPP: assumes that 16 divides end_z - start_z after rounding
+
+  int_pt end_x = start_x + numX;
+  int_pt end_y = start_y + numY;
+  int_pt end_z = start_z + numZ;
+
+  start_x = (VLEN_X*CLEN_X)*(int_pt) ((start_x + VLEN_X*CLEN_X-1) / (VLEN_X * CLEN_X));
+  start_y = (VLEN_Y*CLEN_Y)*(int_pt) ((start_y + VLEN_Y*CLEN_Y-1) / (VLEN_Y * CLEN_Y));
+  start_z = (VLEN_Z*CLEN_Z)*(int_pt) ((start_z + VLEN_Z*CLEN_Z-1) / (VLEN_Z * CLEN_Z));
+
+
+  end_x = ROUND_UP(end_x, CPTS_X);
+  end_y = ROUND_UP(end_y, CPTS_Y);
+  end_z = ROUND_UP(end_z, CPTS_Z);
+  
+  StencilBase *stencil = stencils->stencils[stencil_index];
+
+  idx_t begin_rn = 0;
+  idx_t end_rn = CPTS_N;  
+  idx_t rt = t;
+
+  bool doXMin;
+  bool doXMax;
+  bool doYMin;
+  bool doYMax;
+  bool doZMin;
+  bool doZMax;
+  
+  for(idx_t begin_rx=start_x; begin_rx < end_x; begin_rx += step_rx)
+  {
+    idx_t end_rx = begin_rx + step_rx;
+
+    doXMin = (begin_rx == start_x && xBdryMin);
+    doXMax = (end_rx == end_x     && xBdryMax);
+    
+    for(idx_t begin_ry=start_y; begin_ry < end_y; begin_ry += step_ry)
+    {
+      idx_t end_ry = begin_ry + step_ry;
+      
+      doYMin = (begin_ry == start_y && yBdryMin);
+      doYMax = (end_ry == end_y     && yBdryMax);
+      
+      for(idx_t begin_rz=start_z; begin_rz < end_z; begin_rz += step_rz)
+      {     
+        idx_t end_rz = begin_rz + step_rz;
+
+        doZMin = (begin_rz == start_z && zBdryMin);
+        doZMax = (end_rz == end_z     && zBdryMax);
+
+        if(doXMin && stencil_index == 0)
+	{
+	  patch_decomp.copyStressBoundaryFromBuffer(odc::parallel::Mpi::m_buffRecv[0][1][1], -1, 0, 0, start_x-h, start_y-h, start_z-h, end_x-h, end_y-h, end_z-h, t+1);
+	}
+        if(doXMax && stencil_index == 0)
+	{
+	  patch_decomp.copyStressBoundaryFromBuffer(odc::parallel::Mpi::m_buffRecv[2][1][1], 1, 0, 0, start_x-h, start_y-h, start_z-h, end_x-h, end_y-h, end_z-h, t+1);
+	}
+        if(doYMin && stencil_index == 0)
+	{
+	  patch_decomp.copyStressBoundaryFromBuffer(odc::parallel::Mpi::m_buffRecv[1][0][1], 0, -1, 0, start_x-h, start_y-h, start_z-h, end_x-h, end_y-h, end_z-h, t+1);
+	}
+        if(doYMax && stencil_index == 0)
+	{
+	  patch_decomp.copyStressBoundaryFromBuffer(odc::parallel::Mpi::m_buffRecv[1][2][1], 0, 1, 0, start_x-h, start_y-h, start_z-h, end_x-h, end_y-h, end_z-h, t+1);
+	}
+	//PPP do z
+
+	
+        /*if(doXMin && stencil_index == 1)
+	{
+	  patch_decomp.copyVelBoundaryFromBuffer(odc::parallel::Mpi::m_buffRecv[0][1][1], -1, 0, 0, start_x-h, start_y-h, start_z-h, end_x-h, end_y-h, end_z-h, t+1);
+	}
+        if(doXMax && stencil_index == 1)
+	{
+	  patch_decomp.copyVelBoundaryFromBuffer(odc::parallel::Mpi::m_buffRecv[2][1][1], 1, 0, 0, start_x-h, start_y-h, start_z-h, end_x-h, end_y-h, end_z-h, t+1);
+	}
+        if(doYMin && stencil_index == 1)
+	{
+	  patch_decomp.copyVelBoundaryFromBuffer(odc::parallel::Mpi::m_buffRecv[1][0][1], 0, -1, 0, start_x-h, start_y-h, start_z-h, end_x-h, end_y-h, end_z-h, t+1);
+	}
+        if(doYMax && stencil_index == 1)
+	{
+	  patch_decomp.copyVelBoundaryFromBuffer(odc::parallel::Mpi::m_buffRecv[1][2][1], 0, 1, 0, start_x-h, start_y-h, start_z-h, end_x-h, end_y-h, end_z-h, t+1);
+	  }*/
+	
+	
+#include "yask/stencil_region_loops.hpp"
+
+        if(doXMin && stencil_index == 0)
+	{
+	  patch_decomp.copyVelBoundaryToBuffer(odc::parallel::Mpi::m_buffSend[0][1][1], -1, 0, 0, start_x-h, start_y-h, start_z-h, end_x-h, end_y-h, end_z-h, t+1);
+	}
+        if(doXMax && stencil_index == 0)
+	{
+	  patch_decomp.copyVelBoundaryToBuffer(odc::parallel::Mpi::m_buffSend[2][1][1], 1, 0, 0, start_x-h, start_y-h, start_z-h, end_x-h, end_y-h, end_z-h, t+1);
+	}
+        if(doYMin && stencil_index == 0)
+	{
+	  patch_decomp.copyVelBoundaryToBuffer(odc::parallel::Mpi::m_buffSend[1][0][1], 0, -1, 0, start_x-h, start_y-h, start_z-h, end_x-h, end_y-h, end_z-h, t+1);
+	}
+        if(doYMax && stencil_index == 0)
+	{
+	  patch_decomp.copyVelBoundaryToBuffer(odc::parallel::Mpi::m_buffSend[1][2][1], 0, 1, 0, start_x-h, start_y-h, start_z-h, end_x-h, end_y-h, end_z-h, t+1);
+	}
+	//PPP do z
+
+	
+        if(doXMin && stencil_index == 1)
+	{
+	  ;//patch_decomp.copyStressBoundaryToBuffer(odc::parallel::Mpi::m_buffSend[0][1][1], -1, 0, 0, start_x-h, start_y-h, start_z-h, end_x-h, end_y-h, end_z-h, t+1);
+	}
+        if(doXMax && stencil_index == 1)
+	{
+	  ;//patch_decomp.copyStressBoundaryToBuffer(odc::parallel::Mpi::m_buffSend[2][1][1], 1, 0, 0, start_x-h, start_y-h, start_z-h, end_x-h, end_y-h, end_z-h, t+1);
+	}
+        if(doYMin && stencil_index == 1)
+	{
+	  ;//patch_decomp.copyStressBoundaryToBuffer(odc::parallel::Mpi::m_buffSend[1][0][1], 0, -1, 0, start_x-h, start_y-h, start_z-h, end_x-h, end_y-h, end_z-h, t+1);
+	}
+        if(doYMax && stencil_index == 1)
+	{
+	  ;//patch_decomp.copyStressBoundaryToBuffer(odc::parallel::Mpi::m_buffSend[1][2][1], 0, 1, 0, start_x-h, start_y-h, start_z-h, end_x-h, end_y-h, end_z-h, t+1);
+	}
+
+	
+      }
+    }
+  } 
+}
+
+
+
 #endif
 
 

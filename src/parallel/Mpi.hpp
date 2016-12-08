@@ -85,6 +85,13 @@ class odc::parallel::Mpi {
     //! -1 means no neighbor in that direction 
     static int m_neighborRanks[3][3][3];
   
+    static void barrier()
+    {
+#ifdef AWP_USE_MPI
+      MPI_Barrier(MPI_COMM_WORLD);
+#endif
+    }
+
     /**
      * Check if a coordinate is in this rank.
      *
@@ -134,13 +141,21 @@ class odc::parallel::Mpi {
     static bool initialize( int i_argc, char *i_argv[], odc::io::OptionParser& i_options);
 
     /**
-     * Send and receive buffers in x dimension.  Assumes buffers already filled!
+     * Send and receive buffers in given dimension.  Assumes buffers already filled!
      * This function is blocking.
      *
      * @param i_numGrids number of grids to send. 
      * @param i_dir 0 = x, 1 = y, 2 = z
     **/
     static void sendRecvBuffers(int i_numGrids, int i_dir);
+
+    /**
+     * Send and receive buffers in all dimensions.  Assumes buffers already filled!
+     * This function is blocking.
+     *
+     * @param i_numGrids number of grids to send. 
+    **/
+    static void sendRecvBuffers(int i_numGrids);
     
     /**
      * Finalizes MPI.

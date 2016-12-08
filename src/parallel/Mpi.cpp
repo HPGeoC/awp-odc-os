@@ -247,3 +247,70 @@ void odc::parallel::Mpi::sendRecvBuffers(int i_numGrids, int i_dir)
   }
 #endif	  
 }
+
+void odc::parallel::Mpi::sendRecvBuffers(int i_numGrids)  
+{
+#ifdef AWP_USE_MPI      
+  MPI_Request sendReq[3][3][3], recvReq[3][3][3];
+  MPI_Status status;
+  int doneReq[6][2]; // first index represents coord, second is 0 for recv 1 for send
+  for(int i=0; i<6; i++)
+    for(int j=0; j<2; j++)
+      doneReq[i][j] = 0;
+  int num_active_dirs = 0; // how many communications have yet to terminate
+
+  // stores the indices that correspond to direction i_dir;  first index is x,y,z
+  // second is 0-5 for x left, x right, y left, y right, z left, z right
+  int l_ind[3][6]; 
+  for(int i=0; i<3; i++)
+    for(int j=0; j<6; j++)
+      l_ind[i][j] = 1;
+
+  l_ind[0][0] = 0;
+  l_ind[0][1] = 2;
+
+  l_ind[1][2] = 0;
+  l_ind[1][3] = 2;
+
+  l_ind[2][4] = 0;
+  l_ind[2][5] = 2;
+
+
+  for(int i=0; i<=5; i++)
+  {
+    if(m_neighborRanks[l_ind[0][i]][l_ind[1][i]][l_ind[2][i]] != -1)
+    {
+      MPI_Irecv(m_buffRecv[l_ind[0][i]][l_ind[1][i]][l_ind[2][i]], i_numGrids * m_buffRecvSize[l_ind[0][i]][l_ind[1][i]][l_ind[2][i]],
+	        AWP_MPI_REAL, m_neighborRanks[l_ind[0][i]][l_ind[1][i]][l_ind[2][i]], 0, MPI_COMM_WORLD,
+		&recvReq[l_ind[0][i]][l_ind[1][i]][l_ind[2][i]]);
+      MPI_Isend(m_buffSend[l_ind[0][i]][l_ind[1][i]][l_ind[2][i]], i_numGrids * m_buffSendSize[l_ind[0][i]][l_ind[1][i]][l_ind[2][i]],
+		AWP_MPI_REAL, m_neighborRanks[l_ind[0][i]][l_ind[1][i]][l_ind[2][i]], 0, MPI_COMM_WORLD,
+		&sendReq[l_ind[0][i]][l_ind[1][i]][l_ind[2][i]]);
+      num_active_dirs+=2;
+    }
+  }
+      
+  while(num_active_dirs > 0)
+  {
+    for(int i=0; i<=5; i++)
+    {
+      if(m_neighborRanks[l_ind[0][i]][l_ind[1][i]][l_ind[2][i]] != -1 && !doneReq[i][0])
+      {
+        MPI_Test(&recvReq[l_ind[0][i]][l_ind[1][i]][l_ind[2][i]], &doneReq[i][0], &status);
+        if(doneReq[i][0])
+        {
+          num_active_dirs--;
+        }
+      }
+      if(m_neighborRanks[l_ind[0][i]][l_ind[1][i]][l_ind[2][i]] != -1 && !doneReq[i][1])
+      {
+        MPI_Test(&sendReq[l_ind[0][i]][l_ind[1][i]][l_ind[2][i]], &doneReq[i][1], &status);
+	if(doneReq[i][1])
+	{
+	  num_active_dirs--;
+	}
+      }
+    }
+  }
+#endif	  
+}

@@ -25,7 +25,7 @@ vars = Variables()
 vars.AddVariables(
   EnumVariable( 'parallelization',
                 'parallelization',
-                'mpi_cuda',
+                'mpi_omp',
                  allowed_values=('mpi_cuda', 'mpi_omp', 'mpi_omp_yask')
               ),
   EnumVariable( 'cpu_arch',
@@ -72,16 +72,19 @@ if 'LINKFLAGS' in env['ENV'].keys():
 
 # set CPU architecture and alignment
 if env['cpu_arch'] == 'host':
-  if env['CXX'] == 'icpc':
+  if env['CXX'] == 'icpc' or env['CXX'] == 'mpiicpc':
     env.Append( CPPFLAGS = ['-xHost'] )
-  elif 'g++' in env['CXX']:
+  elif 'g++' in env['CXX'] or 'mpicxx' == env['CXX']:
     env.Append( CPPFLAGS = ['-march=native'] )
 if env['cpu_arch'] == 'snb':
   env.Append( CPPFLAGS = ['-mavx'] )
 elif env['cpu_arch'] == 'hsw':
   env.Append( CPPFLAGS = ['-mavx2'] )
 elif env['cpu_arch'] == 'knl':
-  env.Append( CPPFLAGS = ['-mavx512f', '-mavx512cd', '-mavx512er', '-mavx512pf'] )
+  if 'g++' in env['CXX'] or 'mpicxx' in env['CXX']:
+    env.Append( CPPFLAGS = ['-mavx512f', '-mavx512cd', '-mavx512er', '-mavx512pf'] )
+  else:
+    env.Append( CPPFLAGS = ['-xHost'] ) 
 
 # add cuda support if requested
 if env['parallelization'] in ['cuda', 'mpi_cuda' ]:
@@ -115,13 +118,14 @@ elif env['parallelization'] in ['mpi_omp_yask']:
                              'LAYOUT_3D=Layout_123',
                              'LAYOUT_4D=Layout_1234',
                              'ARCH_HOST',
-                             'NO_STORE_INTRINSICS'] )
+                             'NO_STORE_INTRINSICS',
+                             'USE_RCP28'] )
    if env['cpu_arch'] == 'knl':
      env.Append( CPPDEFINES = ['USE_INTRIN512'] )
    else:
      env.Append( CPPDEFINES = ['USE_INTRIN256'] )   
-   env.Append( CPPFLAGS = ['-fopenmp'])
-   env.Append( LINKFLAGS = ['-fopenmp'] )
+   env.Append( CPPFLAGS = ['-fopenmp','-I/home/rjt/software/include'])
+   env.Append( LINKFLAGS = ['-fopenmp','-L/home/rjt/software/lib','-lnuma'] )
 
 # add current path to seach path
 env.Append( CPPPATH = [Dir('#.').path, Dir('#./src')] )

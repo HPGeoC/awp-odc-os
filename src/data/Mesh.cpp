@@ -87,7 +87,7 @@ void odc::data::Mesh::initialize(odc::io::OptionParser i_options, int_pt x, int_
   m_mu = odc::data::Alloc3D(totalX, totalY, totalZ, odc::constants::boundary);
   m_lam = odc::data::Alloc3D(totalX, totalY, totalZ, odc::constants::boundary);
 #endif
-  m_lam_mu = odc::data::Alloc3D(totalX, totalY, 1, odc::constants::boundary);
+  m_lam_mu = odc::data::Alloc3D(totalX, totalY, 1, odc::constants::boundary, true);
 
   if(m_usingAnelastic)
   {
@@ -322,7 +322,7 @@ void odc::data::Mesh::finalize()
   odc::data::Delloc3D(m_lam, 2);
   odc::data::Delloc3D(m_mu, 2);
 #endif
-  odc::data::Delloc3D(m_lam_mu, 2);
+  //odc::data::Delloc3D(m_lam_mu, 2);
     
   if (m_usingAnelastic)
   {

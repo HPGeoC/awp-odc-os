@@ -25,7 +25,7 @@
 namespace odc {
     namespace data {
         
-        Grid3D Alloc3D(int_pt nx, int_pt ny, int_pt nz, int_pt boundary);
+      Grid3D Alloc3D(int_pt nx, int_pt ny, int_pt nz, int_pt boundary, bool use_hbw=false);
         
         Grid3Dww Alloc3Dww(int_pt nx, int_pt ny, int_pt nz, int_pt boundary);
         Grid1D Alloc1D(int_pt nx, int_pt boundary);

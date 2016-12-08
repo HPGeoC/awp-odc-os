@@ -19,6 +19,11 @@
 
 #include <cstdlib>
 #include <cstdio>
+#include <cstdint>
+
+#ifdef YASK
+#include <numa.h>
+#endif
 
 #include "Grid.hpp"
 
@@ -37,13 +42,35 @@
  
  @warning Terminates with exit code -1 if unable to allocate requested memory.
  */
-Grid3D odc::data::Alloc3D(int_pt nx, int_pt ny, int_pt nz, int_pt boundary)
+Grid3D odc::data::Alloc3D(int_pt nx, int_pt ny, int_pt nz, int_pt boundary, bool use_hbw)
 {
     int_pt i, j, k;
-    
-    Grid3D U = (Grid3D)malloc(sizeof(real**)*(nx+2*boundary) +
-                              sizeof(real *)*(nx+2*boundary)*(ny+2*boundary) +
-                              sizeof(real)*(nx+2*boundary)*(ny+2*boundary)*(nz+2*boundary));
+
+    Grid3D U;
+
+    if(!use_hbw)
+    {
+        U = (Grid3D)malloc(sizeof(real**)*(nx+2*boundary) +
+                           sizeof(real *)*(nx+2*boundary)*(ny+2*boundary) +
+                           sizeof(real)*(nx+2*boundary)*(ny+2*boundary)*(nz+2*boundary));
+    }
+
+    else
+    {
+#ifdef YASK      
+        const unsigned int alignment = 4096;
+        void *ptr = numa_alloc_onnode(sizeof(real**)*(nx+2*boundary) +
+				      sizeof(real *)*(nx+2*boundary)*(ny+2*boundary) +
+                                      sizeof(real)*(nx+2*boundary)*(ny+2*boundary)*(nz+2*boundary) +
+				      alignment, 1);
+        uintptr_t mask = ~((uintptr_t) (alignment - 1));
+        U = (Grid3D) (((uintptr_t)ptr + (alignment-1)) & mask);
+#else
+        U = (Grid3D)malloc(sizeof(real**)*(nx+2*boundary) +
+                           sizeof(real *)*(nx+2*boundary)*(ny+2*boundary) +
+                           sizeof(real)*(nx+2*boundary)*(ny+2*boundary)*(nz+2*boundary));
+#endif
+    }
     
     if (!U){
         printf("Cannot allocate 3D float array\n");

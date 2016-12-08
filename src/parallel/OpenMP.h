@@ -23,7 +23,7 @@
 // TODO(Josh): find the appropriate place for this
 #define WP_SIZE_X 16
 #define WP_SIZE_Y 16
-#define WP_SIZE_Z 64
+#define WP_SIZE_Z 128
 
 
 #include "data/PatchDecomp.hpp"
@@ -407,41 +407,55 @@ public:
 class odc::parallel::OmpManager
 {
 public:
-  OmpManager(int nCompThreads, int nWP, odc::parallel::OpenMP& omp)
+  OmpManager(int nCompThreads, int nWP, odc::parallel::OpenMP& omp, bool isCommunicationThread)
     : m_nCompThreads(nCompThreads), m_nWP(nWP), m_nextWP(0), m_omp(omp)
   {
     m_completedWP = (int*) malloc(nWP * sizeof(int));
 
+    m_velMpiWP = omp.m_velMpiWP;
+    m_stressMpiWP = omp.m_stressMpiWP;
+    
+    
     m_nBarriers = 4;
-    m_indexToBarrier =    (int*) malloc(nWP * sizeof(int));
-    m_barrierDependency = (int*) malloc(m_nBarriers * sizeof(int));
-    m_barrierLeft =       (int*) malloc(m_nBarriers * sizeof(int));
-
+    m_indexToBarrier =    (int*)  malloc(nWP * sizeof(int));
+    m_barrierDependency = (int*)  malloc(m_nBarriers * sizeof(int));
+    m_barrierLeft =       (int*)  malloc(m_nBarriers * sizeof(int));
+    m_barrierBlocking =   (bool*) malloc(m_nBarriers * sizeof(bool));
+    
     for(int i=0; i<nWP; i++)
       m_indexToBarrier[i] = -1;
 
     int barrier = m_omp.m_nBdry;
 
+    // If we have a dedicated communication thread, the two MPI dependencies do not need
+    // to act as barriers blocking later packages (since the dedicated comm thread logic
+    // already checks to make sure we are ready for MPI before assigning those WPs).
+
     m_indexToBarrier[m_omp.m_velMpiWP] = 0;
     m_barrierDependency[0] = m_omp.m_endOfVelBdry;
     m_barrierLeft[0] = m_barrierDependency[0] + 1;
-
+    m_barrierBlocking[0] = (isCommunicationThread ? false : true);
+    
     m_indexToBarrier[nWP/2] = 1;
     m_barrierDependency[1] = m_omp.m_velMpiWP;
     m_barrierLeft[1] = m_barrierDependency[1] + 1;
-
+    m_barrierBlocking[1] = true;
+    
     m_indexToBarrier[m_omp.m_endOfStressBdryXZero+1] = 2;
     m_barrierDependency[2] = nWP/2 - 1;
     m_barrierLeft[2] = m_barrierDependency[2] + 1;
-    
+    m_barrierBlocking[2] = true; 
+     
     m_indexToBarrier[m_omp.m_stressMpiWP] = 3;
     m_barrierDependency[3] = m_omp.m_endOfStressBdry;
     m_barrierLeft[3] = m_barrierDependency[3] + 1;
+    m_barrierBlocking[3] = (isCommunicationThread ? false : true);
+    
 
     // Useful for debugging 
-#if 0
-#pragma omp critical
-{
+    #if 0
+    #pragma omp master
+    {
     std::cout << "barriers: " << std::endl;
     for(int i=0; i<nWP; i++)
     {
@@ -450,8 +464,8 @@ public:
 	std::cout << i << ' ' << m_barrierDependency[m_indexToBarrier[i]] << std::endl;
       }
     }
-}
-#endif
+    }
+    #endif
 
   }
 
@@ -461,15 +475,22 @@ public:
     free(m_indexToBarrier);
     free(m_barrierDependency);
     free(m_barrierLeft);
+    free(m_barrierBlocking);
   }
 
   int m_nCompThreads;
   int m_nWP;
   int m_nextWP;
+
+  //! stores IDs of the two MPI WPs
+  int m_velMpiWP; 
+  int m_stressMpiWP;
   
   int* m_completedWP;
 
   //! stores the number of custom barriers in one timestep in our dynamic OpenMP
+  //! note that despite the name "barrier", these dependencies do not have to act as a traditional
+  //! barrier:  instead, they can just signal that a certain WP cannot run before some dependency
   int m_nBarriers;
   
   //! for each WP stores either -1 to say no barrier here, or the index of the barrier in the arrays below
@@ -481,15 +502,40 @@ public:
   //! for a barrier index, stores the number of WPs that are still outstanding before this barrier will open
   int* m_barrierLeft;
 
+  //! for a barrier index, stores whether we should block all future work packages or just this work package (eg for MPI)
+  bool* m_barrierBlocking;
+
   odc::parallel::OpenMP& m_omp;
+
+  bool velMpiReady()
+  {
+    if(m_completedWP[m_velMpiWP])
+      return false;
+    if(m_barrierLeft[m_indexToBarrier[m_velMpiWP]])
+      return false;
+    return true;
+  }
+
+  bool stressMpiReady()
+  {
+    if(m_completedWP[m_stressMpiWP])
+      return false;
+    if(m_barrierLeft[m_indexToBarrier[m_stressMpiWP]])
+      return false;
+    return true;
+  }
   
+  bool doneMpi()
+  {
+    return m_completedWP[m_velMpiWP] && m_completedWP[m_stressMpiWP];
+  }
   
   /**
    * Sets the initial distribution of work packages.  Also resets data structures.
    *
    * @param i_nextWP an array of size [num_comp_threads][2] that stores wp assignments
    **/
-  void initialWorkPackages(volatile int* i_nextWP)
+  void initialWorkPackages(volatile int* i_nextWP, int i_communicationThreadId)
   {
     // reset data structures
     m_nextWP = 0;
@@ -502,13 +548,36 @@ public:
 
 
     // PPP: for initial assignments, make sure barriers aren't violated (only an issue when number of
-    //      WPs is pathologically small, but should be careful)
+    //      WPs is pathologically small, but should be careful).
+    //      In the case with a dedicated communication thread (which is what is used for small problem
+    //      size runs), we would need #(WPs per kernel) < #threads for this to be an issue. 
+    //      Ie. this isn't a problem even for our strong scaling runs, but should be fixed.
+
     for(int i=0; i<2; i++)
     {
       for(int j=0; j<m_nCompThreads; j++)
       {
-	if(m_nWP > m_nextWP)
-  	  i_nextWP[2*j + i] = ++m_nextWP;
+
+        // if there is a dedicated communication thread, make sure we do not assign an MPI 
+        // work package to a generic computation thread 
+        if(i_communicationThreadId >= 0)
+          while(m_nextWP == m_velMpiWP || m_nextWP == m_stressMpiWP)
+            m_nextWP++;
+
+	// If there is a dedicated communication thread, that logic is handled separately.
+        // Numbers smaller than -m_nWP are used to signal that there is work left to do
+        // this timestep, and also that the previously completed WP has already been 
+	// marked as complete.  This condition is only used for dedicated communication threads
+	if(j == i_communicationThreadId)
+	  i_nextWP[2*j + i] = -m_nWP - 100;
+
+        // Not a comm thread, so just give it the next WP (plus one, by our convention, 
+        // for signalling reasons)
+	else if(m_nWP > m_nextWP)  
+  	  i_nextWP[2*j + i] = (1 + m_nextWP++);
+
+        // Somehow we have assigned all workpackages during initial assignment.  In practice
+        // this is only used for testing with a single thread and small number of WPs.
 	else
 	  i_nextWP[2*j + i] = m_nWP+1;
       }
@@ -528,10 +597,16 @@ public:
    **/  
   int nextTask()
   {
-    if(m_indexToBarrier[m_nextWP] == -1 || m_barrierLeft[m_indexToBarrier[m_nextWP]] == 0)
+    if(m_nextWP >= m_nWP)
+      return -1;
+    
+    if(m_indexToBarrier[m_nextWP] == -1 || !m_barrierBlocking[m_indexToBarrier[m_nextWP]] || m_barrierLeft[m_indexToBarrier[m_nextWP]] == 0)
       return m_nextWP++;
     else
+    {
+      //std::cout << m_nextWP << ' ' << m_barrierLeft[m_indexToBarrier[m_nextWP]] << std::endl;
       return -1;
+    }
   }
 
   /**

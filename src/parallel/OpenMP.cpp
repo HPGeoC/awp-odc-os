@@ -344,9 +344,19 @@ odc::parallel::OpenMP::OpenMP( int_pt       i_nPtsX,
     }
   }
 
+ 
+  //  
+ 
+  //int swap_offset = 0.25 * (m_nWP - m_stressMpiWP);
+  //odc::parallel::WorkPackage tmp;
+  //tmp = m_workPackages[m_stressMpiWP + swap_offset];
+  //m_workPackages[m_stressMpiWP + swap_offset] = m_workPackages[m_stressMpiWP];
+  //m_workPackages[m_stressMpiWP] = tmp;
+  //m_stressMpiWP = m_stressMpiWP + swap_offset;
+
   // useful for debugging:
-#if 0
-  #pragma omp critical
+  #if 0
+  #pragma omp master
   {
     std::cout << "WP layout: " << std::endl << std::endl;
 
@@ -366,7 +376,7 @@ odc::parallel::OpenMP::OpenMP( int_pt       i_nPtsX,
       
     }
   }
-#endif  
+  #endif  
 }
 
 odc::parallel::OpenMP::~OpenMP()
