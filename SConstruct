@@ -81,7 +81,7 @@ if env['cpu_arch'] == 'snb':
 elif env['cpu_arch'] == 'hsw':
   env.Append( CPPFLAGS = ['-mavx2'] )
 elif env['cpu_arch'] == 'knl':
-  if 'g++' in env['CXX'] or 'mpicxx' in env['CXX']:
+  if 'g++' in env['CXX'] or 'mpicxx' in env['CXX'] or 'mpiCC' in env['CXX']:
     env.Append( CPPFLAGS = ['-mavx512f', '-mavx512cd', '-mavx512er', '-mavx512pf'] )
   else:
     env.Append( CPPFLAGS = ['-xHost'] ) 
