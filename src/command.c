@@ -1,6 +1,6 @@
 /**
 @section LICENSE
-Copyright (c) 2013-2016, Regents of the University of California
+Copyright (c) 2013-2017, Regents of the University of California, San Diego State University
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -13,11 +13,11 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 */
 
 /*
-****************************************************************************************************************
+**************************************************************************************************************** 
 *  command.c						                                                       *
 *  Process Command Line	                                                                                       *
 *                                                                                                              *
-*  Name         Type        Command           Description 	                                               *
+*  Name         Type        Command             Description 	                                               *
 *  TMAX         <FLOAT>       -T              propagation time	                	                       *
 *  DH           <FLOAT>       -H              spatial step for x, y, z (meters)                                *
 *  DT           <FLOAT>       -t              time step (seconds)                                              *
@@ -34,11 +34,11 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 *  READ_STEP    <INTEGER>     -R                                                                               *
 *  READ_STEP_GPU<INTEGER>     -Q              CPU reads larger chunks and sends to GPU at every READ_STEP_GPU  *
 *                                               (IFAULT=2) READ_STEP must be divisible by READ_STEP_GPU        *
-*  NX           <INTEGER>     -X              x model dimension in nodes                                       *
+*  NX           <INTEGER>     -X              x model dimension in nodes                                       *      
 *  NY           <INTEGER>     -Y              y model dimension in nodes                                       *
 *  NZ           <INTEGER>     -Z              z model dimension in nodes                                       *
 *  PX           <INTEGER>     -x              number of procs in the x direction                               *
-*  PY           <INTEGER>     -y              number of procs in the y direction                               *
+*  PY           <INTEGER>     -y              number of procs in the y direction                               * 
 *  NBGX         <INTEGER>                     index (starts with 1) to start recording points in X             *
 *  NEDX         <INTEGER>                     index to end recording points in X (-1 for all)                  *
 *  NSKPX        <INTEGER>                     #points to skip in recording points in X                         *
@@ -50,9 +50,9 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 *  NSKPZ        <INTEGER>                     #points to skip in recording points in Z                         *
 *  IDYNA        <INTEGER>     -i              mode selection of dynamic rupture model                          *
 *  SoCalQ       <INTEGER>     -s              Southern California Vp-Vs Q relationship enabling flag           *
-*  FL           <FLOAT>       -l              Q bandwidth low frequency                                        *
-*  FH           <FLOAT>       -h              Q bandwidth high frequency                                       *
-*  FP           <FLOAT>       -p              Q bandwidth central frequency                                    *
+*  FAC          <FLOAT>       -l              Q                                                                * 
+*  Q0           <FLOAT>       -h              Q                                                                * 
+*  EX           <FLOAT>       -x              Q                                                                *
 *  NTISKP       <INTEGER>     -r              # timesteps to skip to copy velocities from GPU to CPU           *
 *  WRITE_STEP   <INTEGER>     -W              # timesteps to write the buffer to the files                     *
 *                                               (written timesteps are n*NTISKP*WRITE_STEP for n=1,2,...)      *
@@ -70,33 +70,33 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #include <string.h>
 
 // Default IN3D Values
-const float def_TMAX       = 100.00;
-const float def_DH         = 16.0;
-const float def_DT         = 0.001;
+const float def_TMAX       = 20.00;
+const float def_DH         = 200.0;
+const float def_DT         = 0.01; 
 const float def_ARBC       = 0.92;
 const float def_PHT        = 0.1;
 
 const int   def_NPC        = 0;
 const int   def_ND         = 20;
-const int   def_NSRC       = 980;
-const int   def_NST        = 2500;
+const int   def_NSRC       = 1;
+const int   def_NST        = 91;
 const int   def_NVAR       = 3;
 
 const int   def_NVE        = 1;
-const int   def_MEDIASTART = 3;
-const int   def_IFAULT     = 1;
-const int   def_READ_STEP  = 2500;
-const int   def_READ_STEP_GPU = 2500;
+const int   def_MEDIASTART = 0;
+const int   def_IFAULT     = 1; 
+const int   def_READ_STEP  = 91;
+const int   def_READ_STEP_GPU = 91;
 
-const int   def_NTISKP     = 25;
-const int   def_WRITE_STEP = 100;
+const int   def_NTISKP     = 1;
+const int   def_WRITE_STEP = 10;
 
-const int   def_NX         = 3500;
-const int   def_NY         = 2500;
-const int   def_NZ         = 1500;
+const int   def_NX         = 256;
+const int   def_NY         = 256; 
+const int   def_NZ         = 1024;
 
-const int   def_PX         = 25;
-const int   def_PY         = 10;
+const int   def_PX         = 1;
+const int   def_PY         = 1;
 
 const int   def_NBGX       = 1;
 const int   def_NEDX       = -1;   // use -1 for all
@@ -111,9 +111,10 @@ const int   def_NSKPZ      = 1;
 const int   def_IDYNA      = 0;
 const int   def_SoCalQ     = 1;
 
-const float def_FL         = 0.01;
-const float def_FH         = 25.0;
-const float def_FP         = 0.5;
+const float def_FAC        = 0.005;
+const float def_Q0         = 5.0; 
+const float def_EX         = 0.0; 
+const float def_FP         = 2.5; 
 
 const char  def_INSRC[50]  = "input/FAULTPOW";
 const char  def_INVEL[50]  = "input/media";
@@ -131,10 +132,10 @@ void command(int argc,    char **argv,
              int *NVE,    int *MEDIASTART, int *IFAULT, int *READ_STEP, int *READ_STEP_GPU,
              int *NTISKP, int *WRITE_STEP,
     	       int *NX,     int *NY,         int *NZ,     int *PX,        int *PY,
-             int *NBGX,   int *NEDX,       int *NSKPX,
-             int *NBGY,   int *NEDY,       int *NSKPY,
-             int *NBGZ,   int *NEDZ,       int *NSKPZ,
-             float *FL,   float *FH,       float *FP,   int *IDYNA,     int *SoCalQ,
+             int *NBGX,   int *NEDX,       int *NSKPX, 
+             int *NBGY,   int *NEDY,       int *NSKPY, 
+             int *NBGZ,   int *NEDZ,       int *NSKPZ, 
+	     float *FAC,   float *Q0,      float *EX,   float *FP,   int *IDYNA,     int *SoCalQ,
              char *INSRC, char *INVEL,     char *OUT,   char *INSRC_I2, char *CHKFILE)
 {
 
@@ -149,11 +150,11 @@ void command(int argc,    char **argv,
    *ND         = def_ND;
    *NSRC       = def_NSRC;
    *NST        = def_NST;
-
+   
    *NVE        = def_NVE;
    *MEDIASTART = def_MEDIASTART;
    *NVAR       = def_NVAR;
-   *IFAULT     = def_IFAULT;
+   *IFAULT     = def_IFAULT; 
    *READ_STEP  = def_READ_STEP;
    *READ_STEP_GPU = def_READ_STEP_GPU;
 
@@ -178,8 +179,9 @@ void command(int argc,    char **argv,
 
    *IDYNA      = def_IDYNA;
    *SoCalQ     = def_SoCalQ;
-   *FL         = def_FL;
-   *FH         = def_FH;
+   *FAC        = def_FAC;
+   *Q0         = def_Q0;
+   *EX         = def_EX;
    *FP         = def_FP;
 
     strcpy(INSRC, def_INSRC);
@@ -189,7 +191,7 @@ void command(int argc,    char **argv,
     strcpy(CHKFILE, def_CHKFILE);
 
     extern char *optarg;
-    static const char *optstring = "-T:H:t:A:P:M:D:S:N:V:B:n:I:R:Q:X:Y:Z:x:y:z:i:l:h:p:s:r:W:1:2:3:11:12:13:21:22:23:100:101:102:o:c:";
+    static const char *optstring = "-T:H:t:A:P:M:D:S:N:V:B:n:I:R:Q:X:Y:Z:x:y:z:i:l:h:30:p:s:r:W:1:2:3:11:12:13:21:22:23:100:101:102:o:c:";
     static struct option long_options[] = {
         {"TMAX", required_argument, NULL, 'T'},
         {"DH", required_argument, NULL, 'H'},
@@ -222,8 +224,9 @@ void command(int argc,    char **argv,
         {"NSKPZ", required_argument, NULL, 23},
         {"IDYNA", required_argument, NULL, 'i'},
         {"SoCalQ", required_argument, NULL, 's'},
-        {"FL", required_argument, NULL, 'l'},
-        {"FH", required_argument, NULL, 'h'},
+	{"FAC", required_argument, NULL, 'l'},
+	{"Q0", required_argument, NULL, 'h'},
+	{"EX", required_argument, NULL, 30},
         {"FP", required_argument, NULL, 'p'},
         {"NTISKP", required_argument, NULL, 'r'},
         {"WRITE_STEP", required_argument, NULL, 'W'},
@@ -269,10 +272,10 @@ void command(int argc,    char **argv,
             case 'I':
 	              *IFAULT     = atoi(optarg); break;
             case 'R':
-                *READ_STEP  = atoi(optarg); break;
+                *READ_STEP  = atoi(optarg); break;		
             case 'Q':
                 readstepGpuIsSet = 1;
-                *READ_STEP_GPU  = atoi(optarg); break;
+                *READ_STEP_GPU  = atoi(optarg); break;		
             case 'X':
                 *NX         = atoi(optarg); break;
             case 'Y':
@@ -306,9 +309,11 @@ void command(int argc,    char **argv,
             case 's':
                 *SoCalQ     = atoi(optarg); break;
             case 'l':
-                *FL         = atof(optarg); break;
+                *FAC         = atof(optarg); break;
             case 'h':
-                *FH         = atof(optarg); break;
+                *Q0         = atof(optarg); break;
+	case 30:
+	  *EX         = atof(optarg); break;
             case 'p':
                 *FP         = atof(optarg); break;
             case 'r':
@@ -331,7 +336,7 @@ void command(int argc,    char **argv,
                 printf("\n\t[(-V | --NVE) <NVE>]\n\t[(-B | --MEDIASTART) <MEDIASTART>]\n\t[(-n | --NVAR) <NVAR>]\n\t[(-I | --IFAULT) <IFAULT>]\n\t[(-R | --READ_STEP) <x READ_STEP for CPU>]\n\t[(-Q | --READ_STEP_GPU) <READ_STEP for GPU>]\n");
                 printf("\n\t[(-X | --NX) <x length]\n\t[(-Y | --NY) <y length>]\n\t[(-Z | --NZ) <z length]\n\t[(-x | --NPX) <x processors]\n\t[(-y | --NPY) <y processors>]\n\t[(-z | --NPZ) <z processors>]\n");
                 printf("\n\t[(-1 | --NBGX) <starting point to record in X>]\n\t[(-2 | --NEDX) <ending point to record in X>]\n\t[(-3 | --NSKPX) <skipping points to record in X>]\n\t[(-11 | --NBGY) <starting point to record in Y>]\n\t[(-12 | --NEDY) <ending point to record in Y>]\n\t[(-13 | --NSKPY) <skipping points to record in Y>]\n\t[(-21 | --NBGZ) <starting point to record in Z>]\n\t[(-22 | --NEDZ) <ending point to record in Z>]\n\t[(-23 | --NSKPZ) <skipping points to record in Z>]\n");
-                printf("\n\t[(-i | --IDYNA) <i IDYNA>]\n\t[(-s | --SoCalQ) <s SoCalQ>]\n\t[(-l | --FL) <l FL>]\n\t[(-h | --FH) <i FH>]\n\t[(-p | --FP) <p FP>]\n\t[(-r | --NTISKP) <time skipping in writing>]\n\t[(-W | --WRITE_STEP) <time aggregation in writing>]\n");
+                printf("\n\t[(-i | --IDYNA) <i IDYNA>]\n\t[(-s | --SoCalQ) <s SoCalQ>]\n\t[(-l | --FAC) <l FAC>]\n\t[(-h | --Q0) <h Q0>]\n\t[(-30 | --EX) <e EX>]\n\t[(-p | --FP) <p FP>]\n\t[(-r | --NTISKP) <time skipping in writing>]\n\t[(-W | --WRITE_STEP) <time aggregation in writing>]\n");
                 printf("\n\t[(-100 | --INSRC) <source file>]\n\t[(-101 | --INVEL) <mesh file>]\n\t[(-o | --OUT) <output file>]\n\t[(-102 | --INSRC_I2) <split source file prefix (IFAULT=2)>]\n\t[(-c | --CHKFILE) <checkpoint file to write statistics>]\n\n");
                 exit(-1);
         }

@@ -1,6 +1,6 @@
 /**
 @section LICENSE
-Copyright (c) 2013-2016, Regents of the University of California
+Copyright (c) 2013-2017, Regents of the University of California, San Diego State University
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -29,8 +29,8 @@ void inicrj(float ARBC, int *coords, int nxt, int nyt, int nzt, int NX, int NY, 
      for(i=0;i<ND;i++)
      {
         nxp        = i + 1;
-        dcrjx[i+2+4*loop] = dcrjx[i+2+4*loop]*(exp(-((alpha*(ND-nxp+1))*(alpha*(ND-nxp+1)))));
-     }
+        dcrjx[i+2+ngsl] = dcrjx[i+2+ngsl]*(exp(-((alpha*(ND-nxp+1))*(alpha*(ND-nxp+1)))));
+     } 
   }
   nxp   = nxt*coords[0] + 1;
   if( (nxp+nxt-1) >= (NX-ND+1))
@@ -38,7 +38,7 @@ void inicrj(float ARBC, int *coords, int nxt, int nyt, int nzt, int NX, int NY, 
      for(i=nxt-ND;i<nxt;i++)
      {
         nxp        = i + NX - nxt + 1;
-        dcrjx[i+2+4*loop] = dcrjx[i+2+4*loop]*(exp(-((alpha*(ND-(NX-nxp)))*(alpha*(ND-(NX-nxp))))));
+        dcrjx[i+2+ngsl] = dcrjx[i+2+ngsl]*(exp(-((alpha*(ND-(NX-nxp)))*(alpha*(ND-(NX-nxp))))));
      }
   }
 
@@ -48,7 +48,7 @@ void inicrj(float ARBC, int *coords, int nxt, int nyt, int nzt, int NX, int NY, 
      for(j=0;j<ND;j++)
      {
         nyp        = j + 1;
-        dcrjy[j+2+4*loop] = dcrjy[j+2+4*loop]*(exp(-((alpha*(ND-nyp+1))*(alpha*(ND-nyp+1)))));
+        dcrjy[j+2+ngsl] = dcrjy[j+2+ngsl]*(exp(-((alpha*(ND-nyp+1))*(alpha*(ND-nyp+1)))));
      }
   }
   nyp   = nyt*coords[1] + 1;
@@ -57,7 +57,7 @@ void inicrj(float ARBC, int *coords, int nxt, int nyt, int nzt, int NX, int NY, 
      for(j=nyt-ND;j<nyt;j++)
      {
         nyp        = j + NY - nyt + 1;
-        dcrjy[j+2+4*loop] = dcrjy[j+2+4*loop]*(exp(-((alpha*(ND-(NY-nyp)))*((alpha*(ND-(NY-nyp)))))));
+        dcrjy[j+2+ngsl] = dcrjy[j+2+ngsl]*(exp(-((alpha*(ND-(NY-nyp)))*((alpha*(ND-(NY-nyp)))))));
      }
   }
 
@@ -71,4 +71,4 @@ void inicrj(float ARBC, int *coords, int nxt, int nyt, int nzt, int NX, int NY, 
      }
   }
   return;
-}
+}  

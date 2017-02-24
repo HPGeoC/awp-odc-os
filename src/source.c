@@ -1,6 +1,6 @@
 /**
 @section LICENSE
-Copyright (c) 2013-2016, Regents of the University of California
+Copyright (c) 2013-2017, Regents of the University of California, San Diego State University
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -15,21 +15,21 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #include <stdio.h>
 #include "pmcl3d.h"
 
-int read_src_ifault_2(int rank, int READ_STEP,
-    char *INSRC, char *INSRC_I2,
+int read_src_ifault_2(int rank, int READ_STEP, 
+    char *INSRC, char *INSRC_I2, 
     int maxdim, int *coords, int NZ,
     int nxt, int nyt, int nzt,
-    int *NPSRC, int *SRCPROC,
-    PosInf *psrc, Grid1D *axx, Grid1D *ayy, Grid1D *azz,
+    int *NPSRC, int *SRCPROC, 
+    PosInf *psrc, Grid1D *axx, Grid1D *ayy, Grid1D *azz, 
     Grid1D *axz, Grid1D *ayz, Grid1D *axy,
     int idx){
 
   FILE *f;
-  char fname[150];
+  char fname[50];
   int dummy[2], i, j;
   int nbx, nby;
   PosInf tpsrc = NULL;
-  Grid1D taxx=NULL, tayy=NULL, tazz=NULL;
+  Grid1D taxx=NULL, tayy=NULL, tazz=NULL; 
   Grid1D taxy=NULL, taxz=NULL, tayz=NULL;
 
   // First time entering this function
@@ -38,19 +38,19 @@ int read_src_ifault_2(int rank, int READ_STEP,
     printf("SOURCE reading first time: %s\n",fname);
     f = fopen(fname, "rb");
     if(f == NULL){
-      printf("SOURCE %d) no such file: %s\n",rank,fname);
       *SRCPROC = -1;
       *NPSRC = 0;
       return 0;
     }
     *SRCPROC = rank;
-    nbx     = nxt*coords[0] + 1 - 2*loop;
+    /*changed from 2 to 6, as we have 8 ghost cell layers - Daniel */
+    nbx     = nxt*coords[0] + 1 - 2*loop; 
     nby     = nyt*coords[1] + 1 - 2*loop;
     // not sure what happens if maxdim != 3
     fread(NPSRC, sizeof(int), 1, f);
     fread(dummy, sizeof(int), 2, f);
 
-    printf("SOURCE I am, rank=%d npsrc=%d\n",rank,*NPSRC);
+    printf("SOURCE I am, rank=%d npsrc=%d\n",rank,*NPSRC);    
 
     tpsrc = Alloc1P((*NPSRC)*maxdim);
     fread(tpsrc, sizeof(int), (*NPSRC)*maxdim, f);
@@ -131,7 +131,7 @@ int read_src_ifault_2(int rank, int READ_STEP,
 return 0;
 }
 
-int inisource(int      rank,    int     IFAULT, int     NSRC,   int     READ_STEP, int     NST,     int     *SRCPROC, int    NZ,
+int inisource(int      rank,    int     IFAULT, int     NSRC,   int     READ_STEP, int     NST,     int     *SRCPROC, int    NZ, 
               MPI_Comm MCW,     int     nxt,    int     nyt,    int     nzt,       int     *coords, int     maxdim,   int    *NPSRC,
               PosInf   *ptpsrc, Grid1D  *ptaxx, Grid1D  *ptayy, Grid1D  *ptazz,    Grid1D  *ptaxz,  Grid1D  *ptayz,   Grid1D *ptaxy, char *INSRC, char *INSRC_I2)
 {
@@ -152,7 +152,7 @@ int inisource(int      rank,    int     IFAULT, int     NSRC,   int     READ_STE
    nbz     = 1;
    nez     = nzt;
    // IFAULT=1 has bug! READ_STEP does not work, it tries to read NST all at once - Efe
-   if(IFAULT<=1)
+   if(IFAULT==1)
    {
       tpsrc = Alloc1P(NSRC*maxdim);
       taxx  = Alloc1D(NSRC*READ_STEP);
@@ -166,20 +166,15 @@ int inisource(int      rank,    int     IFAULT, int     NSRC,   int     READ_STE
       {
       	 FILE   *file;
          int    tmpsrc[3];
-         Grid1D tmpta;
-         if(IFAULT == 1){
-          file = fopen(INSRC,"rb");
-          tmpta = Alloc1D(NST*6);
-         }
-         else if(IFAULT == 0) file = fopen(INSRC,"r");
+         Grid1D tmpta = Alloc1D(NST*6);
+         file = fopen(INSRC,"rb");
          if(!file)
          {
             printf("can't open file %s", INSRC);
 	    return 0;
          }
-         if(IFAULT == 1){
-          for(i=0;i<NSRC;i++)
-          {
+         for(i=0;i<NSRC;i++)
+         { 
             if(fread(tmpsrc,sizeof(int),3,file) && fread(tmpta,sizeof(float),NST*6,file))
             {
                tpsrc[i*maxdim]   = tmpsrc[0];
@@ -195,29 +190,12 @@ int inisource(int      rank,    int     IFAULT, int     NSRC,   int     READ_STE
                   taxy[i*READ_STEP+j] = tmpta[j*6+5];
                }
             }
-          }
-          Delloc1D(tmpta);
          }
-         else if(IFAULT == 0)
-          for(i=0;i<NSRC;i++)
-          {
-            fscanf(file, " %d %d %d ",&tmpsrc[0], &tmpsrc[1], &tmpsrc[2]);
-            tpsrc[i*maxdim]   = tmpsrc[0];
-            tpsrc[i*maxdim+1] = tmpsrc[1];
-            tpsrc[i*maxdim+2] = NZ+1-tmpsrc[2];
-            //printf("SOURCE: %d,%d,%d\n",tpsrc[0],tpsrc[1],tpsrc[2]);
-            for(j=0;j<READ_STEP;j++){
-              fscanf(file, " %f %f %f %f %f %f ",
-                &taxx[i*READ_STEP+j], &tayy[i*READ_STEP+j],
-                &tazz[i*READ_STEP+j], &taxz[i*READ_STEP+j],
-                &tayz[i*READ_STEP+j], &taxy[i*READ_STEP+j]);
-              //printf("SOURCE VAL %d: %f,%f\n",j,taxx[j],tayy[j]);
-            }
-          }
+         Delloc1D(tmpta);
          fclose(file);
       }
       MPI_Bcast(tpsrc, NSRC*maxdim,    MPI_INT,  master, MCW);
-      MPI_Bcast(taxx,  NSRC*READ_STEP, MPI_REAL, master, MCW);
+      MPI_Bcast(taxx,  NSRC*READ_STEP, MPI_REAL, master, MCW); 
       MPI_Bcast(tayy,  NSRC*READ_STEP, MPI_REAL, master, MCW);
       MPI_Bcast(tazz,  NSRC*READ_STEP, MPI_REAL, master, MCW);
       MPI_Bcast(taxz,  NSRC*READ_STEP, MPI_REAL, master, MCW);
@@ -225,7 +203,7 @@ int inisource(int      rank,    int     IFAULT, int     NSRC,   int     READ_STE
       MPI_Bcast(taxy,  NSRC*READ_STEP, MPI_REAL, master, MCW);
       for(i=0;i<NSRC;i++)
       {
-          if( tpsrc[i*maxdim]   >= nbx && tpsrc[i*maxdim]   <= nex && tpsrc[i*maxdim+1] >= nby
+          if( tpsrc[i*maxdim]   >= nbx && tpsrc[i*maxdim]   <= nex && tpsrc[i*maxdim+1] >= nby 
            && tpsrc[i*maxdim+1] <= ney && tpsrc[i*maxdim+2] >= nbz && tpsrc[i*maxdim+2] <= nez)
           {
               srcproc = rank;
@@ -268,8 +246,8 @@ int inisource(int      rank,    int     IFAULT, int     NSRC,   int     READ_STE
       Delloc1D(tazz);
       Delloc1D(taxz);
       Delloc1D(tayz);
-      Delloc1D(taxy);
-      Delloc1P(tpsrc);
+      Delloc1D(taxy); 
+      Delloc1P(tpsrc);       
 
       *SRCPROC = srcproc;
       *NPSRC   = npsrc;
@@ -302,10 +280,10 @@ void addsrc(int i,      float DH,   float DT,   int NST,    int npsrc,  int READ
   vtst = (float)DT/(DH*DH*DH);
 
   i   = i - 1;
-  for(j=0;j<npsrc;j++)
+  for(j=0;j<npsrc;j++) 
   {
-     idx = psrc[j*dim]   + 1 + 4*loop;
-     idy = psrc[j*dim+1] + 1 + 4*loop;
+     idx = psrc[j*dim]   + 1 + ngsl;
+     idy = psrc[j*dim+1] + 1 + ngsl;
      idz = psrc[j*dim+2] + align - 1;
      xx[idx][idy][idz] = xx[idx][idy][idz] - vtst*axx[j*READ_STEP+i];
      yy[idx][idy][idz] = yy[idx][idy][idz] - vtst*ayy[j*READ_STEP+i];
@@ -313,6 +291,7 @@ void addsrc(int i,      float DH,   float DT,   int NST,    int npsrc,  int READ
      xz[idx][idy][idz] = xz[idx][idy][idz] - vtst*axz[j*READ_STEP+i];
      yz[idx][idy][idz] = yz[idx][idy][idz] - vtst*ayz[j*READ_STEP+i];
      xy[idx][idy][idz] = xy[idx][idy][idz] - vtst*axy[j*READ_STEP+i];
+
 /*
      printf("xx=%1.6g\n",xx[idx][idy][idz]);
      printf("yy=%1.6g\n",yy[idx][idy][idz]);

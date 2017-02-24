@@ -1,6 +1,6 @@
 /**
 @section LICENSE
-Copyright (c) 2013-2016, Regents of the University of California
+Copyright (c) 2013-2017, Regents of the University of California, San Diego State University
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -14,13 +14,26 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 #define BLOCK_SIZE_X 2
 #define BLOCK_SIZE_Y 2
-//#define BLOCK_SIZE_Z 128
 #define BLOCK_SIZE_Z 256
 #define align 32
-#define loop  1
+#define loop  1 
+#define ngsl 8     /* number of ghost cells x loop */
+#define ngsl2 16   /* ngsl * 2 */
 
 #define Both  0
 #define Left  1
 #define Right 2
 #define Front 3
 #define Back  4
+
+#define NEDZ_EP 256 /*max k to save final plastic strain*/
+
+
+#define CUCHK(call) {                                    \
+  cudaError_t err = call;                                                    \
+  if( cudaSuccess != err) {                                                \
+  fprintf(stderr, "Cuda error in file '%s' in line %i : %s.\n",        \
+          __FILE__, __LINE__, cudaGetErrorString( err) );              \
+  fflush(stderr); \
+  exit(EXIT_FAILURE);                                                  \
+  } }

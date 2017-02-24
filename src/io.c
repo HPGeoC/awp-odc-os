@@ -1,6 +1,6 @@
 /**
 @section LICENSE
-Copyright (c) 2013-2016, Regents of the University of California
+Copyright (c) 2013-2017, Regents of the University of California, San Diego State University
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -18,10 +18,10 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #include <string.h>
 #include "pmcl3d.h"
 
-int writeCHK(char *chkfile, int ntiskp, float dt, float dh,
+int writeCHK(char *chkfile, int ntiskp, float dt, float dh, 
       int nxt, int nyt, int nzt,
       int nt, float arbc, int npc, int nve,
-      float fl, float fh, float fp,
+      float fac, float q0, float ex, float fp, 
       float *vse, float *vpe, float *dde){
 
   FILE *fchk;
@@ -42,7 +42,7 @@ int writeCHK(char *chkfile, int ntiskp, float dt, float dh,
   fprintf(fchk,"SKIP OF SEISMOGRAMS IN TIME (LOOP COUNTER):\t%d\n",ntiskp);
   fprintf(fchk,"ABC CONDITION, PML=1 OR CERJAN=0:\t%d\n",npc);
   fprintf(fchk,"FD SCHEME, VISCO=1 OR ELASTIC=0:\t%d\n",nve);
-  fprintf(fchk,"Q, FL,FP,FH:\t%f, %f, %f\n",fl,fp,fh);
+  fprintf(fchk,"Q, FAC,Q0,EX,FP:\t%f, %f, %f, %f\n",fac,q0,ex,fp);
   fclose(fchk);
 
 return 0;
