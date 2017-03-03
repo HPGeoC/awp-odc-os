@@ -10,7 +10,7 @@ supports parallel computation (MPI-2) and parallel I/O (MPI-IO).
 
 ## Distribution Contents
 * [src/](src) source code and platform dependent makefiles
-* [User documentation](http://hpgeoc.github.io/awp-odc-os/doc/)
+<> ( * [User documentation](http://hpgeoc.github.io/awp-odc-os/doc/) )
 * [Development wiki](https://github.com/HPGeoC/awp-odc-os/wiki)
 
 ## System Requirements
