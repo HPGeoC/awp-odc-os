@@ -1,4 +1,4 @@
-# awp-odc-os
+# awp-odc-os (nonlinear version)
 The Anelastic Wave Propagation software (awp-odc-os) simulates wave propagation
 in a 3D viscoelastic or elastic solid. Wave propagation use a variant of the staggered
 grid finite difference scheme to approximately solve the 3D elastodynamic
@@ -19,4 +19,4 @@ supports parallel computation (MPI-2) and parallel I/O (MPI-IO).
 * MPI library
 
 ## License
-awp-odc-os is licensed under [BSD-2](LICENSE)
+awp-odc-os (nonlinear version) is licensed under [BSD-2](LICENSE)
