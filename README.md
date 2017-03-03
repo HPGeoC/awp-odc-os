@@ -8,10 +8,10 @@ equations for velocity and stress. The GPU version offers the absorbing boundary
 awp-odc-os is implemented in C and CUDA.  The Message Passing Interface
 supports parallel computation (MPI-2) and parallel I/O (MPI-IO).
 
-## Distribution Contents
-* [src/](src) source code and platform dependent makefiles
+<> ( ## Distribution Contents )
+<> ( * [src/](src) source code and platform dependent makefiles )
 <> ( * [User documentation](http://hpgeoc.github.io/awp-odc-os/doc/) )
-* [Development wiki](https://github.com/HPGeoC/awp-odc-os/wiki)
+<> ( * [Development wiki](https://github.com/HPGeoC/awp-odc-os/wiki) )
 
 ## System Requirements
 * C compiler
