@@ -12,7 +12,7 @@ awp-odc-os is implemented in C and CUDA.  The Message Passing Interface supports
 * [System Requirements](System Requirements)
 * [License](License)
 * [Installation](Installation)
-* [Running awp-odc-os (nonlinear version)](Running awp-odc-os (nonlinear version)
+* [Running awp-odc-os (nonlinear version)](Running awp-odc-os (nonlinear version))
 * [Important Notes](Important Notes)
 * [Source File Processing](Source File Processing)
 * [Mesh File Processing](Mesh File Processing)
@@ -90,17 +90,17 @@ To install awp-odc-os, perform the following steps:
 
   <table>
     <tr><th>parameter(s)</th><th>result</th></tr>
-    <tr><td>`-X` `-Y` `-Z`</td><td>_grid points in each direction (or NX, NY, NZ)_                            </td></tr>
-    <tr><td>`-x` `-y`     </td><td>_GPUs used in x/y direction each, total x*y GPUs used or NPX, NPY, NPZ(=1)_</td></tr>
-    <tr><td>`--TMAX`      </td><td>_time step in seconds (total time steps are TMAX/DT)_                      </td></tr>
-    <tr><td>`--DT`        </td><td>_total propagation time to run in seconds_                                 </td></tr>
-    <tr><td>`--DH`        </td><td>_discretization in space (spatial step for x, y, z (meters))_              </td></tr>
-    <tr><td>`--NVAR`      </td><td>_number of variables in a grid point_                                      </td></tr>
-    <tr><td>`--NVE`       </td><td>_visco or elastic scheme (1=visco, 0=elastic)_                             </td></tr>
-    <tr><td>`--NSRC`      </td><td>_number of source nodes on fault_                                          </td></tr>
-    <tr><td>`--NST`       </td><td>_number of time steps in rupture functions_                                </td></tr>
-    <tr><td>`--IFAULT`    </td><td>_mode selection and fault or initial stress setting (0-2)_                 </td></tr>
-    <tr><td>`--MEDIASTART`</td><td>_initial media restart option(0=homogeneous)_                              </td></tr>
+    <tr><td> -X -Y -Z     </td><td> grid points in each direction (or NX, NY, NZ)                             </td></tr>
+    <tr><td> -x -y        </td><td> GPUs used in x/y direction each, total x*y GPUs used or NPX, NPY, NPZ(=1) </td></tr>
+    <tr><td> --TMAX       </td><td> time step in seconds (total time steps are TMAX/DT)                       </td></tr>
+    <tr><td> --DT         </td><td> total propagation time to run in seconds                                  </td></tr>
+    <tr><td> --DH         </td><td> discretization in space (spatial step for x, y, z (meters))               </td></tr>
+    <tr><td> --NVAR       </td><td> number of variables in a grid point                                       </td></tr>
+    <tr><td> --NVE        </td><td> visco or elastic scheme (1=visco, 0=elastic)                              </td></tr>
+    <tr><td> --NSRC       </td><td> number of source nodes on fault                                           </td></tr>
+    <tr><td> --NST        </td><td> number of time steps in rupture functions                                 </td></tr>
+    <tr><td> --IFAULT     </td><td> mode selection and fault or initial stress setting (0-2)                  </td></tr>
+    <tr><td> --MEDIASTART </td><td> initial media restart option(0=homogeneous)                               </td></tr>
   </table>
 
 3. Key I/O parameters of the executable (pmcl3d):
