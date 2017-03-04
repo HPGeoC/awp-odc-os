@@ -158,8 +158,8 @@ To install awp-odc-os, perform the following steps:
 
   - Mesh: mesh file for 560x560x512 size (binary)
       <table>
-        <tr><th> (x, y, z)   </th><th> (x, y, z)   </th><th>...</th><th> (x, y, z)   </th><th> (x, y, z)   </th><th>...</th></tr>
-        <tr><td> (1, 1, 1)   </td><td> (2, 1, 1)   </td><td>...</td><td> (1, 2, 1)   </td><td> (2, 2, 1)   </td><td>...</td></tr>
+        <tr><td> (x, y, z)   </td><td> (x, y, z)   </td><td>...</td><td> (x, y, z)   </td><td> (x, y, z)   </td><td>...</td></tr>
+        <tr><th> (1, 1, 1)   </th><th> (2, 1, 1)   </th><th>...</th><th> (1, 2, 1)   </th><th> (2, 2, 1)   </th><th>...</th></tr>
         <tr><td> vp, vs, den </td><td> vp, vs, den </td><td>...</td><td> vp, vs, den </td><td> vp, vs, den </td><td>...</td></tr>
       </table>
 
