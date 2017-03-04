@@ -81,7 +81,7 @@ To install awp-odc-os, perform the following steps:
   (depends on the system, e.g. on Blue Waters)
 
   > ./env.sh
-  
+
   this script creates following folders:
 
   - `input/`      - single small source and mesh input files (for small scale tests)
