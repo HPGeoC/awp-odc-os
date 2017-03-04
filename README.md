@@ -12,7 +12,7 @@ awp-odc-os is implemented in C and CUDA.  The Message Passing Interface supports
 * [System Requirements](System Requirements)
 * [License](License)
 * [Installation](Installation)
-* [Running awp-odc-os (nonlinear version)](Running awp-odc-os (nonlinear version)
+* [Running awp-odc-os (nonlinear version)](Running awp-odc-os (nonlinear version))
 * [Important Notes](Important Notes)
 * [Source File Processing](Source File Processing)
 * [Mesh File Processing](Mesh File Processing)
