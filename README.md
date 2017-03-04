@@ -21,7 +21,7 @@ awp-odc-os is implemented in C and CUDA.  The Message Passing Interface supports
 * [Lustre File System Specifics](Lustre File System Specifics)
 
 #### Distribution Contents
-
+* [src/](src) source code and platform dependent makefiles
 
 #### System Requirements
 * C compiler
@@ -60,7 +60,7 @@ To install awp-odc-os, perform the following steps:
   >
   > make -f makefile.[MACHINE].[COMPILER]
 
-  ([MACHINE] represents machine name, e.g. titan, bluewaters) ([COMPILER] represents compiler name, e.g. gnu, pgi, cray)
+  ([MACHINE] represents machine name, e.g. `titan`, `bluewaters`) ([COMPILER] represents compiler name, e.g. `gnu`, `pgi`, `cray`)
 
 4. Executable pmcl3d located in `src/`
 
@@ -68,15 +68,27 @@ To install awp-odc-os, perform the following steps:
 
 1. Sample file access: [http://hpgeoc.sdsc.edu/downloads/awp-odc-os-nonlinear-example.tar.gz](http://hpgeoc.sdsc.edu/downloads/awp-odc-os-nonlinear-example.tar.gz)
 
-2. Copy the zip file into awp-odc-os home directory and unpack. One folders *run/* will be extracted into the home directory.
+2. Copy the zip file into awp-odc-os home directory and unpack. One folders `run/` will be extracted into the home directory.
 
   > cd awp-odc-os-nonlinear
   >
-  > tar -zxvf ./awp-odc-os-v1.0-examples.tar.gz
+  > tar -zxvf ./awp-odc-os-nonlinear-examples.tar.gz
 
 3. Run the environment setting script. This script will prepare required folders and link executable and input files into `run/` folder.
 
   > cd run
+
+  (depends on the system, e.g. on Blue Waters)
+
+  this script creates following folders:
+
+  - `input/`      - single small source and mesh input files (for small scale tests)
+  - `input_rst/`  - pre-partitioned source and mesh files (for large scale tests, see Source file processing section and Mesh file processing section)
+  - `output_ckp/` - run statistics and checkpoints if enabled
+  - `output_sfc/` - output folder striping might be needed for lustre system
+  - `debug`       - output folder for debug information
+
+  > ./env.sh
 
 4. Submit pbs job from `run/` directory. Like the run script, the job submission process is platform dependent. On Blue Waters, for instance, the run.bluewaters.pbs script can be found in `run/` and submitted via (modify your pbs script - account, email address):
 
@@ -89,14 +101,14 @@ To install awp-odc-os, perform the following steps:
 2. Key model parameters of the executable (pmcl3d):
 
   <table>
-    <tr><th>parameter(s)</th><th>result</th></tr>
+    <tr><th> parameter(s) </th><th> result                                                                    </th></tr>
     <tr><td> -X -Y -Z     </td><td> grid points in each direction (or NX, NY, NZ)                             </td></tr>
     <tr><td> -x -y        </td><td> GPUs used in x/y direction each, total x*y GPUs used or NPX, NPY, NPZ(=1) </td></tr>
     <tr><td> --TMAX       </td><td> time step in seconds (total time steps are TMAX/DT)                       </td></tr>
     <tr><td> --DT         </td><td> total propagation time to run in seconds                                  </td></tr>
     <tr><td> --DH         </td><td> discretization in space (spatial step for x, y, z (meters))               </td></tr>
     <tr><td> --NVAR       </td><td> number of variables in a grid point                                       </td></tr>
-    <tr><td> --NVE        </td><td> visco or elastic scheme (1=visco, 0=elastic)                              </td></tr>
+    <tr><td> --NVE        </td><td> visco or elastic scheme (0=elastic, 1=visco, 3=plasticity)                </td></tr>
     <tr><td> --NSRC       </td><td> number of source nodes on fault                                           </td></tr>
     <tr><td> --NST        </td><td> number of time steps in rupture functions                                 </td></tr>
     <tr><td> --IFAULT     </td><td> mode selection and fault or initial stress setting (0-2)                  </td></tr>
@@ -105,9 +117,28 @@ To install awp-odc-os, perform the following steps:
 
 3. Key I/O parameters of the executable (pmcl3d):
 
+  <table>
+    <tr><th> parameter(s)    </th><th> result                                                          </th></tr>
+    <tr><td> --READ_STEP     </td><td> CPU reads # step sources from file system                       </td></tr>
+    <tr><td> --READ_STEP_GPU </td><td> CPU reads larger chunks and sends to GPU at every READ_STEP_GPU
+                                  <br> (when IFAULT=2, READ_STEP must be divisible by READ_STEP_GPU)   </td></tr>
+    <tr><td> --WRITE_STEP    </td><td> # timesteps to write the buffer to the files                    </td></tr>
+    <tr><td> --NTISKP        </td><td> # timesteps to skip to copy velocities from GPU to CPU          </td></tr>
+    <tr><td> --NSKPX         </td><td> # points to skip in recording points in X                       </td></tr>
+    <tr><td> --NSKPY         </td><td> # points to skip in recording points in Y                       </td></tr>
+  </table>
+
 4. Other model parameters:
 
-
+  <table>
+    <tr><th> parameter(s) </th><th> result                                                            </th></tr>
+    <tr><td> --ND         </td><td> ABC thickness (grid-points), Cerjan >= 20                         </td></tr>
+    <tr><td> --NPC        </td><td> Cerjan(0), or PML(1), current version only implemented for Cerjan
+                               <br>  (NPC=0) (npx*npy*npz)/IOST < the total number of OSTs in a file
+                               <br> system (IOST definition see section Lustre file system specifics) </td></tr>
+    <tr><td> --SoCalQ     </td><td> parameter set for California Vp-Vs Q relationship (SoCalQ=1),
+                               <br> default SoCalQ=0                                                  </td></tr>
+  </table>
 
 #### Source File Processing
 
