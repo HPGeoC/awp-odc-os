@@ -80,6 +80,8 @@ To install awp-odc-os, perform the following steps:
 
   (depends on the system, e.g. on Blue Waters)
 
+  > ./env.sh
+  
   this script creates following folders:
 
   - `input/`      - single small source and mesh input files (for small scale tests)
@@ -87,8 +89,6 @@ To install awp-odc-os, perform the following steps:
   - `output_ckp/` - run statistics and checkpoints if enabled
   - `output_sfc/` - output folder striping might be needed for lustre system
   - `debug`       - output folder for debug information
-
-  > ./env.sh
 
 4. Submit pbs job from `run/` directory. Like the run script, the job submission process is platform dependent. On Blue Waters, for instance, the run.bluewaters.pbs script can be found in `run/` and submitted via (modify your pbs script - account, email address):
 
