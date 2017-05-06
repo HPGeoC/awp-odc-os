@@ -31,101 +31,123 @@ namespace odc {
     namespace io {
         class OutputWriter;
         class CheckpointWriter;
+        class ReceiverWriter;
     }
 }
 
+//added by Rajdeep (April 18 2017)
+class odc::io::ReceiverWriter {
+public:
+    ReceiverWriter(char *inputFileName, char *outputFileName, real deltaH, int_pt numZGridPoints);
+    void    writeReceiverOutputFiles(int_pt currentTimeStep, int_pt numTimestepsToSkip, PatchDecomp& i_ptchDec);
+    void    finalize();
+
+private:
+    int_pt  m_numberOfReceivers;
+    int_pt  *m_arrayGridX;
+    int_pt  *m_arrayGridY;
+    int_pt  *m_arrayGridZ;
+    bool    *m_ownedByThisRank;
+
+    int_pt  m_buffSkip;
+    int_pt  *m_buffCount;
+    int_pt  **m_buffTimestep;
+    real    **m_buffVelX;
+    real    **m_buffVelY;
+    real    **m_buffVelZ;
+
+    char    m_receiverInputFileName[AWP_PATH_MAX];
+    char    m_receiverOutputFileName[AWP_PATH_MAX];
+    char    **m_receiverOutputLogs;
+
+    FILE    *m_receiverInputFilePtr;
+    FILE    *m_receiverOutputFilePtr;
+};
+
 class odc::io::CheckpointWriter {
 public:
-    
     CheckpointWriter(char *i_fileName, int_pt nd, int_pt numTimestepsToSkip,
                      int_pt numZGridPoints);
-    
+
     void writeInitialStats(int_pt ntiskp, real dt, real dh, int_pt nxt, int_pt nyt, int_pt nzt,
                            int_pt nt, real arbc, int_pt npc, int_pt nve, real fac, real q0, real ex, real fp,
                            real vse_min, real vse_max, real vpe_min, real vpe_max, real dde_min, real dde_max);
 
     void writeUpdatedStats(int_pt currentTimeStep, PatchDecomp& i_ptchDec);
     void finalize();
-    
+
 private:
-    
     int_pt m_nd;
     int_pt m_numTimestepsToSkip;
     int_pt m_numZGridPoints;
 
     int_pt m_rcdX, m_rcdY, m_rcdZ;
     bool m_ownedByThisRank;
-    
-    char m_checkPointFileName[256];
+
+    char m_checkPointFileName[AWP_PATH_MAX];
     FILE *m_checkPointFile = nullptr;
-    
 };
 
 class odc::io::OutputWriter {
-    
 public:
     void update(int_pt i_timestep, PatchDecomp& i_ptchDec);
 
     void finalize();
     OutputWriter(OptionParser i_options);
-    
-    
+
 private:
-    char m_filenamebasex[256];
-    char m_filenamebasey[256];
-    char m_filenamebasez[256];
-    
-    char m_outputFolder[50];
-    
+    char m_filenamebasex[AWP_PATH_MAX];
+    char m_filenamebasey[AWP_PATH_MAX];
+    char m_filenamebasez[AWP_PATH_MAX];
+
+    char m_outputFolder[AWP_PATH_MAX];
+
     int_pt m_firstGlobalXNodeToRecord;
     int_pt m_firstGlobalYNodeToRecord;
     int_pt m_firstGlobalZNodeToRecord;
-    
+
     int_pt m_lastGlobalXNodeToRecord;
     int_pt m_lastGlobalYNodeToRecord;
     int_pt m_lastGlobalZNodeToRecord;
-    
+
     int_pt m_numGlobalXNodesToRecord;
     int_pt m_numGlobalYNodesToRecord;
     int_pt m_numGlobalZNodesToRecord;
-    
+
     int m_numTimestepsToSkip;
-    
+
     int_pt m_firstXNodeToRecord;
     int_pt m_firstYNodeToRecord;
     int_pt m_firstZNodeToRecord;
-    
+
     int_pt m_lastXNodeToRecord;
     int_pt m_lastYNodeToRecord;
     int_pt m_lastZNodeToRecord;
-    
+
     int m_writeStep;
-    
+
     int_pt m_numXNodesToSkip;
     int_pt m_numYNodesToSkip;
     int_pt m_numZNodesToSkip;
-    
+
     int_pt m_numXNodesToRecord;
     int_pt m_numYNodesToRecord;
     int_pt m_numZNodesToRecord;
     int_pt m_numGridPointsToRecord;
-    
+
     MPI_Datatype m_filetype;
     MPI_Offset   m_displacement;
-    
+
     real *m_velocityXWriteBuffer;
     real *m_velocityYWriteBuffer;
     real *m_velocityZWriteBuffer;
-    
+
     void calcRecordingPoints(int *rec_nbgx, int *rec_nedx,
                              int *rec_nbgy, int *rec_nedy, int *rec_nbgz, int *rec_nedz,
                              int *rec_nxt, int *rec_nyt, int *rec_nzt, MPI_Offset *displacement,
                              long int nxt, long int nyt, long int nzt, int rec_NX, int rec_NY, int rec_NZ,
                              int NBGX, int NEDX, int NSKPX, int NBGY, int NEDY, int NSKPY,
                              int NBGZ, int NEDZ, int NSKPZ, int *coord);
-    
-
-    
 };
 
 

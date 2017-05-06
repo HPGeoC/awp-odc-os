@@ -151,19 +151,25 @@ class odc::io::OptionParser {
     int m_soCalQ;
 
     // Source input file (if @c IFAULT==2, then this is prefix of @c tpsrc).
-    char m_inSrc[50];
+    char m_inSrc[AWP_PATH_MAX];
 
     // Mesh input file.
-    char m_inVel[50];
+    char m_inVel[AWP_PATH_MAX];
 
     // Output folder.
-    char m_out[50];
+    char m_out[AWP_PATH_MAX];
 
     // Split source input file prefix for @c IFAULT==2 option.
-    char m_inSrcI2[50];
+    char m_inSrcI2[AWP_PATH_MAX];
 
     // Checkpoint statistics file to write to.
-    char m_chkFile[50];
+    char m_chkFile[AWP_PATH_MAX];
+
+    // Receiver list input file
+    char m_inRcvr[AWP_PATH_MAX];
+
+    // Receiver output log file
+    char m_outRcvr[AWP_PATH_MAX];
 
     /**
      * Constructor of the option parser.

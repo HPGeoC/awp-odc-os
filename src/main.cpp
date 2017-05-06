@@ -91,6 +91,10 @@ int main( int i_argc, char *i_argv[] )
   odc::io::CheckpointWriter l_checkpoint(l_options.m_chkFile, l_options.m_nD,
 					 l_options.m_nTiSkp, l_options.m_nZ);
 
+  // set up receiver writer
+  odc::io::ReceiverWriter l_receiver(l_options.m_inRcvr, l_options.m_outRcvr,
+                                     l_options.m_dH, l_options.m_nZ);
+
   if(l_rank == 0)
     l_checkpoint.writeInitialStats(l_options.m_nTiSkp, l_options.m_dT, l_options.m_dH,
                                    l_options.m_nX, l_options.m_nY,
@@ -543,7 +547,8 @@ int main( int i_argc, char *i_argv[] )
 
 	//l_output.update(tstep, patch_decomp);
         if(l_rank == 0)
-	  l_checkpoint.writeUpdatedStats(tstep, patch_decomp);
+            l_checkpoint.writeUpdatedStats(tstep, patch_decomp);
+        l_receiver.writeReceiverOutputFiles(tstep, l_options.m_nTiSkp, patch_decomp);
       }
     }
 #pragma omp barrier
@@ -557,7 +562,6 @@ int main( int i_argc, char *i_argv[] )
     }
 #pragma omp barrier
   }
-    
 
   odc::parallel::Mpi::barrier();
 
@@ -566,8 +570,9 @@ int main( int i_argc, char *i_argv[] )
   std::cout << "releasing memory" << std::endl;
   patch_decomp.finalize();
   l_checkpoint.finalize();
+  l_receiver.finalize();
   //l_output.finalize();
-    
+
   // close mpi
   std::cout << "closing mpi" << std::endl;
   odc::parallel::Mpi::finalize();

@@ -23,7 +23,7 @@
 
 extern "C" {
   void command( int argc,    char **argv,
-	              float *TMAX, float *DH,       float *DT,   float *ARBC,    float *PHT,
+                float *TMAX, float *DH,       float *DT,   float *ARBC,    float *PHT,
                 int *NPC,    int *ND,         int *NSRC,   int *NST,       int *NVAR,
                 int *NVE,    int *MEDIASTART, int *IFAULT, int *READ_STEP, int *READ_STEP_GPU,
                 int *NTISKP, int *WRITE_STEP,
@@ -31,8 +31,8 @@ extern "C" {
                 int *NBGX,   int *NEDX,       int *NSKPX, 
                 int *NBGY,   int *NEDY,       int *NSKPY, 
                 int *NBGZ,   int *NEDZ,       int *NSKPZ, 
-                float *FAC,  float *Q0,       float *EX,   float *FP,      int *IDYNA,     int *SoCalQ,
-                char *INSRC, char *INVEL,     char *OUT,   char *INSRC_I2, char *CHKFILE);
+                float *FAC,  float *Q0,       float *EX,   float *FP,      int *IDYNA,      int *SoCalQ,
+                char *INSRC, char *INVEL,     char *OUT,   char *INSRC_I2, char *CHKFILE,   char *INRCVR,   char *OUTRCVR );
 }
 
 odc::io::OptionParser::OptionParser( int i_argc, char **i_argv ) {
@@ -72,8 +72,10 @@ odc::io::OptionParser::OptionParser( int i_argc, char **i_argv ) {
             m_inVel,
             m_out,
             m_inSrcI2,
-            m_chkFile );
-    
+            m_chkFile,
+            m_inRcvr,
+            m_outRcvr );
+
     m_numTimesteps = (int_pt)((m_tMax/m_dT) + 1);
 
   // print options
@@ -122,7 +124,8 @@ odc::io::OptionParser::OptionParser( int i_argc, char **i_argv ) {
             << "\t" << "inVel:\t\t"     << m_inVel       << std::endl
             << "\t" << "out:\t\t"       << m_out         << std::endl
             << "\t" << "inSrcI2:\t"     << m_inSrcI2     << std::endl
-            << "\t" << "chkFile:\t"     << m_chkFile     << std::endl;
-#endif    
-    
+            << "\t" << "chkFile:\t"     << m_chkFile     << std::endl
+            << "\t" << "inRcvr:\t"      << m_inRcvr      << std::endl
+            << "\t" << "outRcvr:\t"     << m_outRcvr     << std::endl;
+#endif
 }
