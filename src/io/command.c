@@ -19,11 +19,11 @@
 
 /*
 **************************************************************************************************************** 
-*  command.c						                                                                           *
-*  Process Command Line	                                                                                       *
+*  command.c                                                                                                   *
+*  Process Command Line                                                                                        *
 *                                                                                                              *
-*  Name         Type        Command             Description 	                                               *
-*  TMAX         <FLOAT>       -T              propagation time	                	                           *
+*  Name         Type        Command             Description                                                    *
+*  TMAX         <FLOAT>       -T              propagation time                                                 *
 *  DH           <FLOAT>       -H              spatial step for x, y, z (meters)                                *
 *  DT           <FLOAT>       -t              time step (seconds)                                              *
 *  ARBC         <FLOAT>       -A              coefficient for PML (3-4), or Cerjan (0.90-0.96)                 *
@@ -39,7 +39,7 @@
 *  READ_STEP    <INTEGER>     -R                                                                               *
 *  READ_STEP_GPU<INTEGER>     -Q              CPU reads larger chunks and sends to GPU at every READ_STEP_GPU  *
 *                                               (IFAULT=2) READ_STEP must be divisible by READ_STEP_GPU        *
-*  NX           <INTEGER>     -X              x model dimension in nodes                                       *      
+*  NX           <INTEGER>     -X              x model dimension in nodes                                       *
 *  NY           <INTEGER>     -Y              y model dimension in nodes                                       *
 *  NZ           <INTEGER>     -Z              z model dimension in nodes                                       *
 *  PX           <INTEGER>     -x              number of processors in the x direction                          *
@@ -66,6 +66,8 @@
 *  INVEL        <STRING>                      mesh input file                                                  *
 *  INSRC_I2     <STRING>                      split source input file prefix for IFAULT=2 option               *
 *  CHKFILE      <STRING>      -c              Checkpoint statistics file to write to                           *
+*  INRCVR       <STRING>      -C              Receiver list input file                                         *
+*  OUTRCVR      <STRING>      -O              Receiver output log file                                         *
 ****************************************************************************************************************
 */
 
@@ -74,65 +76,67 @@
 #include <getopt.h>
 #include <math.h>
 #include <string.h>
+#include "constants.hpp"
 
 // Default IN3D Values
-const float def_TMAX       = 20.00;
-const float def_DH         = 200.0;
-const float def_DT         = 0.01; 
-const float def_ARBC       = 0.92;
-const float def_PHT        = 0.1;
+const float def_TMAX            = 20.00;
+const float def_DH              = 200.0;
+const float def_DT              = 0.01; 
+const float def_ARBC            = 0.92;
+const float def_PHT             = 0.1;
 
-const int   def_NPC        = 0;
-const int   def_ND         = 20;
-const int   def_NSRC       = 1;
-const int   def_NST        = 91;
-const int   def_NVAR       = 3;
+const int   def_NPC             = 0;
+const int   def_ND              = 20;
+const int   def_NSRC            = 1;
+const int   def_NST             = 91;
+const int   def_NVAR            = 3;
 
-const int   def_NVE        = 1;
-const int   def_MEDIASTART = 0;
-const int   def_IFAULT     = 1; 
-const int   def_READ_STEP  = 91;
-const int   def_READ_STEP_GPU = 91;
+const int   def_NVE             = 1;
+const int   def_MEDIASTART      = 0;
+const int   def_IFAULT          = 1; 
+const int   def_READ_STEP       = 91;
+const int   def_READ_STEP_GPU   = 91;
 
-const int   def_NTISKP     = 10;
-const int   def_WRITE_STEP = 10;
+const int   def_NTISKP          = 10;
+const int   def_WRITE_STEP      = 10;
 
-const int   def_NX         = 224;
-const int   def_NY         = 224; 
-const int   def_NZ         = 1024;
+const int   def_NX              = 224;
+const int   def_NY              = 224; 
+const int   def_NZ              = 1024;
 
-const int   def_PX         = 1;
-const int   def_PY         = 1;
+const int   def_PX              = 1;
+const int   def_PY              = 1;
 
-const int   def_NBGX       = 1;
-const int   def_NEDX       = -1;   // use -1 for all
-const int   def_NSKPX      = 1;
-const int   def_NBGY       = 1;
-const int   def_NEDY       = -1;   // use -1 for all
-const int   def_NSKPY      = 1;
-const int   def_NBGZ       = 1;
-const int   def_NEDZ       = 1;    // only surface
-const int   def_NSKPZ      = 1;
+const int   def_NBGX            = 1;
+const int   def_NEDX            = -1;   // use -1 for all
+const int   def_NSKPX           = 1;
+const int   def_NBGY            = 1;
+const int   def_NEDY            = -1;   // use -1 for all
+const int   def_NSKPY           = 1;
+const int   def_NBGZ            = 1;
+const int   def_NEDZ            = 1;    // only surface
+const int   def_NSKPZ           = 1;
 
-const int   def_IDYNA      = 0;
-const int   def_SoCalQ     = 1;
+const int   def_IDYNA           = 0;
+const int   def_SoCalQ          = 1;
 
-const float def_FAC        = 0.005;
-const float def_Q0         = 5.0;
-const float def_EX         = 0.0;
-const float def_FP         = 2.5;
+const float def_FAC             = 0.005;
+const float def_Q0              = 5.0;
+const float def_EX              = 0.0;
+const float def_FP              = 2.5;
 
-const char  def_INSRC[50]  = "input/FAULTPOW";
-const char  def_INVEL[50]  = "input/media";
+const char  def_INSRC[AWP_PATH_MAX]         = "input/FAULTPOW";
+const char  def_INVEL[AWP_PATH_MAX]         = "input/media";
 
-const char  def_OUT[50] = "output_sfc";
+const char  def_OUT[AWP_PATH_MAX]           = "output_sfc";
 
-const char  def_INSRC_TPSRC[50] = "input_rst/srcpart/tpsrc/tpsrc";
-const char  def_INSRC_I2[50]  = "input_rst/srcpart/split_faults/fault";
+const char  def_INSRC_TPSRC[AWP_PATH_MAX]   = "input_rst/srcpart/tpsrc/tpsrc";
+const char  def_INSRC_I2[AWP_PATH_MAX]      = "input_rst/srcpart/split_faults/fault";
 
-const char  def_CHKFILE[50]   = "output_sfc/CHKP";
+const char  def_CHKFILE[AWP_PATH_MAX]       = "output_sfc/CHKP";
 
-
+const char  def_INRCVR[AWP_PATH_MAX]        = "input/receiverList.txt";
+const char  def_OUTRCVR[AWP_PATH_MAX]       = "output_sfc/receiverOutput";
 
 /**
  Reads command line arguments and assigns them to corresponding variables.
@@ -200,6 +204,8 @@ const char  def_CHKFILE[50]   = "output_sfc/CHKP";
                                     Defaults to @c "input_rst/srcpart/split_faults/fault"
  @param[out] CHKFILE            Checkpoint statistics file to write to. Set with command line option @c -o or @c --CHKFILE. Defaults to
                                     @c "output_sfc/CHKP"
+ @param[out] INRCVR             Receiver list input file. Set with command line option @c -C or @c --INRCVR. Defaults to @c "input/receiverList.txt"
+ @param[out] OUTRCVR            Receiver output log file. Set with command line option @c -O or @c --OUTRCVR. Defaults to @c "output_sfc/receiverOutput"
  
  @warning The number of MPI processes must be greater than or equal to @c PX*PY
  @warning If @c IFAULT==2 then @c READ_STEP must be divisible by @c READ_STEP_GPU
@@ -207,71 +213,73 @@ const char  def_CHKFILE[50]   = "output_sfc/CHKP";
  @warning All file names must be under 50 characters in length!!!
  */
 void command(int argc,    char **argv,
-	     float *TMAX, float *DH,       float *DT,   float *ARBC,    float *PHT,
+             float *TMAX, float *DH,       float *DT,   float *ARBC,    float *PHT,
              int *NPC,    int *ND,         int *NSRC,   int *NST,       int *NVAR,
              int *NVE,    int *MEDIASTART, int *IFAULT, int *READ_STEP, int *READ_STEP_GPU,
              int *NTISKP, int *WRITE_STEP,
-    	       int *NX,     int *NY,         int *NZ,     int *PX,        int *PY,
+             int *NX,     int *NY,         int *NZ,     int *PX,        int *PY,
              int *NBGX,   int *NEDX,       int *NSKPX, 
              int *NBGY,   int *NEDY,       int *NSKPY, 
              int *NBGZ,   int *NEDZ,       int *NSKPZ, 
-             float *FAC,   float *Q0,      float *EX,   float *FP,   int *IDYNA,     int *SoCalQ,
-             char *INSRC, char *INVEL,     char *OUT,   char *INSRC_I2, char *CHKFILE)
+             float *FAC,   float *Q0,      float *EX,   float *FP,   int *IDYNA,        int *SoCalQ,
+             char *INSRC, char *INVEL,     char *OUT,   char *INSRC_I2, char *CHKFILE,  char *INRCVR,   char *OUTRCVR )
 {
 
-   // Fill in default values
-   *TMAX       = def_TMAX;
-   *DH         = def_DH;
-   *DT         = def_DT;
-   *ARBC       = def_ARBC;
-   *PHT        = def_PHT;
+    // Fill in default values
+    *TMAX           = def_TMAX;
+    *DH             = def_DH;
+    *DT             = def_DT;
+    *ARBC           = def_ARBC;
+    *PHT            = def_PHT;
 
-   *NPC        = def_NPC;
-   *ND         = def_ND;
-   *NSRC       = def_NSRC;
-   *NST        = def_NST;
-   
-   *NVE        = def_NVE;
-   *MEDIASTART = def_MEDIASTART;
-   *NVAR       = def_NVAR;
-   *IFAULT     = def_IFAULT; 
-   *READ_STEP  = def_READ_STEP;
-   *READ_STEP_GPU = def_READ_STEP_GPU;
+    *NPC            = def_NPC;
+    *ND             = def_ND;
+    *NSRC           = def_NSRC;
+    *NST            = def_NST;
 
-   *NTISKP     = def_NTISKP;
-   *WRITE_STEP = def_WRITE_STEP;
+    *NVE            = def_NVE;
+    *MEDIASTART     = def_MEDIASTART;
+    *NVAR           = def_NVAR;
+    *IFAULT         = def_IFAULT; 
+    *READ_STEP      = def_READ_STEP;
+    *READ_STEP_GPU  = def_READ_STEP_GPU;
 
-   *NX         = def_NX;
-   *NY         = def_NY;
-   *NZ         = def_NZ;
-   *PX         = def_PX;
-   *PY         = def_PY;
+    *NTISKP         = def_NTISKP;
+    *WRITE_STEP     = def_WRITE_STEP;
 
-   *NBGX       = def_NBGX;
-   *NEDX       = def_NEDX;
-   *NSKPX      = def_NSKPX;
-   *NBGY       = def_NBGY;
-   *NEDY       = def_NEDY;
-   *NSKPY      = def_NSKPY;
-   *NBGZ       = def_NBGZ;
-   *NEDZ       = def_NEDZ;
-   *NSKPZ      = def_NSKPZ;
+    *NX             = def_NX;
+    *NY             = def_NY;
+    *NZ             = def_NZ;
+    *PX             = def_PX;
+    *PY             = def_PY;
 
-   *IDYNA      = def_IDYNA;
-   *SoCalQ     = def_SoCalQ;
-   *FAC        = def_FAC;
-   *Q0         = def_Q0;
-   *EX         = def_EX;
-   *FP         = def_FP;
+    *NBGX           = def_NBGX;
+    *NEDX           = def_NEDX;
+    *NSKPX          = def_NSKPX;
+    *NBGY           = def_NBGY;
+    *NEDY           = def_NEDY;
+    *NSKPY          = def_NSKPY;
+    *NBGZ           = def_NBGZ;
+    *NEDZ           = def_NEDZ;
+    *NSKPZ          = def_NSKPZ;
+
+    *IDYNA          = def_IDYNA;
+    *SoCalQ         = def_SoCalQ;
+    *FAC            = def_FAC;
+    *Q0             = def_Q0;
+    *EX             = def_EX;
+    *FP             = def_FP;
 
     strcpy(INSRC, def_INSRC);
     strcpy(INVEL, def_INVEL);
     strcpy(OUT, def_OUT);
     strcpy(INSRC_I2, def_INSRC_I2);
     strcpy(CHKFILE, def_CHKFILE);
+    strcpy(INRCVR, def_INRCVR);
+    strcpy(OUTRCVR, def_OUTRCVR);
 
     extern char *optarg;
-    static const char *optstring = "-T:H:t:A:P:M:D:S:N:V:B:n:I:R:Q:X:Y:Z:x:y:z:i:l:h:30:p:s:r:W:1:2:3:11:12:13:21:22:23:100:101:102:o:c:";
+    static const char *optstring = "-T:H:t:A:P:M:D:S:N:V:B:n:I:R:Q:X:Y:Z:x:y:z:i:l:h:30:p:s:r:W:1:2:3:11:12:13:21:22:23:100:101:102:o:c:C:O:";
     static struct option long_options[] = {
         {"TMAX", required_argument, NULL, 'T'},
         {"DH", required_argument, NULL, 'H'},
@@ -315,6 +323,8 @@ void command(int argc,    char **argv,
         {"OUT", required_argument, NULL, 'o'},
         {"INSRC_I2", required_argument, NULL, 102},
         {"CHKFILE", required_argument, NULL, 'c'},
+        {"INRCVR", required_argument, NULL, 'C'},
+        {"OUTRCVR", required_argument, NULL, 'O'},
     };
 
     // If IFAULT=2 and INSRC is not set, then *INSRC = def_INSRC_TPSRC, not def_INSRC
@@ -322,8 +332,8 @@ void command(int argc,    char **argv,
     // If IFAULT=1 and READ_STEP_GPU is not set, it should be = READ_STEP
     int readstepGpuIsSet = 0;
     int c;
-    while ((c=getopt_long(argc, argv, optstring, long_options, NULL)) != -1)
-    {
+
+    while ((c=getopt_long(argc, argv, optstring, long_options, NULL)) != -1) {
         switch (c) {
             case 'T':
                 *TMAX       = atof(optarg); break;
@@ -401,7 +411,7 @@ void command(int argc,    char **argv,
             case 'W':
                 *WRITE_STEP = atoi(optarg); break;
             case 100:
-                insrcIsSet = 1;
+                insrcIsSet  = 1;
                 strcpy(INSRC, optarg); break;
             case 101:
                 strcpy(INVEL, optarg); break;
@@ -411,21 +421,25 @@ void command(int argc,    char **argv,
                 strcpy(INSRC_I2, optarg); break;
             case 'c':
                 strcpy(CHKFILE, optarg); break;
+            case 'C':
+                strcpy(INRCVR, optarg); break;
+            case 'O':
+                strcpy(OUTRCVR, optarg); break;
             default:
                 printf("Usage: %s \nOptions:\n\t[(-T | --TMAX) <TMAX>]\n\t[(-H | --DH) <DH>]\n\t[(-t | --DT) <DT>]\n\t[(-A | --ARBC) <ARBC>]\n\t[(-P | --PHT) <PHT>]\n\t[(-M | --NPC) <NPC>]\n\t[(-D | --ND) <ND>]\n\t[(-S | --NSRC) <NSRC>]\n\t[(-N | --NST) <NST>]\n",argv[0]);
                 printf("\n\t[(-V | --NVE) <NVE>]\n\t[(-B | --MEDIASTART) <MEDIASTART>]\n\t[(-n | --NVAR) <NVAR>]\n\t[(-I | --IFAULT) <IFAULT>]\n\t[(-R | --READ_STEP) <x READ_STEP for CPU>]\n\t[(-Q | --READ_STEP_GPU) <READ_STEP for GPU>]\n");
                 printf("\n\t[(-X | --NX) <x length]\n\t[(-Y | --NY) <y length>]\n\t[(-Z | --NZ) <z length]\n\t[(-x | --NPX) <x processors]\n\t[(-y | --NPY) <y processors>]\n\t[(-z | --NPZ) <z processors>]\n");
                 printf("\n\t[(-1 | --NBGX) <starting point to record in X>]\n\t[(-2 | --NEDX) <ending point to record in X>]\n\t[(-3 | --NSKPX) <skipping points to record in X>]\n\t[(-11 | --NBGY) <starting point to record in Y>]\n\t[(-12 | --NEDY) <ending point to record in Y>]\n\t[(-13 | --NSKPY) <skipping points to record in Y>]\n\t[(-21 | --NBGZ) <starting point to record in Z>]\n\t[(-22 | --NEDZ) <ending point to record in Z>]\n\t[(-23 | --NSKPZ) <skipping points to record in Z>]\n");
                 printf("\n\t[(-i | --IDYNA) <i IDYNA>]\n\t[(-s | --SoCalQ) <s SoCalQ>]\n\t[(-l | --FAC) <l FAC>]\n\t[(-h | --Q0) <h Q0>]\n\t[(-30 | --EX) <e EX>]\n\t[(-p | --FP) <p FP>]\n\t[(-r | --NTISKP) <time skipping in writing>]\n\t[(-W | --WRITE_STEP) <time aggregation in writing>]\n");
-                printf("\n\t[(-100 | --INSRC) <source file>]\n\t[(-101 | --INVEL) <mesh file>]\n\t[(-o | --OUT) <output file>]\n\t[(-102 | --INSRC_I2) <split source file prefix (IFAULT=2)>]\n\t[(-c | --CHKFILE) <checkpoint file to write statistics>]\n\n");
+                printf("\n\t[(-100 | --INSRC) <source file>]\n\t[(-101 | --INVEL) <mesh file>]\n\t[(-o | --OUT) <output file>]\n\t[(-102 | --INSRC_I2) <split source file prefix (IFAULT=2)>]\n\t[(-c | --CHKFILE) <checkpoint file to write statistics>]\n\t[(-C | --INRCVR) <receiver list input file>]\n\t[(-O | --OUTRCVR) <receiver output log file>]\n\n");
                 exit(-1);
         }
     }
     // If IFAULT=2 and INSRC is not set, then *INSRC = def_INSRC_TPSRC, not def_INSRC
-    if(*IFAULT == 2 && !insrcIsSet){
+    if(*IFAULT == 2 && !insrcIsSet) {
       strcpy(INSRC, def_INSRC_TPSRC);
     }
-    if(!readstepGpuIsSet){
+    if(!readstepGpuIsSet) {
       *READ_STEP_GPU = *READ_STEP;
     }
     return;

@@ -59,7 +59,7 @@ int read_src_ifault_2(int rank, int READ_STEP,
     int idx){
 
   FILE *f;
-  char fname[150];
+  char fname[AWP_PATH_MAX];
   int dummy[2], i, j;
   int nbx, nby;
   PosInf tpsrc = NULL;

@@ -489,7 +489,7 @@ void odc::data::Mesh::inimesh(int MEDIASTART, Grid3D d1, Grid3D mu, Grid3D lam, 
         
     if(MEDIASTART>=1 && MEDIASTART<=3)
     {
-      char filename[200];
+      char filename[AWP_PATH_MAX];
       if(MEDIASTART<3) sprintf(filename,"%s",INVEL);
       else if(MEDIASTART==3)
       {

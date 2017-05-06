@@ -20,6 +20,9 @@
 #ifndef CONSTANTS_HPP
 #define CONSTANTS_HPP
 
+#include <linux/limits.h>
+
+#define AWP_PATH_MAX (PATH_MAX+1)
 
 // constants of shared code - start
 #ifdef __RESTRICT
