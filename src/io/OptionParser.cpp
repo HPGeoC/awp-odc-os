@@ -1,11 +1,12 @@
 /**
  @author Alexander Breuer (anbreuer AT ucsd.edu)
+ @author Rajdeep Konwar (rkonwar AT ucsd.edu)
  
  @section DESCRIPTION
  Parser for command line options.
  
  @section LICENSE
- Copyright (c) 2015-2016, Regents of the University of California
+ Copyright (c) 2015-2017, Regents of the University of California
  All rights reserved.
  
  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -76,9 +77,9 @@ odc::io::OptionParser::OptionParser( int i_argc, char **i_argv ) {
             m_inRcvr,
             m_outRcvr );
 
-    m_numTimesteps = (int_pt)((m_tMax/m_dT) + 1);
+  m_numTimesteps = (int_pt)((m_tMax/m_dT) + 1);
 
-  // print options
+  //! print options
   // TODO: Log
 #if 0
   std::cout << "parsed options successfully:"            << std::endl
