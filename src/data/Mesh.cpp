@@ -348,7 +348,6 @@ void odc::data::Mesh::inimesh(int MEDIASTART, Grid3D d1, Grid3D mu, Grid3D lam, 
                               int NZ, int *coords, MPI_Comm MCW, int IDYNA, int NVE, int SoCalQ, char *INVEL,
                               float *vse, float *vpe, float *dde)
 {
-  printf("start of inimesh SHOULD NOT BE HERE WARNING WARNING\n");
   double stime = 0., etime = 0.;
     
   int merr;
@@ -1380,8 +1379,7 @@ void odc::data::Mesh::new_inimesh(int MEDIASTART,
             tmpvp[i][j][k]=600.0;
           }
 
-          int_pt offset = i * i_strideX + j * i_strideY + (nzt - 1 - k) * i_strideZ; 
-          std::cout << "HERE!!!!!!!!!!!!!" << std::endl;
+          int_pt offset = i * i_strideX + j * i_strideY + (nzt - 1 - k) * i_strideZ;
           if(tmpdd[i][j][k]<1700.0) tmpdd[i][j][k]=1700.0;
           
 #ifdef YASK
