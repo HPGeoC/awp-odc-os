@@ -348,7 +348,6 @@ void odc::data::Mesh::inimesh(int MEDIASTART, Grid3D d1, Grid3D mu, Grid3D lam, 
                               int NZ, int *coords, MPI_Comm MCW, int IDYNA, int NVE, int SoCalQ, char *INVEL,
                               float *vse, float *vpe, float *dde)
 {
-  printf("start of inimesh\n");
   double stime = 0., etime = 0.;
     
   int merr;
@@ -1071,10 +1070,10 @@ void odc::data::Mesh::new_inimesh(int MEDIASTART,
           //TODO(Josh): optimize this
           int_pt offset = i * i_strideX + j * i_strideY + k * i_strideZ;
 
-	  if(NVE==1)
-	  {
-	    qp[offset] = 0.00416667;
-	    qs[offset] = 0.00833333;
+          if(NVE==1)
+          {
+            qp[offset] = 0.00416667;
+            qs[offset] = 0.00833333;
           }
           
 #ifdef YASK
@@ -1087,6 +1086,61 @@ void odc::data::Mesh::new_inimesh(int MEDIASTART,
           d1[offset]=dd;           
 #endif
         }
+  }
+  else if(MEDIASTART == 4)
+  {
+
+    double max_vse = -1.0e10;
+    double max_vpe = -1.0e10;
+    double max_dde = -1.0e10;
+    double min_vse = 1.0e10;
+    double min_vpe = 1.0e10;
+    double min_dde = 1.0e10;
+
+    for(int_pt k=0;k<nzt;k++)
+    {
+      for(int_pt j=0;j<nyt;j++)
+      {
+        for(int_pt i=0;i<nxt;i++)
+        {
+          int_pt l_readOffset = (k*i_inputSizeY*i_inputSizeX+j*i_inputSizeX+i)*nvar;
+          vp = i_inputBuffer[l_readOffset+0];
+          vs = i_inputBuffer[l_readOffset+1];
+          dd = i_inputBuffer[l_readOffset+2];
+
+          if(vs<min_vse) min_vse = vs;
+          if(vs>max_vse) max_vse = vs;
+          if(vp<min_vpe) min_vpe = vp;
+          if(vp>max_vpe) max_vpe = vp;
+          if(dd<min_dde) min_dde = dd;
+          if(dd>max_dde) max_dde = dd;
+
+          int_pt offset = i * i_strideX + j * i_strideY + k * i_strideZ;
+#ifdef YASK
+          lam_grid->writeElem(1./(dd*(vp*vp - 2.*vs*vs)), i+bdry_width, j+bdry_width, k+bdry_width, 0);
+          mu_grid->writeElem(1./(dd*vs*vs), i+bdry_width, j+bdry_width, k+bdry_width, 0);
+          density_grid->writeElem(dd, i+bdry_width, j+bdry_width, k+bdry_width, 0);
+#else
+          lam[offset]=1./(dd*(vp*vp - 2.*vs*vs)); 
+          mu[offset]=1./(dd*vs*vs); 
+          d1[offset]=dd;
+#endif
+          if(NVE==1)
+          {
+            qp[offset] = i_inputBuffer[l_readOffset+3];
+            qs[offset] = i_inputBuffer[l_readOffset+4];
+          }
+        }
+      }
+    }
+
+
+    m_vse[0] = min_vse;
+    m_vse[1] = max_vse;
+    m_vpe[0] = min_vpe;
+    m_vpe[1] = max_vpe;
+    m_dde[0] = min_dde;
+    m_dde[1] = max_dde;
   }
   else
   {
@@ -1325,8 +1379,7 @@ void odc::data::Mesh::new_inimesh(int MEDIASTART,
             tmpvp[i][j][k]=600.0;
           }
 
-          int_pt offset = i * i_strideX + j * i_strideY + (nzt - 1 - k) * i_strideZ; 
-                    
+          int_pt offset = i * i_strideX + j * i_strideY + (nzt - 1 - k) * i_strideZ;
           if(tmpdd[i][j][k]<1700.0) tmpdd[i][j][k]=1700.0;
           
 #ifdef YASK

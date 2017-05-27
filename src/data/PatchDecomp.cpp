@@ -86,7 +86,6 @@ void PatchDecomp::initialize(odc::io::OptionParser i_options, int_pt xSize, int_
     std::cout << "can't read file " << i_options.m_inVel << std::endl;
     return;
   }
-
   
   for(int i=0; i<m_numPatches; i++)
   {
