@@ -69,24 +69,15 @@ public:
                   yask::Grid_XYZ* an_yz_grid
 #endif
                   );
-  
-  // initialize and store mesh parameters using input from command line options
-  Mesh(odc::io::OptionParser i_options, odc::data::SoA i_data);
-    
-  // cleanup
+      
   void finalize();
     
     
 private:
     
   void weights_sub(Grid3D weights,Grid1D coeff, float ex, float fac);
-  void inimesh(int MEDIASTART, Grid3D d1, Grid3D mu, Grid3D lam, Grid3D qp, Grid3D qs, float *taumax, float *taumin,
-               Grid3D tau, Grid3D weights,Grid1D coeff,
-               int nvar, float FP,  float FAC, float Q0, float EX, int nxt, int nyt, int nzt, int PX, int PY, int NX, int NY,
-               int NZ, int *coords, MPI_Comm MCW, int IDYNA, int NVE, int SoCalQ, char *INVEL,
-               float *vse, float *vpe, float *dde);
-
-  void new_inimesh(int MEDIASTART,
+  
+  void inimesh(int MEDIASTART,
 #ifdef YASK
                    yask::Grid_XYZ* density_grid,
                    yask::Grid_XYZ* mu_grid,
@@ -128,11 +119,7 @@ private:
     
   void tausub( Grid3D tau, float taumin,float taumax);
     
-  void init_texture(int nxt,  int nyt,  int nzt,  Grid3D tau1,  Grid3D tau2,  Grid3D vx1,  Grid3D vx2,
-                    Grid3D weights, Grid3Dww ww,Grid3D wwo,
-                    int xls,  int xre,  int yls,  int yre);
-
-  void new_init_texture(Grid3D tau1,  Grid3D tau2,  Grid3D vx1,  Grid3D vx2, Grid3D weights, Grid3Dww ww,Grid3D wwo,
+  void init_texture(Grid3D tau1,  Grid3D tau2,  Grid3D vx1,  Grid3D vx2, Grid3D weights, Grid3Dww ww,Grid3D wwo,
                         int_pt startX,  int_pt endX,  int_pt startY,  int_pt endY, int_pt startZ, int_pt endZ,
                         int_pt globalStartX, int_pt globalStartY, int_pt globalStartZ, int_pt sizeZ);
 
@@ -142,9 +129,7 @@ private:
 #ifdef YASK
       yask::Grid_XYZ* gd1,yask::Grid_XYZ* gmu,yask::Grid_XYZ* glam,
 #endif
-//#else
       Grid3D density,Grid3D mu, Grid3D lam,
-//#endif
       Grid3D qp, Grid3D qs, bool anelastic,
       int_pt bdry_width, int_pt nx, int_pt ny, int_pt nz);
     

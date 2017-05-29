@@ -21,11 +21,6 @@
 #include "data/common.hpp"
 #include "Grid.hpp"
 
-/**************************************************************************
- * Efecan updated on Oct 4, 2012
- *    MEDIARESTART=3 is added for partitioned large mesh reading
- *
- ***************************************************************************/
 #include <cstdio>
 #include <cmath>
 #include <complex>
@@ -37,26 +32,18 @@
 using namespace yask;
 #endif
 
-double w_time()
+static real anelastic_coeff(real q, int_pt weight_index, real weight, real *coeff)
 {
-  struct timeval t;
-  if(gettimeofday(&t, NULL))
+  if(1.0/q <= 200.0)
   {
-    return 0;
+    q = (coeff[weight_index*2-2]*q*q + coeff[weight_index*2-1]*q)/weight;
   }
-  return (double) t.tv_sec + 0.000001 * (double) t.tv_usec;
+  else
+  {
+    q *= 0.5;
+  }
+  return q;
 }
-
-static real anelastic_coeff(real q, int_pt weight_index, real weight, real *coeff) {
-    if(1.0/q <= 200.0) {
-        q = (coeff[weight_index*2-2]*q*q + coeff[weight_index*2-1]*q)/weight;
-    } else {
-        q *= 0.5;
-    }
-    return q;
-}
-
-
 
 void odc::data::Mesh::initialize(odc::io::OptionParser i_options, int_pt x, int_pt y, int_pt z,
                                  int_pt bdry_size, bool anelastic, Grid1D i_inputBuffer,
@@ -102,7 +89,7 @@ void odc::data::Mesh::initialize(odc::io::OptionParser i_options, int_pt x, int_
   }
 
     
-  new_inimesh(i_options.m_mediaStart,
+  inimesh(i_options.m_mediaStart,
 #ifdef YASK
               density_grid,
               mu_grid,
@@ -151,8 +138,10 @@ void odc::data::Mesh::initialize(odc::io::OptionParser i_options, int_pt x, int_
       m_density, m_mu, m_lam, m_qp, m_qs, m_usingAnelastic, bdry_size, x, y, z);
 
   // For free surface boundary condition calculations
-  for(int i = bdry_size; i < bdry_size + x; i++) {
-    for(int j = bdry_size; j < bdry_size + y ;j++) {
+  for(int i = bdry_size; i < bdry_size + x; i++)
+  {
+    for(int j = bdry_size; j < bdry_size + y ;j++)
+    {
       real t_xl, t_xl2m;
 #ifdef YASK
       t_xl             = 1.0/lam_grid->readElem(i,j,bdry_size+z-1,0);
@@ -181,10 +170,9 @@ void odc::data::Mesh::initialize(odc::io::OptionParser i_options, int_pt x, int_
       }
     }
 
-    new_init_texture(tau1, tau2, m_tau1, m_tau2, weights, m_weight_index, m_weights,
-                     bdry_size, bdry_size+x, bdry_size, bdry_size+y, bdry_size, bdry_size+z,
-                     i_globalX, i_globalY, i_globalZ,
-                     i_options.m_nZ);
+    init_texture(tau1, tau2, m_tau1, m_tau2, weights, m_weight_index, m_weights,
+                 bdry_size, bdry_size+x, bdry_size, bdry_size+y, bdry_size, bdry_size+z,
+                 i_globalX, i_globalY, i_globalZ, i_options.m_nZ);
   }
     
   Delloc3D(tau);
@@ -237,83 +225,8 @@ void odc::data::Mesh::initialize(odc::io::OptionParser i_options, int_pt x, int_
         
     odc::data::Delloc3Dww(m_weight_index, 2);
   }
-#endif
-  
+#endif  
 }
-
-
-odc::data::Mesh::Mesh(odc::io::OptionParser i_options, odc::data::SoA data)
-{
-    
-  real taumax, taumin;
-    
-  Grid3D tau = Alloc3D(2, 2, 2);
-  Grid3D tau1 = Alloc3D(2, 2, 2);
-  Grid3D tau2 = Alloc3D(2, 2, 2);
-  Grid3D weights = Alloc3D(2, 2, 2);
-    
-  real tauu;
-    
-  m_density = odc::data::Alloc3D(data.m_numXGridPoints, data.m_numYGridPoints, data.m_numZGridPoints, odc::constants::boundary);
-  m_mu = odc::data::Alloc3D(data.m_numXGridPoints, data.m_numYGridPoints, data.m_numZGridPoints, odc::constants::boundary);
-  m_lam = odc::data::Alloc3D(data.m_numXGridPoints, data.m_numYGridPoints, data.m_numZGridPoints, odc::constants::boundary);
-  m_lam_mu = odc::data::Alloc3D(data.m_numXGridPoints, data.m_numYGridPoints, 1, odc::constants::boundary);
-    
-  if (i_options.m_nVe == 1)
-  {
-    m_usingAnelastic = true;
-    // If doing anelastic attenuation
-    m_qp = odc::data::Alloc3D(data.m_numXGridPoints, data.m_numYGridPoints, data.m_numZGridPoints, odc::constants::boundary);
-    m_qs = odc::data::Alloc3D(data.m_numXGridPoints, data.m_numYGridPoints, data.m_numZGridPoints, odc::constants::boundary);
-    m_tau1 = odc::data::Alloc3D(data.m_numXGridPoints, data.m_numYGridPoints, data.m_numZGridPoints, odc::constants::boundary);
-    m_tau2 = odc::data::Alloc3D(data.m_numXGridPoints, data.m_numYGridPoints, data.m_numZGridPoints, odc::constants::boundary);
-    m_weights = odc::data::Alloc3D(data.m_numXGridPoints, data.m_numYGridPoints, data.m_numZGridPoints, odc::constants::boundary);
-    m_weight_index = odc::data::Alloc3Dww(data.m_numXGridPoints, data.m_numYGridPoints, data.m_numZGridPoints, odc::constants::boundary);
-    m_coeff = Alloc1D(16);
-    weights_sub(weights, m_coeff, i_options.m_ex, i_options.m_fac);
-  }
-    
-  inimesh(i_options.m_mediaStart, m_density, m_mu, m_lam, m_qp, m_qs, &taumax, &taumin, tau, weights, m_coeff, i_options.m_nVar, i_options.m_fp, i_options.m_fac, i_options.m_q0, i_options.m_ex, data.m_numXGridPoints, data.m_numYGridPoints, data.m_numZGridPoints, 1, 1, data.m_numXGridPoints, data.m_numYGridPoints, data.m_numZGridPoints, odc::parallel::Mpi::coords, MPI_COMM_WORLD, i_options.m_iDyna, i_options.m_nVe, i_options.m_soCalQ, i_options.m_inVel, m_vse, m_vpe, m_dde);
-    
-    
-  // For free surface boundary condition calculations
-  for(int i=0;i<data.m_numXGridPoints;i++)
-  {
-    for(int j=0;j<data.m_numYGridPoints;j++)
-    {
-      real t_xl, t_xl2m;
-      t_xl             = 1.0/m_lam[i][j][data.m_numZGridPoints-1];
-      t_xl2m           = 2.0/m_mu[i][j][data.m_numZGridPoints-1] + t_xl;
-      m_lam_mu[i][j][0]  = t_xl/t_xl2m;
-    }
-  }
-    
-  if(i_options.m_nVe == 1)
-  {
-    // If doing anelastic attenuation
-    for(int i=0; i<2; i++)
-    {
-      for(int j=0; j<2; j++)
-      {
-        for(int k=0; k<2; k++)
-        {
-          tauu          = tau[i][j][k];
-          tau2[i][j][k] = exp(-i_options.m_dT/tauu);
-          tau1[i][j][k] = 0.5*(1.-tau2[i][j][k]);
-        }
-      }
-    }
-        
-    init_texture(data.m_numXGridPoints, data.m_numYGridPoints, data.m_numZGridPoints, tau1, tau2, m_tau1, m_tau2, weights, m_weight_index, m_weights, 0, data.m_numXGridPoints-1, 0, data.m_numYGridPoints-1);
-  }
-
-    
-  Delloc3D(tau);
-  Delloc3D(tau1);
-  Delloc3D(tau2);
-  Delloc3D(weights);
-}
-
 
 void odc::data::Mesh::finalize()
 {
@@ -341,627 +254,7 @@ void odc::data::Mesh::finalize()
     
 }
 
-
-void odc::data::Mesh::inimesh(int MEDIASTART, Grid3D d1, Grid3D mu, Grid3D lam, Grid3D qp, Grid3D qs, float *taumax, float *taumin,
-                              Grid3D tau, Grid3D weights,Grid1D coeff,
-                              int nvar, float FP,  float FAC, float Q0, float EX, int nxt, int nyt, int nzt, int PX, int PY, int NX, int NY,
-                              int NZ, int *coords, MPI_Comm MCW, int IDYNA, int NVE, int SoCalQ, char *INVEL,
-                              float *vse, float *vpe, float *dde)
-{
-  double stime = 0., etime = 0.;
-    
-  int merr;
-  int rank;
-  int_pt err;
-  float vp,vs,dd,pi;
-  int   rmtype[3], rptype[3], roffset[3];
-  MPI_Datatype readtype;
-  MPI_Status   filestatus;
-  MPI_File     fh;
-  char mpiErrStr[100];
-  int mpiErrStrLen;
-  int_pt num_pts = (int_pt) nxt * (int_pt) nyt * (int_pt) nzt;
-    
-    
-  pi      = 4.*atan(1.);
-  //  *taumax = 1./(2*pi*0.01)*10.0*FAC;
-  *taumax = 1./(2*pi*0.01)*1.0*FAC;
-  if(EX<0.65 && EX>=0.01) *taumin = 1./(2*pi*10.0)*0.2*FAC;
-  else if(EX<0.85 && EX>=0.65)
-  {
-    *taumin = 1./(2*pi*12.0)*0.5*FAC;
-    *taumax = 1./(2*pi*0.08)*2.0*FAC;
-  }
-  else if (EX<0.95 && EX>=0.85)
-  {
-    //(EX<0.95 && EX>=0.85) *taumin = 1./(2*pi*280.0)*0.1*FAC;
-    //  else if(EX<0.01) *taumin = 1./(2*pi*40.0)*0.1*FAC;
-    *taumin = 1./(2*pi*15.0)*0.8*FAC;
-    *taumax = 1./(2*pi*0.1)*2.5*FAC;
-  }
-    
-  else if(EX<0.01) *taumin = 1./(2*pi*10.0)*0.2*FAC;
-    
-    
-  tausub(tau, *taumin, *taumax);
-  if(!coords[0] && !coords[1])
-    printf("tau: %e,%e; %e,%e; %e,%e; %e,%e\n",
-           tau[0][0][0],tau[1][0][0],tau[0][1][0],tau[1][1][0],
-           tau[0][0][1],tau[1][0][1],tau[0][1][1],tau[1][1][1]);
-  MPI_Comm_rank(MCW,&rank);
-  if(MEDIASTART==0)
-  {
-    //*taumax = 1./(2*pi*0.01)*10.0*FAC;
-    //*taumin = 1./(2*pi*400.0)*0.1*FAC;
-    if(IDYNA==1)
-    {
-      vp=6000.0;
-      vs=3464.0;
-      dd=2670.0;
-    }
-    else
-    {
-      vp=4800.0;
-      vs=2800.0;
-      dd=2500.0;
-    }
-        
-    for(int_pt i=0;i<nxt;i++)
-    {
-      for(int_pt j=0;j<nyt;j++)
-      {
-        for(int_pt k=0;k<nzt;k++)
-        {
-          lam[i][j][k]=1./(dd*(vp*vp - 2.*vs*vs));
-          mu[i][j][k]=1./(dd*vs*vs);
-          d1[i][j][k]=dd;
-        }
-      }
-    }
-  }
-  else
-  {
-    Grid3D tmpvp=NULL, tmpvs=NULL, tmpdd=NULL;
-    Grid3D tmppq=NULL, tmpsq=NULL;
-    int var_offset;
-
-    stime = w_time();
-    printf("inimesh: Allocating....\n");
-    tmpvp = Alloc3D(nxt, nyt, nzt);
-    tmpvs = Alloc3D(nxt, nyt, nzt);
-    tmpdd = Alloc3D(nxt, nyt, nzt);
-    printf("inimesh: done allocating, took %lf\n", w_time()-stime);
-
-    stime = w_time();
-    printf("inimesh: Initializing....\n");
-#pragma omp parallel for collapse(3)
-    for(int_pt i=0;i<nxt;i++)
-    {
-      for(int_pt j=0;j<nyt;j++)
-      {
-        for(int_pt k=0;k<nzt;k++)
-        {
-          tmpvp[i][j][k]=0.0f;
-          tmpvs[i][j][k]=0.0f;
-          tmpdd[i][j][k]=0.0f;
-        }
-      }
-    }
-    printf("inimesh: done initializing, took %lf\n", w_time()-stime);
-        
-        
-    if(NVE==1)
-    {
-      tmppq = Alloc3D(nxt, nyt, nzt);
-      tmpsq = Alloc3D(nxt, nyt, nzt);
-      stime = w_time();
-      printf("inimesh: Initializing 2....\n");
-            
-#pragma omp parallel for collapse(3)
-      for(int_pt i=0;i<nxt;i++)
-      {
-        for(int_pt j=0;j<nyt;j++)
-        {
-          for(int_pt k=0;k<nzt;k++)
-          {
-            tmppq[i][j][k]=0.0f;
-            tmpsq[i][j][k]=0.0f;
-          }
-        }
-      }
-      printf("inimesh: done initializing 2, took %lf\n", w_time()-stime);
-            
-    }
-        
-    if(nvar==8)
-    {
-      var_offset=3;
-    }
-    else if(nvar==5)
-    {
-      var_offset=0;
-    }
-    else
-    {
-      var_offset=0;
-    }
-        
-    if(MEDIASTART>=1 && MEDIASTART<=3)
-    {
-      char filename[AWP_PATH_MAX];
-      if(MEDIASTART<3) sprintf(filename,"%s",INVEL);
-      else if(MEDIASTART==3)
-      {
-        sprintf(filename,"input_rst/mediapart/media%07d.bin",rank);
-        if(rank%100==0) printf("Rank=%d, reading file=%s\n",rank,filename);
-      }
-      Grid1D tmpta = Alloc1D(nvar*num_pts);
-      if(MEDIASTART==3 || (PX==1 && PY==1))
-      {
-        FILE   *file;
-        file = fopen(filename,"rb");
-        if(!file)
-        {
-          printf("can't open file %s", filename);
-          return;
-        }
-        if(!fread(tmpta,sizeof(float),nvar*num_pts,file))
-        {
-          printf("can't read file %s", filename);
-          return;
-        }
-        //printf("%d) 0-0-0,1-10-3=%f, %f\n",rank,tmpta[0],tmpta[1+10*nxt+3*nxt*nyt]);
-      }
-      else
-      {
-        printf("MPI not implemented in CPU code, quitting.");
-        abort();
-        /*printf("%d) Media file will be read using MPI-IO\n", rank);
-          rmtype[0]  = NZ;
-          rmtype[1]  = NY;
-          rmtype[2]  = NX*nvar;
-          rptype[0]  = nzt;
-          rptype[1]  = nyt;
-          rptype[2]  = nxt*nvar;
-          roffset[0] = 0;
-          roffset[1] = nyt*coords[1];
-          roffset[2] = nxt*coords[0]*nvar;
-          err = MPI_Type_create_subarray(3, rmtype, rptype, roffset, MPI_ORDER_C, MPI_FLOAT, &readtype);
-          if(err != MPI_SUCCESS){
-          MPI_Error_string(err, mpiErrStr, &mpiErrStrLen);
-          printf("%d) ERROR! MPI-IO mesh reading create subarray: %s\n",rank,mpiErrStr);
-          }
-          err = MPI_Type_commit(&readtype);
-          if(err != MPI_SUCCESS){
-          MPI_Error_string(err, mpiErrStr, &mpiErrStrLen);
-          printf("%d) ERROR! MPI-IO mesh reading commit: %s\n",rank,mpiErrStr);
-          }
-          err = MPI_File_open(MCW,filename,MPI_MODE_RDONLY,MPI_INFO_NULL,&fh);
-          if(err != MPI_SUCCESS){
-          MPI_Error_string(err, mpiErrStr, &mpiErrStrLen);
-          printf("%d) ERROR! MPI-IO mesh reading file open: %s\n",rank,mpiErrStr);
-          }
-          err = MPI_File_set_view(fh, 0, MPI_FLOAT, readtype, "native", MPI_INFO_NULL);
-          if(err != MPI_SUCCESS){
-          MPI_Error_string(err, mpiErrStr, &mpiErrStrLen);
-          printf("%d) ERROR! MPI-IO mesh reading file set view: %s\n",rank,mpiErrStr);
-          }
-          err = MPI_File_read_all(fh, tmpta, nvar*nxt*nyt*nzt, MPI_FLOAT, &filestatus);
-          if(err != MPI_SUCCESS){
-          MPI_Error_string(err, mpiErrStr, &mpiErrStrLen);
-          printf("%d) ERROR! MPI-IO mesh reading file read: %s\n",rank,mpiErrStr);
-          }
-          err = MPI_File_close(&fh);
-          if(err != MPI_SUCCESS){
-          MPI_Error_string(err, mpiErrStr, &mpiErrStrLen);
-          printf("%d) ERROR! MPI-IO mesh reading file close: %s\n",rank,mpiErrStr);
-          }
-          if(!rank) printf("Media file is read using MPI-IO\n");*/
-      }
-            
-      stime = w_time();
-      printf("inimesh: Starting comp 1....\n");
-
-#pragma omp parallel for collapse(3)
-      for(int_pt k=0;k<nzt;k++)
-      {
-        for(int_pt j=0;j<nyt;j++)
-        {
-          for(int_pt i=0;i<nxt;i++)
-          {
-            tmpvp[i][j][k]=tmpta[(k*nyt*(int_pt) nxt+j*nxt+i)*nvar+var_offset];
-            tmpvs[i][j][k]=tmpta[(k*nyt*nxt+j*(int_pt) nxt+i)*nvar+var_offset+1];
-            tmpdd[i][j][k]=tmpta[(k*nyt*nxt+j*(int_pt) nxt+i)*nvar+var_offset+2];
-                        
-            if(nvar>3)
-            {
-              tmppq[i][j][k]=tmpta[(k*nyt*(int_pt)nxt+j*nxt+i)*nvar+var_offset+3];
-              tmpsq[i][j][k]=tmpta[(k*nyt*(int_pt)nxt+j*nxt+i)*nvar+var_offset+4];
-            }
-            if(tmpvp[i][j][k]!=tmpvp[i][j][k] ||
-               tmpvs[i][j][k]!=tmpvs[i][j][k] ||
-               tmpdd[i][j][k]!=tmpdd[i][j][k]){
-              printf("%d) tmpvp,vs,dd is NAN!\n",rank);
-              MPI_Abort(MPI_COMM_WORLD,1);
-            }
-          }
-        }
-      }
-      printf("inimesh: done comp 1, took %lf\n", w_time()-stime);
-            
-      //printf("%d) vp,vs,dd[0^3]=%f,%f,%f\n",rank,tmpvp[0][0][0],
-      //   tmpvs[0][0][0], tmpdd[0][0][0]);
-      Delloc1D(tmpta);
-    }
-    /*
-      if(nvar==3 && NVE==1)
-      {
-      for(i=0;i<nxt;i++)
-      for(j=0;j<nyt;j++){
-      for(k=0;k<nzt;k++){
-      tmpsq[i][j][k]=0.05*tmpvs[i][j][k];
-      tmppq[i][j][k]=2.0*tmpsq[i][j][k];
-      //tmpsq[i][j][k] = 50.0;
-      //tmppq[i][j][k] = 50.0;
-      }
-      }
-      }
-    */
-    float w0=0.0f, ww1=0.0f, w2=0.0f, tmp1=0.0f, tmp2=0.0f;
-    if(NVE==1)
-    {
-      w0=2*pi*FP;
-      //ww1=2*pi*FL;
-      //w2=2*pi*FH;
-      //*taumax=1./ww1;
-      //*taumin=1./w2;
-      //tmp1=2./pi*(log((*taumax)/(*taumin)));
-      //tmp2=2./pi*log(w0*(*taumin));
-      if(!rank) printf("w0 = %g\n",w0);
-    }
-        
-    vse[0] = 1.0e10;
-    vpe[0] = 1.0e10;
-    dde[0] = 1.0e10;
-    vse[1] = -1.0e10;
-    vpe[1] = -1.0e10;
-    dde[1] = -1.0e10;
-    float facex = (float)pow(FAC,EX);
-        
-
-#pragma omp parallel for collapse(2)
-    for(int_pt i=0;i<nxt;i++)
-    {
-      for(int_pt j=0;j<nyt;j++)
-      {
-        float weights_los[2][2][2];
-        float weights_lop[2][2][2];
-        float val[2];
-        float mu1, denom;
-        float qpinv=0.0f, qsinv=0.0f, vpvs=0.0f;
-        int ii,jj,kk,iii,jjj,kkk,num;
-        std::complex<double> value(0.0, 0.0);
-        std::complex<double> sqrtm1(0.0, 1.0);
-
-        for(int_pt k=0;k<nzt;k++)
-        {
-          //printf("iteration: %d,%d,%d\n",i,j,k);
-          //tmpvs[i][j][k] = tmpvs[i][j][k]*(1+ ( log(w2/w0) )/(pi*tmpsq[i][j][k]) );
-          //tmpvp[i][j][k] = tmpvp[i][j][k]*(1+ ( log(w2/w0) )/(pi*tmppq[i][j][k]) );
-          //	    tmpsq[i][j][k] = 20;
-          //	    tmppq[i][j][k] = 20;
-          if(tmpvs[i][j][k]<200.0)
-          {
-            tmpvs[i][j][k]=200.0;
-            tmpvp[i][j][k]=600.0;
-            // tmpsq[i][j][k] = 20;
-            // tmppq[i][j][k] = 20;
-          }
-          tmpsq[i][j][k] = 0.1  * tmpvs[i][j][k];
-          tmppq[i][j][k] = 2.0   * tmpsq[i][j][k];
-                    
-          if(tmppq[i][j][k]>200.0)
-          {
-            // QF - VP
-            val[0] = 0.0;
-            val[1] = 0.0;
-            for(ii=0;ii<2;ii++)
-              for(jj=0;jj<2;jj++)
-                for(kk=0;kk<2;kk++){
-                  denom = ((w0*w0*tau[ii][jj][kk]*tau[ii][jj][kk]+1.0)*tmppq[i][j][k]*facex);
-                  val[0] += weights[ii][jj][kk]/denom;
-                  val[1] += -weights[ii][jj][kk]*w0*tau[ii][jj][kk]/denom;
-                }
-            mu1 = tmpdd[i][j][k]*tmpvp[i][j][k]*tmpvp[i][j][k]/(1.0-val[0]);
-          }
-          else
-          {
-            //		 if(rank==0) printf("coeff[num]1,2 = %g %g\n",coeff[0],coeff[1]);
-            num=0;
-            for (iii=0;iii<2;iii++)
-              for(jjj=0;jjj<2;jjj++)
-                for(kkk=0;kkk<2;kkk++){
-                  weights_lop[iii][jjj][kkk]=coeff[num]/(tmppq[i][j][k]*tmppq[i][j][k])+coeff[num+1]/(tmppq[i][j][k]);
-                  num=num+2;
-                }
-            //		 if(rank==0) printf("weights_lop %g\n",weights_lop[0][0][0]);
-                        
-            value=0.0+0.0*sqrtm1;
-            for(ii=0;ii<2;ii++)
-              for(jj=0;jj<2;jj++)
-                for(kk=0;kk<2;kk++)
-                {
-                  value=value+1.0/(1.0-((double)weights_lop[ii][jj][kk])/(1.0+sqrtm1*((double)w0*tau[ii][jj][kk])));
-                }
-            value=1./value;
-            //		 if(rank==0) printf("creal(value) %f\n",creal(value));
-            // if(rank==0) printf("sqrtm1 %f\n",cimag(sqrtm1));
-                        
-            mu1=tmpdd[i][j][k]*tmpvp[i][j][k]*tmpvp[i][j][k]/(8.*std::real(value));
-            //	 if(rank==0) printf("mu1 %g\n",mu1);
-          }
-                    
-                    
-          tmpvp[i][j][k] = sqrt(mu1/tmpdd[i][j][k]);
-                    
-                    
-                    
-                    
-          // QF - VS
-          if(tmpsq[i][j][k]>200.0)
-          {
-            val[0] = 0.0;
-            val[1] = 0.0;
-            for(ii=0;ii<2;ii++)
-              for(jj=0;jj<2;jj++)
-                for(kk=0;kk<2;kk++)
-                {
-                  denom = ((w0*w0*tau[ii][jj][kk]*tau[ii][jj][kk]+1.0)*tmpsq[i][j][k]*facex);
-                  val[0] += weights[ii][jj][kk]/denom;
-                  val[1] += -weights[ii][jj][kk]*w0*tau[ii][jj][kk]/denom;
-                }
-            mu1 = tmpdd[i][j][k]*tmpvs[i][j][k]*tmpvs[i][j][k]/(1.0-val[0]);
-          }
-          else
-          {
-            num=0;
-            for (iii=0;iii<2;iii++)
-              for(jjj=0;jjj<2;jjj++)
-                for(kkk=0;kkk<2;kkk++)
-                {
-                  weights_los[iii][jjj][kkk]=coeff[num]/(tmpsq[i][j][k]*tmpsq[i][j][k])+coeff[num+1]/(tmpsq[i][j][k]);
-                  num=num+2;
-                }
-            value=0.0+0.0*sqrtm1;
-            for(ii=0;ii<2;ii++)
-              for(jj=0;jj<2;jj++)
-                for(kk=0;kk<2;kk++)
-                {
-                  value=value+1.0/(1.0-((double)weights_los[ii][jj][kk])/(1.0+sqrtm1*((double)w0*tau[ii][jj][kk])));
-                                    
-                }
-            value=1./value;
-            mu1=tmpdd[i][j][k]*tmpvs[i][j][k]*tmpvs[i][j][k]/(8.*std::real(value));
-          }
-                    
-          tmpvs[i][j][k] = sqrt(mu1/tmpdd[i][j][k]);
-                    
-                    
-          // QF - end
-          if (SoCalQ==1)
-          {
-            vpvs=tmpvp[i][j][k]/tmpvs[i][j][k];
-            if (vpvs<1.45)  tmpvs[i][j][k]=tmpvp[i][j][k]/1.45;
-          }
-          if(tmpvp[i][j][k]>7600.0)
-          {
-            tmpvs[i][j][k]=4387.0;
-            tmpvp[i][j][k]=7600.0;
-          }
-          if(tmpvs[i][j][k]<200.0)
-          {
-            tmpvs[i][j][k]=200.0;
-            tmpvp[i][j][k]=600.0;
-          }
-          if(tmpdd[i][j][k]<1700.0) tmpdd[i][j][k]=1700.0;
-          //printf("tmpvp,tmpvs,tmpdd: %e,%e,%e\n",tmpvp[i][j][k],tmpvs[i][j][k],tmpdd[i][j][k]);
-          mu[i][j][(nzt-1) - k]  = 1./(tmpdd[i][j][k]*tmpvs[i][j][k]*tmpvs[i][j][k]);
-          lam[i][j][(nzt-1) - k] = 1./(tmpdd[i][j][k]*(tmpvp[i][j][k]*tmpvp[i][j][k]
-                                                       -2.*tmpvs[i][j][k]*tmpvs[i][j][k]));
-          d1[i][j][(nzt-1) - k]  = tmpdd[i][j][k];
-          if(NVE==1)
-          {
-            if(tmppq[i][j][k]<=0.0)
-            {
-              qpinv=0.0;
-              qsinv=0.0;
-            }
-            else
-            {
-              qpinv=1./tmppq[i][j][k];
-              qsinv=1./tmpsq[i][j][k];
-            }
-            //tmppq[i][j][k]=tmp1*qpinv/(1.0-tmp2*qpinv);
-            //tmpsq[i][j][k]=tmp1*qsinv/(1.0-tmp2*qsinv);
-            tmppq[i][j][k] = qpinv/facex;
-            tmpsq[i][j][k] = qsinv/facex;
-            qp[i][j][(nzt-1) - k] = tmppq[i][j][k];
-            qs[i][j][(nzt-1) - k] = tmpsq[i][j][k];
-          }
-          //printf("tmppq,tmpsq: %e,%e\n",tmppq[i][j][k],tmpsq[i][j][k]);
-                    
-#pragma omp critical
-          {
-            if(tmpvs[i][j][k]<vse[0]) vse[0] = tmpvs[i][j][k];
-            if(tmpvs[i][j][k]>vse[1]) vse[1] = tmpvs[i][j][k];
-            if(tmpvp[i][j][k]<vpe[0]) vpe[0] = tmpvp[i][j][k];
-            if(tmpvp[i][j][k]>vpe[1]) vpe[1] = tmpvp[i][j][k];
-            if(tmpdd[i][j][k]<dde[0]) dde[0] = tmpdd[i][j][k];
-            if(tmpdd[i][j][k]>dde[1]) dde[1] = tmpdd[i][j][k];
-          }
-        }
-      }
-    }
-    Delloc3D(tmpvp);
-    Delloc3D(tmpvs);
-    Delloc3D(tmpdd);
-    if(NVE==1)
-    {
-      Delloc3D(tmppq);
-      Delloc3D(tmpsq);
-    }
-
-    // TODO:
-    // (gwilkins) Looks like some sort of assignment statements for ghost regions?
-    // We don't hard code those so this shouldn't be necessary
-    //   (rjtobin)  I think they are necessary
-        
-    //5 Planes (except upper XY-plane)
-        
-    for(int_pt j=0;j<nyt;j++)
-      for(int_pt k=0;k<nzt;k++)
-      {
-        lam[-1][j][k]     = lam[0][j][k];
-        lam[nxt][j][k] = lam[nxt-1][j][k];
-        mu[-1][j][k]      = mu[0][j][k];
-        mu[nxt][j][k]  = mu[nxt-1][j][k];
-        d1[-1][j][k]      = d1[0][j][k];
-        d1[nxt][j][k]  = d1[nxt-1][j][k];
-      }
-        
-    for(int_pt i=0;i<nxt;i++)
-      for(int_pt k=0;k<nzt;k++)
-      {
-        lam[i][-1][k]     = lam[i][0][k];
-        lam[i][nyt][k] = lam[i][nyt-1][k];
-        mu[i][-1][k]      = mu[i][0][k];
-        mu[i][nyt][k]  = mu[i][nyt-1][k];
-        d1[i][-1][k]      = d1[i][0][k];
-        d1[i][nyt][k]  = d1[i][nyt-1][k];
-      }
-        
-    for(int_pt i=0;i<nxt;i++)
-      for(int_pt j=0;j<nyt;j++)
-      {
-        lam[i][j][-1]   = lam[i][j][0];
-        mu[i][j][-1]    = mu[i][j][0];
-        d1[i][j][-1]    = d1[i][j][0];
-      }
-        
-    //12 border lines
-    for(int_pt i=0;i<nxt;i++)
-    {
-      lam[i][-1][-1]          = lam[i][0][0];
-      mu[i][-1][-1]           = mu[i][0][0];
-      d1[i][-1][-1]           = d1[i][0][0];
-      lam[i][nyt][-1]         = lam[i][nyt-1][0];
-      mu[i][nyt][-1]          = mu[i][nyt-1][0];
-      d1[i][nyt][-1]          = d1[i][nyt-1][0];
-      lam[i][-1][nzt]         = lam[i][0][nzt-1];
-      mu[i][-1][nzt]          = mu[i][0][nzt-1];
-      d1[i][-1][nzt]          = d1[i][0][nzt-1];
-      lam[i][nyt][nzt]        = lam[i][nyt-1][nzt-1];
-      mu[i][nyt][nzt]         = mu[i][nyt-1][nzt-1];
-      d1[i][nyt][nzt]         = d1[i][nyt-1][nzt-1];
-    }
-        
-    for(int_pt j=0;j<nyt;j++)
-    {
-      lam[-1][j][-1]          = lam[0][j][0];
-      mu[-1][j][-1]           = mu[0][j][0];
-      d1[-1][j][-1]           = d1[0][j][0];
-      lam[nxt][j][-1]         = lam[nxt-1][j][0];
-      mu[nxt][j][-1]          = mu[nxt-1][j][0];
-      d1[nxt][j][-1]          = d1[nxt-1][j][0];
-      lam[-1][j][nzt]         = lam[0][j][nzt-1];
-      mu[-1][j][nzt]          = mu[0][j][nzt-1];
-      d1[-1][j][nzt]          = d1[0][j][nzt-1];
-      lam[nxt][j][nzt]        = lam[nxt-1][j][nzt-1];
-      mu[nxt][j][nzt]         = mu[nxt-1][j][nzt-1];
-      d1[nxt][j][nzt]         = d1[nxt-1][j][nzt-1];
-    }
-        
-    for(int_pt k=0;k<nzt;k++)
-    {
-      lam[-1][-1][k]          = lam[0][0][k];
-      mu[-1][-1][k]           = mu[0][0][k];
-      d1[-1][-1][k]           = d1[0][0][k];
-      lam[nxt][-1][k]         = lam[nxt-1][0][k];
-      mu[nxt][-1][k]          = mu[nxt-1][0][k];
-      d1[nxt][-1][k]          = d1[nxt-1][0][k];
-      lam[-1][nyt][k]         = lam[0][nyt-1][k];
-      mu[-1][nyt][k]          = mu[0][nyt-1][k];
-      d1[-1][nyt][k]          = d1[0][nyt-1][k];
-      lam[nxt][nyt][k]        = lam[nxt-1][nyt-1][k];
-      mu[nxt][nyt][k]         = mu[nxt-1][nyt-1][k];
-      d1[nxt][nyt][k]         = d1[nxt-1][nyt-1][k];
-    }
-        
-    //8 Corners
-    lam[-1][-1][-1]             = lam[0][0][0];
-    mu[-1][-1][-1]              = mu[0][0][0];
-    d1[-1][-1][-1]              = d1[0][0][0];
-    lam[nxt][-1][-1]            = lam[nxt-1][0][0];
-    mu[nxt][-1][-1]             = mu[nxt-1][0][0];
-    d1[nxt][-1][-1]             = d1[nxt-1][0][0];
-    lam[-1][nyt][-1]            = lam[0][nyt-1][0];
-    mu[-1][nyt][-1]             = mu[0][nyt-1][0];
-    d1[-1][nyt][-1]             = d1[0][nyt-1][0];
-    lam[-1][-1][nzt]            = lam[0][0][nzt-1];
-    mu[-1][-1][nzt]             = mu[0][0][nzt-1];
-    d1[-1][-1][nzt]             = d1[0][0][nzt-1];
-    lam[nxt][-1][nzt]           = lam[nxt-1][0][nzt-1];
-    mu[nxt][-1][nzt]            = mu[nxt-1][0][nzt-1];
-    d1[nxt][-1][nzt]            = d1[nxt-1][0][nzt-1];
-    lam[nxt][nyt][-1]           = lam[nxt-1][nyt-1][0];
-    mu[nxt][nyt][-1]            = mu[nxt-1][nyt-1][0];
-    d1[nxt][nyt][-1]            = d1[nxt-1][nyt-1][0];
-    lam[-1][nyt][nzt]           = lam[0][nyt-1][nzt-1];
-    mu[-1][nyt][nzt]            = mu[0][nyt-1][nzt-1];
-    d1[-1][nyt][nzt]            = d1[0][nyt-1][nzt-1];
-    lam[nxt][nyt][nzt]          = lam[nxt-1][nyt-1][nzt-1];
-    mu[nxt][nyt][nzt]           = mu[nxt-1][nyt-1][nzt-1];
-    d1[nxt][nyt][nzt]           = d1[nxt-1][nyt-1][nzt-1];
-        
-        
-        
-    for(int_pt i=0;i<nxt;i++)
-      for(int_pt j=0;j<nyt;j++)
-      {
-        int_pt k = nzt; 
-        d1[i][j][k]   = d1[i][j][k-1];
-        mu[i][j][k]   = mu[i][j][k-1];
-        lam[i][j][k]  = lam[i][j][k-1];
-        if(NVE==1)
-        {
-          qp[i][j][k] = qp[i][j][k-1];
-          qs[i][j][k] = qs[i][j][k-1];
-        }
-      }
-         
-        
-    if(!coords[0] && !coords[1])
-      printf("Before MPI_Allreduce for vpe, vse, dde\n");
-    float tmpvse[2],tmpvpe[2],tmpdde[2];
-        
-    merr = MPI_Allreduce(vse,tmpvse,2,MPI_FLOAT,MPI_MAX,MCW);
-    merr = MPI_Allreduce(vpe,tmpvpe,2,MPI_FLOAT,MPI_MAX,MCW);
-    merr = MPI_Allreduce(dde,tmpdde,2,MPI_FLOAT,MPI_MAX,MCW);
-    vse[1] = tmpvse[1];
-    vpe[1] = tmpvpe[1];
-    dde[1] = tmpdde[1];
-    merr = MPI_Allreduce(vse,tmpvse,2,MPI_FLOAT,MPI_MIN,MCW);
-    merr = MPI_Allreduce(vpe,tmpvpe,2,MPI_FLOAT,MPI_MIN,MCW);
-    merr = MPI_Allreduce(dde,tmpdde,2,MPI_FLOAT,MPI_MIN,MCW);
-    vse[0] = tmpvse[0];
-    vpe[0] = tmpvpe[0];
-    dde[0] = tmpdde[0];
-  }
-  printf("end of inimesh\n");
-  return;
-}// end function inimesh
-
-void odc::data::Mesh::new_inimesh(int MEDIASTART,
+void odc::data::Mesh::inimesh(int MEDIASTART,
 #ifdef YASK
                                   Grid_XYZ* density_grid,
                                   Grid_XYZ* mu_grid,
@@ -1002,9 +295,6 @@ void odc::data::Mesh::new_inimesh(int MEDIASTART,
                                   int_pt i_inputSizeZ
                                   )
 {
-  printf("start of inimesh\n");
-  double stime = 0., etime = 0.;
-    
   int merr;
   int_pt err;
   float vp,vs,dd,pi;
@@ -1030,9 +320,6 @@ void odc::data::Mesh::new_inimesh(int MEDIASTART,
     
     
   tausub(tau, *taumin, *taumax);
-  printf("tau: %e,%e; %e,%e; %e,%e; %e,%e\n",
-         tau[0][0][0],tau[1][0][0],tau[0][1][0],tau[1][1][0],
-         tau[0][0][1],tau[1][0][1],tau[0][1][1],tau[1][1][1]);
 
   if(MEDIASTART != 0 && odc::parallel::Mpi::m_size != 1)
   {
@@ -1040,7 +327,10 @@ void odc::data::Mesh::new_inimesh(int MEDIASTART,
     printf("\tReverting to MEDIASTART=0");
     MEDIASTART=0;
   }
-  
+
+  /*
+   MEDIASTART 0 corresponds to a homogeneous mesh with hardcoded material parameters. 
+   */
   if(MEDIASTART==0)
   {
     if(IDYNA==1)
@@ -1087,6 +377,10 @@ void odc::data::Mesh::new_inimesh(int MEDIASTART,
 #endif
         }
   }
+  /*
+   MEDIASTART 4 corresponds to an input mesh that should be read directly with no 
+   processing.
+   */
   else if(MEDIASTART == 4)
   {
 
@@ -1148,15 +442,10 @@ void odc::data::Mesh::new_inimesh(int MEDIASTART,
     Grid3D tmppq=NULL, tmpsq=NULL;
     int var_offset;
 
-    stime = w_time();
-    printf("inimesh: Allocating....\n");
     tmpvp = Alloc3D(nxt, nyt, nzt);
     tmpvs = Alloc3D(nxt, nyt, nzt);
     tmpdd = Alloc3D(nxt, nyt, nzt);
-    printf("inimesh: done allocating, took %lf\n", w_time()-stime);
 
-    stime = w_time();
-    printf("inimesh: Initializing....\n");
 #pragma omp parallel for collapse(3)
     for(int_pt i=0;i<nxt;i++)
     {
@@ -1170,15 +459,12 @@ void odc::data::Mesh::new_inimesh(int MEDIASTART,
         }
       }
     }
-    printf("inimesh: done initializing, took %lf\n", w_time()-stime);
         
         
     if(NVE==1)
     {
       tmppq = Alloc3D(nxt, nyt, nzt);
       tmpsq = Alloc3D(nxt, nyt, nzt);
-      stime = w_time();
-      printf("inimesh: Initializing 2....\n");
             
 #pragma omp parallel for collapse(3)
       for(int_pt i=0;i<nxt;i++)
@@ -1192,8 +478,6 @@ void odc::data::Mesh::new_inimesh(int MEDIASTART,
           }
         }
       }
-      printf("inimesh: done initializing 2, took %lf\n", w_time()-stime);
-            
     }
         
     if(nvar==8)
@@ -1211,9 +495,6 @@ void odc::data::Mesh::new_inimesh(int MEDIASTART,
         
     if(MEDIASTART>=1 && MEDIASTART<=3)
     {
-      stime = w_time();
-      printf("inimesh: Starting comp 1....\n");
-
 #pragma omp parallel for collapse(3)
       for(int_pt k=0;k<nzt;k++)
       {
@@ -1234,7 +515,6 @@ void odc::data::Mesh::new_inimesh(int MEDIASTART,
             if(tmpvp[i][j][k]!=tmpvp[i][j][k] ||
                tmpvs[i][j][k]!=tmpvs[i][j][k] ||
                tmpdd[i][j][k]!=tmpdd[i][j][k]){
-              printf("tmpvp,vs,dd is NAN!\n");
               MPI_Abort(MPI_COMM_WORLD,1);
             }
           }
@@ -1247,12 +527,9 @@ void odc::data::Mesh::new_inimesh(int MEDIASTART,
     if(NVE==1)
     {
       w0=2*pi*FP;
-      printf("w0 = %g\n",w0);
     }
         
     float facex = (float)pow(FAC,EX);
-
-
 
         
 #pragma omp parallel for collapse(2)
@@ -1464,7 +741,7 @@ void odc::data::Mesh::new_inimesh(int MEDIASTART,
 }
 
 /**
- 
+
    @param taumin  -
    @param taumax  -
  
@@ -1500,67 +777,10 @@ void odc::data::Mesh::tausub( Grid3D tau, float taumin,float taumax)
   return;
 } // end function tausub
 
-
-
-
-
-/**
- 
-   @param nxt         -
-   @param nyt         -
-   @param nzt         -
-   @param tau1        -
-   @param tau2        -
-   @param vx1         -
-   @param vx2         -
-   @param weights     -
-   @param ww          -
-   @param wwo         -
-   @param xls         -
-   @param xre         -
-   @param yls         -
-   @param yre         -
-*/
-void odc::data::Mesh::init_texture(int nxt,  int nyt,  int nzt,  Grid3D tau1,  Grid3D tau2,  Grid3D vx1,  Grid3D vx2,
-                                   Grid3D weights, Grid3Dww ww,Grid3D wwo,
-                                   int xls,  int xre,  int yls,  int yre)
-{
-  int i, j, k, itx, ity, itz;
-  itx = 0;
-  ity = 0;
-  itz = (nzt-1)%2;
-  for(i=xls;i<=xre;i++)
-  {
-    itx = 1 - itx;
-    for(j=yls;j<=yre;j++)
-    {
-      ity = 1 - ity;
-      for(k=0;k<nzt;k++)
-      {
-        itz           = 1 - itz;
-        vx1[i][j][k]  = tau1[itx][ity][itz];
-        vx2[i][j][k]  = tau2[itx][ity][itz];
-        wwo[i][j][k]   = 8.0*weights[itx][ity][itz];
-        if (itx<0.5 && ity<0.5 && itz<0.5) ww[i][j][k]   = 1;
-        else if(itx<0.5 && ity<0.5 && itz>0.5) ww[i][j][k]   = 2;
-        else if(itx<0.5 && ity>0.5 && itz<0.5) ww[i][j][k]   = 3;
-        else if(itx<0.5 && ity>0.5 && itz>0.5) ww[i][j][k]   = 4;
-        else if(itx>0.5 && ity<0.5 && itz<0.5) ww[i][j][k]   = 5;
-        else if(itx>0.5 && ity<0.5 && itz>0.5) ww[i][j][k]   = 6;
-        else if(itx>0.5 && ity>0.5 && itz<0.5) ww[i][j][k]   = 7;
-        else if(itx>0.5 && ity>0.5 && itz>0.5) ww[i][j][k]   = 8;
-        //		 printf("%g %g\n",ww[i][j][k],ww[i][j][k]);
-                
-      }
-    }
-  }
-  return;
-}
-
 // TODO(Josh): clean this
-void odc::data::Mesh::new_init_texture(Grid3D tau1,  Grid3D tau2,  Grid3D vx1,  Grid3D vx2, Grid3D weights, Grid3Dww ww,Grid3D wwo,
-                                       int_pt startX,  int_pt endX,  int_pt startY,  int_pt endY, int_pt startZ, int_pt endZ,
-                                       int_pt globalStartX, int_pt globalStartY, int_pt globalStartZ, int_pt sizeZ)
+void odc::data::Mesh::init_texture(Grid3D tau1,  Grid3D tau2,  Grid3D vx1,  Grid3D vx2, Grid3D weights, Grid3Dww ww,Grid3D wwo,
+                                   int_pt startX,  int_pt endX,  int_pt startY,  int_pt endY, int_pt startZ, int_pt endZ,
+                                   int_pt globalStartX, int_pt globalStartY, int_pt globalStartZ, int_pt sizeZ)
 {
   int i, j, k, itx, ity, itz;
 
@@ -1590,8 +810,6 @@ void odc::data::Mesh::new_init_texture(Grid3D tau1,  Grid3D tau2,  Grid3D vx1,  
         else if(itx>0.5 && ity<0.5 && itz>0.5) ww[i][j][k]   = 6;
         else if(itx>0.5 && ity>0.5 && itz<0.5) ww[i][j][k]   = 7;
         else if(itx>0.5 && ity>0.5 && itz>0.5) ww[i][j][k]   = 8;
-        //		 printf("%g %g\n",ww[i][j][k],ww[i][j][k]);
-                
       }
     }
   }
@@ -1599,16 +817,11 @@ void odc::data::Mesh::new_init_texture(Grid3D tau1,  Grid3D tau2,  Grid3D vx1,  
 }
 
 
-
-
-
 /**
- 
    @param weights
    @param coeff
    @param ex
-   @param fac
- 
+   @param fac 
  
 */
 void odc::data::Mesh::weights_sub(Grid3D weights,Grid1D coeff, float ex, float fac)
@@ -1879,13 +1092,13 @@ void odc::data::Mesh::weights_sub(Grid3D weights,Grid1D coeff, float ex, float f
   else if(ex<0.01)
   {
     weights[0][0][0] = 0.8867;
-    weights[1][0][0] = 1.0440  ;
-    weights[0][1][0] =0.0423  ;
-    weights[1][1][0] =0.8110 ;
-    weights[0][0][1] =1.7275   ;
-    weights[1][0][1] =0.5615 ;
-    weights[0][1][1] =0.8323 ;
-    weights[1][1][1] =0.4641 ;
+    weights[1][0][0] = 1.0440;
+    weights[0][1][0] = 0.0423;
+    weights[1][1][0] = 0.8110;
+    weights[0][0][1] = 1.7275;
+    weights[1][0][1] = 0.5615;
+    weights[0][1][1] = 0.8323;
+    weights[1][1][1] = 0.4641;
         
         
     coeff[0] = -27.5089;
@@ -1922,9 +1135,7 @@ void odc::data::Mesh::set_boundaries(
 #ifdef YASK
     Grid_XYZ* gd1,Grid_XYZ* gmu,Grid_XYZ* glam,
 #endif
-//#else
     Grid3D d1, Grid3D mu, Grid3D lam,
-//#endif
     Grid3D qp, Grid3D qs, bool anelastic,
     int_pt bdry_width, int_pt nx, int_pt ny, int_pt nz)
 
