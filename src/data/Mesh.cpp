@@ -1083,12 +1083,14 @@ void odc::data::Mesh::new_inimesh(int MEDIASTART,
 #else
           lam[offset]=1./(dd*(vp*vp - 2.*vs*vs)); 
           mu[offset]=1./(dd*vs*vs); 
-          d1[offset]=dd;           
+          d1[offset]=dd;
 #endif
         }
   }
-  else if(MEDIASTART == 4)
-  {
+
+  //! Generates grid from user-provided mesh file (../work/input/filename.bin)
+  // TODO(Raj): At some point max_vse, min_vse etc. need to be reduced over MPI (for all MEDIASTART >= 1)
+  else if (MEDIASTART == 4) {
 
     double max_vse = -1.0e10;
     double max_vpe = -1.0e10;
@@ -1097,12 +1099,9 @@ void odc::data::Mesh::new_inimesh(int MEDIASTART,
     double min_vpe = 1.0e10;
     double min_dde = 1.0e10;
 
-    for(int_pt k=0;k<nzt;k++)
-    {
-      for(int_pt j=0;j<nyt;j++)
-      {
-        for(int_pt i=0;i<nxt;i++)
-        {
+    for(int_pt k=0;k<nzt;k++) {
+      for(int_pt j=0;j<nyt;j++) {
+        for(int_pt i=0;i<nxt;i++) {
           int_pt l_readOffset = (k*i_inputSizeY*i_inputSizeX+j*i_inputSizeX+i)*nvar;
           vp = i_inputBuffer[l_readOffset+0];
           vs = i_inputBuffer[l_readOffset+1];
@@ -1125,15 +1124,13 @@ void odc::data::Mesh::new_inimesh(int MEDIASTART,
           mu[offset]=1./(dd*vs*vs); 
           d1[offset]=dd;
 #endif
-          if(NVE==1)
-          {
+          if(NVE==1) {
             qp[offset] = i_inputBuffer[l_readOffset+3];
             qs[offset] = i_inputBuffer[l_readOffset+4];
           }
         }
       }
     }
-
 
     m_vse[0] = min_vse;
     m_vse[1] = max_vse;

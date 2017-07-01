@@ -46,6 +46,9 @@ public:
 
   void initialize(odc::io::OptionParser i_options, int_pt _nx, int_pt _ny, int_pt _nz, int_pt _bw,
                   int_pt i_globalX, int_pt i_globalY, int_pt i_globalZ, Grid1D i_inputBuffer);
+
+  bool checkStressNaN();
+
   
   int_pt nx, ny, nz;
   int_pt bdry_width;

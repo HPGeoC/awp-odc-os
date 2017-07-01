@@ -409,6 +409,17 @@ void PatchDecomp::setStressZZ(real i_stress, int_pt i_ptch, int_pt i_locX, int_p
 #endif
 }
 
+bool PatchDecomp::checkStressNaN()
+{
+  for(int l_ptchId = 0; l_ptchId < m_numPatches; l_ptchId++)
+  {
+    Patch* l_ptch = &m_patches[l_ptchId];
+    if(l_ptch->checkStressNaN())
+      return true;
+  }
+  return false;
+}
+
 void PatchDecomp::copyVelToBuffer(real* o_bufferX, real* o_bufferY, real* o_bufferZ,
                                   int_pt i_firstX, int_pt i_lastX, int_pt i_skipX,
                                   int_pt i_firstY, int_pt i_lastY, int_pt i_skipY,

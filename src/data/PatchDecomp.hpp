@@ -419,6 +419,12 @@ public:
   void   setStressZZ(real i_stress, int_pt i_ptch, int_pt i_locX, int_pt i_locY, int_pt i_locZ, int_pt i_timestep);
 
   /**
+   * Returns true if any stress grid value in any patch is NaN
+   *
+   **/                
+  bool   checkStressNaN();
+
+  /**
    * Perform MPI synchronization of velocity grids in a given direction.
    *
    * @param i_dir direction of boundaryto synchronize: 0 = x, 1 = y, 2 = z
