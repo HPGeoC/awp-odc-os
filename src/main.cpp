@@ -79,8 +79,6 @@ int main( int i_argc, char *i_argv[] )
   const int_pt l_rangeZ   = odc::parallel::Mpi::m_rangeZ;
   const int_pt l_numRanks = odc::parallel::Mpi::m_size;
 
-  //std::cout << "setting up data structures" << std::endl;
-
   //! initialize patches
   PatchDecomp patch_decomp;
   patch_decomp.initialize(l_options, l_rangeX, l_rangeY, l_rangeZ,
@@ -422,7 +420,6 @@ int main( int i_argc, char *i_argv[] )
 
                   if (next_task >= 0) {
                     nextWP[l_td][l_task] = next_task + 1;
-                    //std::cout << "assigned: " << next_task << ' ' << l_omp.m_nWP << std::endl;
                   }
                 } else {
                   nextWP[l_td][l_task] = l_omp.m_nWP+1;
@@ -467,7 +464,6 @@ int main( int i_argc, char *i_argv[] )
           if (start_time < 0) {
             start_time = wall_time();
             start_ts = tstep;
-            std::cout << "start time is " << start_time << std::endl;
           } else if(0) {
             double cur_time = wall_time();
             double avg = (cur_time - start_time) / (tstep - start_ts);
