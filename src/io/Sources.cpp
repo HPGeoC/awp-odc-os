@@ -24,172 +24,153 @@
 #include "parallel/Mpi.hpp"
 #include "data/Grid.hpp"
 
-odc::io::Sources::Sources(int   i_iFault,
-                 int      i_nSrc,
-                 int      i_readStep,
-                 int      i_nSt,
-                 int_pt   i_nZ,
-                 int      i_nXt, int i_nYt, int i_nZt,
-                 char     *i_inSrc,
-		 char     *i_inSrcI2,
-                 PatchDecomp& i_pd ) {
+odc::io::Sources::Sources(int           i_iFault,
+                          int           i_nSrc,
+                          int           i_readStep,
+                          int           i_nSt,
+                          int_pt        i_nZ,
+                          int           i_nXt,
+                          int           i_nYt,
+                          int           i_nZt,
+                          char          *i_inSrc,
+                          char          *i_inSrcI2,
+                          PatchDecomp&  i_pd ) {
+  const int dim = 3;
 
-    const int dim = 3;
-    
-    inisource(i_iFault, i_nSrc, i_readStep, i_nSt, &m_srcProc, dim,
-              &m_nPsrc, i_nZ, &m_ptpSrc,&m_ptAxx, &m_ptAyy, &m_ptAzz, &m_ptAxz,
-              &m_ptAyz, &m_ptAxy, i_inSrc, i_inSrcI2 );
+  inisource(i_iFault, i_nSrc, i_readStep, i_nSt, &m_srcProc, dim,
+            &m_nPsrc, i_nZ, &m_ptpSrc,&m_ptAxx, &m_ptAyy, &m_ptAzz, &m_ptAxz,
+            &m_ptAyz, &m_ptAxy, i_inSrc, i_inSrcI2 );
 
-    // Establish pointers to the various stress components
+  if (m_nPsrc == 0)
+    return;
 
-    if(m_nPsrc == 0)
-      return;
-    
-    m_locStrXX = new real*[m_nPsrc];
-    m_locStrXY = new real*[m_nPsrc];
-    m_locStrXZ = new real*[m_nPsrc];
-    m_locStrYY = new real*[m_nPsrc];
-    m_locStrYZ = new real*[m_nPsrc];
-    m_locStrZZ = new real*[m_nPsrc];
+  // Establish pointers to the various stress components
+  m_locStrXX = new real*[m_nPsrc];
+  m_locStrXY = new real*[m_nPsrc];
+  m_locStrXZ = new real*[m_nPsrc];
+  m_locStrYY = new real*[m_nPsrc];
+  m_locStrYZ = new real*[m_nPsrc];
+  m_locStrZZ = new real*[m_nPsrc];
 
-    for(int j=0; j<m_nPsrc; j++)
-    {
-        int_pt idx = m_ptpSrc[j*dim];
-        int_pt idy = m_ptpSrc[j*dim+1];
-        int_pt idz = m_ptpSrc[j*dim+2];
+  for (int j = 0; j < m_nPsrc; j++) {
+    int_pt idx = m_ptpSrc[j*dim];
+    int_pt idy = m_ptpSrc[j*dim+1];
+    int_pt idz = m_ptpSrc[j*dim+2];
 
-	// check if this source term is on one of the MPI boundaries
-	// PPP: are these upper bounds correct?
-        if(idx < 0 || idx >= i_pd.m_numXGridPoints
-         ||idy < 0 || idy >= i_pd.m_numYGridPoints
-         ||idz < 0 || idz >= i_pd.m_numZGridPoints)
-	{
-	  // We are on an MPI boundary.  First determine which one.
+    // check if this source term is on one of the MPI boundaries
+    // PPP: are these upper bounds correct?
+    if ( idx < 0 || idx >= i_pd.m_numXGridPoints
+       ||idy < 0 || idy >= i_pd.m_numYGridPoints
+       ||idz < 0 || idz >= i_pd.m_numZGridPoints ) {
 
-	  int dir_x = 1, dir_y = 1, dir_z = 1;
+      // We are on an MPI boundary.  First determine which one.
+      int dir_x = 1, dir_y = 1, dir_z = 1;
 
-	  if(idx < 0)
-	    dir_x = 0;
-	  if(idx >= i_pd.m_numXGridPoints)
-	    dir_x = 2;
-	  if(idy < 0)
-	    dir_y = 0;
-	  if(idy >= i_pd.m_numYGridPoints)
-	    dir_y = 2;
-	  if(idz < 0)
-	    dir_z = 0;
-	  if(idz >= i_pd.m_numZGridPoints)
-	    dir_z = 2;
+      if(idx < 0)
+        dir_x = 0;
+      if(idx >= i_pd.m_numXGridPoints)
+        dir_x = 2;
+      if(idy < 0)
+        dir_y = 0;
+      if(idy >= i_pd.m_numYGridPoints)
+        dir_y = 2;
+      if(idz < 0)
+        dir_z = 0;
+      if(idz >= i_pd.m_numZGridPoints)
+        dir_z = 2;
 
-	  
-	  // Determine the extent of this MPI buffer
+      // Determine the extent of this MPI buffer
+      int_pt startX = 0;
+      int_pt endX   = i_pd.m_numXGridPoints;
+      int_pt startY = 0;
+      int_pt endY   = i_pd.m_numYGridPoints;
+      int_pt startZ = 0;
+      int_pt endZ   = i_pd.m_numZGridPoints;
 
-          int_pt startX = 0;
-          int_pt endX = i_pd.m_numXGridPoints;
-          int_pt startY = 0;
-          int_pt endY = i_pd.m_numYGridPoints;
-          int_pt startZ = 0;
-          int_pt endZ = i_pd.m_numZGridPoints;
+      if (dir_x == 0) {
+        startX = -2;
+        endX   = 0;
+      }
+      if (dir_x == 2) {
+        startX = endX;
+        endX = endX+2;
+      }
+      if (dir_y == 0) {
+        startY = -2;
+        endY   = 0;
+      }
+      if (dir_y == 2) {
+        startY = endY;
+        endY = endY+2;
+      }
+      if (dir_z == 0) {
+        startZ = -2;
+        endZ   = 0;
+      }
+      if(dir_z == 2) {
+        startZ = endZ;
+        endZ = endZ+2;
+      }
 
-          if(dir_x == 0)
-	  {
-	    startX = -2;
-            endX   = 0;
-	  }
-	  if(dir_x == 2)
-	  {
-	    startX = endX;
-	    endX = endX+2;
-	  }
-          if(dir_y == 0)
-	  {
-	    startY = -2;
-            endY   = 0;
-	  }
-	  if(dir_y == 2)
-	  {
-	    startY = endY;
-	    endY = endY+2;
-	  }
-          if(dir_z == 0)
-	  {
-	    startZ = -2;
-            endZ   = 0;
-	  }
-	  if(dir_z == 2)
-	  {
-	    startZ = endZ;
-	    endZ = endZ+2;
-	  }
+      // Determine buffer offset for XX stress element
+      int_pt strideOneGrid = (endX-startX) * (endY-startY) * (endZ-startZ);
+      int_pt strideZ = 1;
+      int_pt strideY = (endZ-startZ) * strideZ;
+      int_pt strideX = (endY-startY) * strideY;
 
+      int_pt xxOffset = (idx - startX) * strideX + (idy - startY) * strideY + (idz - startZ) * strideZ;
 
-	  // Determine buffer offset for XX stress element
+      // Every other stress component is offset by a multiple of strideOneGrid
+      real* buffer  = odc::parallel::Mpi::m_buffRecv[dir_x][dir_y][dir_z];
+      m_locStrXX[j] = &buffer[xxOffset];
+      m_locStrXY[j] = &buffer[xxOffset + 1*strideOneGrid];
+      m_locStrXZ[j] = &buffer[xxOffset + 2*strideOneGrid];
+      m_locStrYY[j] = &buffer[xxOffset + 3*strideOneGrid];
+      m_locStrYZ[j] = &buffer[xxOffset + 4*strideOneGrid];
+      m_locStrZZ[j] = &buffer[xxOffset + 5*strideOneGrid];
 
-	  int_pt strideOneGrid = (endX-startX) * (endY-startY) * (endZ-startZ);
-	  int_pt strideZ = 1;
-	  int_pt strideY = (endZ-startZ) * strideZ;
-	  int_pt strideX = (endY-startY) * strideY;
+      // We are done with this index, move along
+      continue;
+    }
 
-	  int_pt xxOffset = (idx - startX) * strideX + (idy - startY) * strideY + (idz - startZ) * strideZ;
-	  
-	  // Every other stress component is offset by a multiple of strideOneGrid
-	  real* buffer = odc::parallel::Mpi::m_buffRecv[dir_x][dir_y][dir_z];
-	  m_locStrXX[j] = &buffer[xxOffset];
-	  m_locStrXY[j] = &buffer[xxOffset + 1*strideOneGrid];
-	  m_locStrXZ[j] = &buffer[xxOffset + 2*strideOneGrid];
-	  m_locStrYY[j] = &buffer[xxOffset + 3*strideOneGrid];
-	  m_locStrYZ[j] = &buffer[xxOffset + 4*strideOneGrid];
-	  m_locStrZZ[j] = &buffer[xxOffset + 5*strideOneGrid];
-	  
-
-	  // We are done with this index, move along
-	  continue;
-	}
-
-
-	// We're not on an MPI boundary, this case is easy
-	
-        int patch_id = i_pd.globalToPatch(idx,idy,idz);
-        int_pt x = i_pd.globalToLocalX(idx,idy,idz);
-        int_pt y = i_pd.globalToLocalY(idx,idy,idz);
-        int_pt z = i_pd.globalToLocalZ(idx,idy,idz);
+    // We're not on an MPI boundary, this case is easy
+    int patch_id = i_pd.globalToPatch(idx,idy,idz);
+    int_pt x = i_pd.globalToLocalX(idx,idy,idz);
+    int_pt y = i_pd.globalToLocalY(idx,idy,idz);
+    int_pt z = i_pd.globalToLocalZ(idx,idy,idz);
 
 
 #ifdef YASK
-        Patch& p = i_pd.m_patches[patch_id];
+    Patch& p = i_pd.m_patches[patch_id];
 
-	// Make sure YASK's real equals size of AWP real
-	assert(sizeof(real) == sizeof(real_t));
+    // Make sure YASK's real equals size of AWP real
+    assert(sizeof(real) == sizeof(real_t));
 
-	// The zero constants in the below correspond to timestep and grid_num,
-	// which are irrelevant for our usage of YASK (make sure that the YASK
-	// TIMESTEP constant is set to 1!)
+    // The zero constants in the below correspond to timestep and grid_num,
+    // which are irrelevant for our usage of YASK (make sure that the YASK
+    // TIMESTEP constant is set to 1!)
 
-	m_locStrXX[j] = (real*) p.yask_context.stress_xx->getElemPtr(0,x,y,z,0); 
-	m_locStrXY[j] = (real*) p.yask_context.stress_xy->getElemPtr(0,x,y,z,0);
-	m_locStrXZ[j] = (real*) p.yask_context.stress_xz->getElemPtr(0,x,y,z,0);
-	m_locStrYY[j] = (real*) p.yask_context.stress_yy->getElemPtr(0,x,y,z,0);
-	m_locStrYZ[j] = (real*) p.yask_context.stress_yz->getElemPtr(0,x,y,z,0);
-	m_locStrZZ[j] = (real*) p.yask_context.stress_zz->getElemPtr(0,x,y,z,0);
+    m_locStrXX[j] = (real*) p.yask_context.stress_xx->getElemPtr(0,x,y,z,0); 
+    m_locStrXY[j] = (real*) p.yask_context.stress_xy->getElemPtr(0,x,y,z,0);
+    m_locStrXZ[j] = (real*) p.yask_context.stress_xz->getElemPtr(0,x,y,z,0);
+    m_locStrYY[j] = (real*) p.yask_context.stress_yy->getElemPtr(0,x,y,z,0);
+    m_locStrYZ[j] = (real*) p.yask_context.stress_yz->getElemPtr(0,x,y,z,0);
+    m_locStrZZ[j] = (real*) p.yask_context.stress_zz->getElemPtr(0,x,y,z,0);
 #else
-	m_locStrXX[j] = &i_pd.m_patches[patch_id].soa.m_stressXX[x][y][z];
-	m_locStrXY[j] = &i_pd.m_patches[patch_id].soa.m_stressXY[x][y][z];
-	m_locStrXZ[j] = &i_pd.m_patches[patch_id].soa.m_stressXZ[x][y][z];
-	m_locStrYY[j] = &i_pd.m_patches[patch_id].soa.m_stressYY[x][y][z];
-	m_locStrYZ[j] = &i_pd.m_patches[patch_id].soa.m_stressYZ[x][y][z];
-	m_locStrZZ[j] = &i_pd.m_patches[patch_id].soa.m_stressZZ[x][y][z];
-#endif        
-    }
-
-    
+    m_locStrXX[j] = &i_pd.m_patches[patch_id].soa.m_stressXX[x][y][z];
+    m_locStrXY[j] = &i_pd.m_patches[patch_id].soa.m_stressXY[x][y][z];
+    m_locStrXZ[j] = &i_pd.m_patches[patch_id].soa.m_stressXZ[x][y][z];
+    m_locStrYY[j] = &i_pd.m_patches[patch_id].soa.m_stressYY[x][y][z];
+    m_locStrYZ[j] = &i_pd.m_patches[patch_id].soa.m_stressYZ[x][y][z];
+    m_locStrZZ[j] = &i_pd.m_patches[patch_id].soa.m_stressZZ[x][y][z];
+#endif
+  }
 }
 
-odc::io::Sources::~Sources()
-{
+odc::io::Sources::~Sources() {
   //TODO(Josh): deal with other source term data
-  
-  if(m_nPsrc > 0)
-  {
+
+  if (m_nPsrc > 0) {
     delete[] m_locStrXX;
     delete[] m_locStrXY;
     delete[] m_locStrXZ;
@@ -198,7 +179,6 @@ odc::io::Sources::~Sources()
     delete[] m_locStrZZ;
   }
 }
-
 
 /**
  Reads fault source file and sets corresponding parameter values for source fault nodes owned by the calling process
@@ -476,115 +456,106 @@ int inisource(int     IFAULT, int     NSRC,   int     READ_STEP, int     NST,   
         return 1;
     }
     else if(IFAULT == 3){
-        std::cerr << "Warning: IFAULT == 3 specified, this is EXPERIMENTAL." << std::endl;
-	std::ifstream in;
-	in.open(INSRC);
-	if(!in.is_open())
-	{
-	  std::cerr << "Error: Could not open source input file." << std::endl;
-	  return 1;
-	}
+      std::cerr << "Warning: IFAULT == 3 specified, this is EXPERIMENTAL." << std::endl;
 
-	int_pt x,y,z;
-	in >> x >> y >> z;
+      int boundary = 0, within = 0;
+      int_pt x, y, z, num_timesteps;
+      real strike, dip, rake;
+      std::ifstream in;
 
-	int boundary = 0, within = 0;
+      in.open(INSRC);
+      if (!in.is_open()) {
+        std::cerr << "Error: Could not open source input file." << std::endl;
+        return 1;
+      }
 
-	if(x >= nbx-2 && x <= nbx-1)
-	  boundary++;
-	if(x >= nex+1 && x <= nex+2)
-	  boundary++;
-	if(y >= nby-2 && y <= nby-1)
-	  boundary++;
-	if(y >= ney+1 && y <= ney+2)
-	  boundary++;
-	if(z >= nbz-2 && z <= nbz-1)
-	  boundary++;
-	if(z >= nez+1 && z <= nez+2)
-	  boundary++;
-	    
-	if(x >= nbx && x <= nex)
-	  within++;
-	if(y >= nby && y <= ney)
-	  within++;
-	if(z >= nbz && z <= nez)
-	  within++;
+      in >> x >> y >> z;
 
+      if (x >= nbx-2 && x <= nbx-1)
+        boundary++;
+      if (x >= nex+1 && x <= nex+2)
+        boundary++;
+      if (y >= nby-2 && y <= nby-1)
+        boundary++;
+      if (y >= ney+1 && y <= ney+2)
+        boundary++;
+      if (z >= nbz-2 && z <= nbz-1)
+        boundary++;
+      if (z >= nez+1 && z <= nez+2)
+        boundary++;
 
-	// check if the point source is not in the MPI rank (or halo)
-        if((within != 3) && (within != 2 || boundary != 1))
-	{
-          *SRCPROC = -1;
-          *NPSRC   = 0;
-          *ptpsrc  = NULL;
-          *ptaxx   = NULL;
-          *ptayy   = NULL;
-          *ptazz   = NULL;
-          *ptaxz   = NULL;
-          *ptayz   = NULL;
-          *ptaxy   = NULL;
-	  return 1;
-	}
-	
-	real strike, dip, rake;
-	in >> strike >> dip >> rake;
-	int_pt num_timesteps;
-	in >> num_timesteps;
+      if (x >= nbx && x <= nex)
+        within++;
+      if (y >= nby && y <= ney)
+        within++;
+      if (z >= nbz && z <= nez)
+        within++;
 
-	real* moment = new real[num_timesteps];
+      // check if the point source is not in the MPI rank (or halo)
+      if ((within != 3) && (within != 2 || boundary != 1)) {
+        *SRCPROC = -1;
+        *NPSRC   = 0;
+        *ptpsrc  = NULL;
+        *ptaxx   = NULL;
+        *ptayy   = NULL;
+        *ptazz   = NULL;
+        *ptaxz   = NULL;
+        *ptayz   = NULL;
+        *ptaxy   = NULL;
+        return 1;
+      }
 
-	for(int i=0; i<num_timesteps; i++)
-	{
-	  in >> moment[i];
-	}
+      in >> strike >> dip >> rake;
+      in >> num_timesteps;
 
-	
-        real axx = - sin(dip) * cos(rake) * sin(2. * strike)
-	  - sin(2. * dip) * sin(rake) * sin(2. * strike);
+      real* moment = new real[num_timesteps];
 
-	real axy = sin(dip) * cos(rake) * cos(2. * strike)
-	  + sin(2. * dip) * sin(rake) * sin(strike) * cos(strike);
+      for (int i = 0; i < num_timesteps; i++)
+        in >> moment[i];
 
-	real axz = - cos(dip) * cos(rake) * cos(strike)
-	  - cos(2. * dip) * sin(rake) * sin(strike);
+      real axx  = - sin(dip) * cos(rake) * sin(2. * strike)
+                  - sin(2. * dip) * sin(rake) * sin(2. * strike);
 
-	real ayy = sin(dip) * cos(rake) * sin(2. * strike)
-	  - sin(2. * dip) * sin(rake) * cos(2. * strike);
+      real axy  = sin(dip) * cos(rake) * cos(2. * strike)
+                  + sin(2. * dip) * sin(rake) * sin(strike) * cos(strike);
 
-	real ayz = - cos(dip) * cos(rake) * sin(strike)
-	  + cos(2*dip) * sin(rake) * cos(strike);
+      real axz  = - cos(dip) * cos(rake) * cos(strike)
+                  - cos(2. * dip) * sin(rake) * sin(strike);
 
-	real azz = sin(2. * dip) * sin(rake);
+      real ayy  = sin(dip) * cos(rake) * sin(2. * strike)
+                  - sin(2. * dip) * sin(rake) * cos(2. * strike);
 
-	
-        *SRCPROC = 1;
-        *NPSRC   = 1;
-        *ptpsrc  = odc::data::Alloc1P(*NPSRC*maxdim+3);
-        *ptaxx   = odc::data::Alloc1D(*NPSRC*num_timesteps);
-        *ptayy   = odc::data::Alloc1D(*NPSRC*num_timesteps);
-        *ptazz   = odc::data::Alloc1D(*NPSRC*num_timesteps);
-        *ptaxz   = odc::data::Alloc1D(*NPSRC*num_timesteps);
-        *ptayz   = odc::data::Alloc1D(*NPSRC*num_timesteps);
-        *ptaxy   = odc::data::Alloc1D(*NPSRC*num_timesteps);
+      real ayz  = - cos(dip) * cos(rake) * sin(strike)
+                  + cos(2. * dip) * sin(rake) * cos(strike);
 
-	(*ptpsrc)[0] = x;
-	(*ptpsrc)[1] = y;
-	(*ptpsrc)[2] = z;
-	
-	for(int i=0; i<num_timesteps; i++)
-	{
-	  (*ptaxx)[i] = moment[i] * axx;
-	  (*ptaxy)[i] = moment[i] * axy;
-	  (*ptaxz)[i] = moment[i] * axz;
-	  (*ptayy)[i] = moment[i] * ayy;
-	  (*ptayz)[i] = moment[i] * ayz;
-	  (*ptazz)[i] = moment[i] * azz;	  
-	}
+      real azz = sin(2. * dip) * sin(rake);
 
-	
-	delete[] moment;
+      *SRCPROC = 1;
+      *NPSRC   = 1;
+      *ptpsrc  = odc::data::Alloc1P(*NPSRC*maxdim+3);
+      *ptaxx   = odc::data::Alloc1D(*NPSRC*num_timesteps);
+      *ptayy   = odc::data::Alloc1D(*NPSRC*num_timesteps);
+      *ptazz   = odc::data::Alloc1D(*NPSRC*num_timesteps);
+      *ptaxz   = odc::data::Alloc1D(*NPSRC*num_timesteps);
+      *ptayz   = odc::data::Alloc1D(*NPSRC*num_timesteps);
+      *ptaxy   = odc::data::Alloc1D(*NPSRC*num_timesteps);
+
+      (*ptpsrc)[0] = x;
+      (*ptpsrc)[1] = y;
+      (*ptpsrc)[2] = z;
+
+      for (int i=0; i<num_timesteps; i++) {
+        (*ptaxx)[i] = moment[i] * axx;
+        (*ptaxy)[i] = moment[i] * axy;
+        (*ptaxz)[i] = moment[i] * axz;
+        (*ptayy)[i] = moment[i] * ayy;
+        (*ptayz)[i] = moment[i] * ayz;
+        (*ptazz)[i] = moment[i] * azz;
+      }
+
+      delete[] moment;
     }
-    
+
     return 0;
 }
 
@@ -618,13 +589,12 @@ int inisource(int     IFAULT, int     NSRC,   int     READ_STEP, int     NST,   
  */
 void odc::io::Sources::addsrc(int_pt i,      float DH,   float DT,   int NST,  int READ_STEP, int dim,
                               PatchDecomp& pd) {
-    
-    
+
     float vtst;
     int_pt idx, idy, idz, j;
     int_pt x, y, z;
     vtst = (float)DT/(DH*DH*DH);
-    
+
     for(j=0; j<m_nPsrc; j++)
     {
         idx = m_ptpSrc[j*dim];
@@ -649,7 +619,7 @@ void odc::io::Sources::addsrc(int_pt i,      float DH,   float DT,   int NST,  i
         *sYY -= vtst*m_ptAyy[j*READ_STEP+i];
         *sYZ -= vtst*m_ptAyz[j*READ_STEP+i];
         *sZZ -= vtst*m_ptAzz[j*READ_STEP+i];
-	
+
     }
     return;
 }

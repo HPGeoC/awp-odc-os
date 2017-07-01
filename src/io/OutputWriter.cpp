@@ -295,18 +295,23 @@ void odc::io::OutputWriter::finalize() {
   odc::data::common::release(m_velocityZWriteBuffer);
 }
 
+//! ReceiverWriter class constructor
+//! TODO(Raj): Get m_buffSkip from script file instead of defining it here?
 odc::io::ReceiverWriter::ReceiverWriter(char *inputFileName, char *outputFileName, real deltaH, int_pt numZGridPoints):
                                     m_buffSkip(10), m_receiverInputFilePtr(nullptr), m_receiverOutputFilePtr(nullptr) {
-  int_pt  i = 0;
-  int_pt  k;
-  real    rcvrX, rcvrY, rcvrZ;
-  real    gridX, gridY, gridZ;
-  char    *token;
-  char    line[256];
+  int_pt  i = 0;                    //! receiver counter
+  int_pt  k;                        //! loop counter
+  real    rcvrX, rcvrY, rcvrZ;      //! receiver coordinates
+  real    gridX, gridY, gridZ;      //! receiver grid points
+  char    *token;                   //! token read from receiver input file
+  char    line[256];                //! line read from receiver input file
 
+  //! Copy the receiver input file name set in launch script
   std::strncpy(m_receiverInputFileName, inputFileName, sizeof(m_receiverInputFileName));
 
   if (!m_receiverInputFilePtr) {
+
+    //! Open the receiver input-file in read-mode
     m_receiverInputFilePtr = std::fopen(m_receiverInputFileName, "r");
 
     if (!m_receiverInputFilePtr) {
@@ -315,9 +320,11 @@ odc::io::ReceiverWriter::ReceiverWriter(char *inputFileName, char *outputFileNam
     }
   }
 
+  //! Get the total no. of receivers (first line in input file)
   fgets(line, sizeof(line), m_receiverInputFilePtr);
   m_numberOfReceivers = atoi(line);
 
+  //! Dynamic memory allocation
   m_ownedByThisRank   = new bool [m_numberOfReceivers];
   m_arrayGridX        = new int_pt [m_numberOfReceivers];
   m_arrayGridY        = new int_pt [m_numberOfReceivers];
@@ -347,9 +354,12 @@ odc::io::ReceiverWriter::ReceiverWriter(char *inputFileName, char *outputFileNam
     m_receiverOutputLogs[k] = new char [AWP_PATH_MAX];
 
   while (fgets(line, sizeof(line), m_receiverInputFilePtr)) {
+
+    //! Skip empty line
     if (line[0] == '\n')
       continue;
 
+    //! Get token words every line between spaces and convert to real coordinates
     token   = strtok(line, " ");
     rcvrX   = atof(token);
     token   = strtok(NULL, " ");
@@ -357,20 +367,34 @@ odc::io::ReceiverWriter::ReceiverWriter(char *inputFileName, char *outputFileNam
     token   = strtok(NULL, " ");
     rcvrZ   = atof(token);
 
+    //! Convert real coordinates to integral grid points in the mesh
     gridX   = rcvrX / deltaH;
     gridY   = rcvrY / deltaH;
+
+    /** Receiver z-coordinate is specified starting from Earth surface whereas internally,
+        front lower left corner is considered origin, thus the following transformation */
     gridZ   = numZGridPoints - 1 - rcvrZ / deltaH;
 
+    //! Determine if the current MPI contains the receiver
     m_ownedByThisRank[i] = odc::parallel::Mpi::isInThisRank(gridX, gridY, gridZ);
 
+    /** Subtract the MPI starting coordinates to get local coordinates in that MPI
+        for example, if x from file was 4000m and there were two MPIs in x-direction,
+        and total grid dimension was 5120m, MPI starting x-coord. for node 2 would be
+        2560m, giving a grid point = 4000-2560+0.5 = 1440m which is correct locally
+        0.5 is added to round the real coordinate to ceiling integer value */
     m_arrayGridX[i] = (int_pt)(gridX - odc::parallel::Mpi::m_startX + 0.5);
     m_arrayGridY[i] = (int_pt)(gridY - odc::parallel::Mpi::m_startY + 0.5);
     m_arrayGridZ[i] = (int_pt)(gridZ - odc::parallel::Mpi::m_startZ + 0.5);
 
+    //! Construct name of receiver output log based on receiver, for ex: receiverOutput_13.log and store in an array
     std::strncpy(m_receiverOutputFileName, outputFileName, sizeof(m_receiverOutputFileName));
-    sprintf(m_receiverOutputLogs[i], "%s_%d.log", m_receiverOutputFileName, i+1);
+    sprintf(m_receiverOutputLogs[i], "%s_%d.csv", m_receiverOutputFileName, i+1);
 
+    //! If the current MPI owns the grid point, we create a corresponding file
     if (m_ownedByThisRank[i]) {
+
+      //! Open file in truncate mode, i.e. discard previous run values and close file
       m_receiverOutputFilePtr = std::fopen(m_receiverOutputLogs[i],"w");
       if (!m_receiverOutputFilePtr)
         continue;
@@ -386,11 +410,18 @@ odc::io::ReceiverWriter::ReceiverWriter(char *inputFileName, char *outputFileNam
   m_receiverInputFilePtr = nullptr;
 }
 
+//! writeReceiverOutputFiles function
 void odc::io::ReceiverWriter::writeReceiverOutputFiles(int_pt currentTimeStep, int_pt numTimestepsToSkip, PatchDecomp& i_ptchDec) {
     for (int_pt i = 0; i < m_numberOfReceivers; i++) {
+
+      //! Only consider time-steps which are a multiple of timesteps-to-skip
       if (m_ownedByThisRank[i] && (currentTimeStep % numTimestepsToSkip == 0)) {
+
+        //! Only write output to file every buffer-skip steps (by default 10)
         if ((currentTimeStep / numTimestepsToSkip) % m_buffSkip == 0) {
           if (!m_receiverOutputFilePtr) {
+
+            //! Open receiver output log in append mode
             m_receiverOutputFilePtr = std::fopen(m_receiverOutputLogs[i],"a+");
 
             if (!m_receiverOutputFilePtr) {
@@ -399,20 +430,27 @@ void odc::io::ReceiverWriter::writeReceiverOutputFiles(int_pt currentTimeStep, i
             }
           }
 
+          //! Append into array the velocity values at the buffer-skip step (by default 10th)
           m_buffTimestep[i][m_buffSkip-1] = currentTimeStep;
           m_buffVelX[i][m_buffSkip-1]     = i_ptchDec.getVelX(m_arrayGridX[i], m_arrayGridY[i], m_arrayGridZ[i], currentTimeStep);
           m_buffVelY[i][m_buffSkip-1]     = i_ptchDec.getVelY(m_arrayGridX[i], m_arrayGridY[i], m_arrayGridZ[i], currentTimeStep);
           m_buffVelZ[i][m_buffSkip-1]     = i_ptchDec.getVelZ(m_arrayGridX[i], m_arrayGridY[i], m_arrayGridZ[i], currentTimeStep);
 
-          for (int_pt j = 0; j < m_buffSkip; j++)
-            fprintf(m_receiverOutputFilePtr, "%4" AWP_PT_FORMAT_STRING " :%20e %20e %20e\n",
-                    m_buffTimestep[i][j], m_buffVelX[i][j], m_buffVelY[i][j], m_buffVelZ[i][j]);
+          for (int_pt j = 0; j < m_buffSkip; j++) {
 
+              //! Write to file in a csv format
+              fprintf(m_receiverOutputFilePtr, "%" AWP_PT_FORMAT_STRING ",%e,%e,%e\n",
+                    m_buffTimestep[i][j], m_buffVelX[i][j], m_buffVelY[i][j], m_buffVelZ[i][j]);
+          }
+
+          //! After every disk-write, flush and close file pointer and reset buffer counter to zero
           m_buffCount[i] = 0;
           fflush(m_receiverOutputFilePtr);
           fclose(m_receiverOutputFilePtr);
           m_receiverOutputFilePtr = nullptr;
       } else {
+
+        //! Store intermediate (till buffer is filled) velocity values in arrays
         m_buffTimestep[i][m_buffCount[i]] = currentTimeStep;
         m_buffVelX[i][m_buffCount[i]]     = i_ptchDec.getVelX(m_arrayGridX[i], m_arrayGridY[i], m_arrayGridZ[i], currentTimeStep);
         m_buffVelY[i][m_buffCount[i]]     = i_ptchDec.getVelY(m_arrayGridX[i], m_arrayGridY[i], m_arrayGridZ[i], currentTimeStep);
@@ -423,8 +461,9 @@ void odc::io::ReceiverWriter::writeReceiverOutputFiles(int_pt currentTimeStep, i
   }
 }
 
+//! ReceiverWriter class cleanup function
 void odc::io::ReceiverWriter::finalize() {
-  int_pt k;
+  int_pt k;     //! loop counter
 
   if (m_receiverInputFilePtr) {
     fclose(m_receiverInputFilePtr);
@@ -436,6 +475,7 @@ void odc::io::ReceiverWriter::finalize() {
     m_receiverOutputFilePtr = nullptr;
   }
 
+  //! Memory deallocation
   delete[] m_arrayGridX;
   delete[] m_arrayGridY;
   delete[] m_arrayGridZ;
@@ -538,6 +578,7 @@ void odc::io::CheckpointWriter::writeInitialStats(int_pt ntiskp, real dt, real d
 void odc::io::CheckpointWriter::finalize() {
   if (m_checkPointFile) {
     fclose(m_checkPointFile);
+    m_checkPointFile = nullptr;
   }
 }
 
