@@ -155,17 +155,17 @@ bool Patch::checkStressNaN()
       for(int_pt z = h-1; z < size_z - h + 1; z++)
       {
 #ifdef YASK
-        if( isnan(yask_context.stress_xx->readElem(0,x,y,z,0)) )
-//            isnan(yask_context.stress_xy->readElem(0,x,y,z,0)) ||
-//            isnan(yask_context.stress_xz->readElem(0,x,y,z,0)) ||
-//            isnan(yask_context.stress_yy->readElem(0,x,y,z,0)) ||
-//            isnan(yask_context.stress_yz->readElem(0,x,y,z,0)) ||
-//            isnan(yask_context.stress_zz->readElem(0,x,y,z,0)) )
+        if( isnan(yask_context.stress_xx->readElem(0,x,y,z,0)) ||
+            isnan(yask_context.stress_xy->readElem(0,x,y,z,0)) ||
+            isnan(yask_context.stress_xz->readElem(0,x,y,z,0)) ||
+            isnan(yask_context.stress_yy->readElem(0,x,y,z,0)) ||
+            isnan(yask_context.stress_yz->readElem(0,x,y,z,0)) ||
+            isnan(yask_context.stress_zz->readElem(0,x,y,z,0)) )
         {
           std::cout << x << " " << y << " " << z << std::endl;
           return true;
         }
-#elif
+#else
        if( isnan(soa.m_stressXX[x][y][z])
            isnan(soa.m_stressXY[x][y][z])
            isnan(soa.m_stressXZ[x][y][z])
