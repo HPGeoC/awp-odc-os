@@ -166,11 +166,11 @@ bool Patch::checkStressNaN()
           return true;
         }
 #else
-       if( std::isnan(soa.m_stressXX[x][y][z])
-           std::isnan(soa.m_stressXY[x][y][z])
-           std::isnan(soa.m_stressXZ[x][y][z])
-           std::isnan(soa.m_stressYY[x][y][z])
-           std::isnan(soa.m_stressYZ[x][y][z])
+       if( std::isnan(soa.m_stressXX[x][y][z]) ||
+           std::isnan(soa.m_stressXY[x][y][z]) ||
+           std::isnan(soa.m_stressXZ[x][y][z]) ||
+           std::isnan(soa.m_stressYY[x][y][z]) ||
+           std::isnan(soa.m_stressYZ[x][y][z]) ||
            std::isnan(soa.m_stressZZ[x][y][z]) )
       {
         return true;
