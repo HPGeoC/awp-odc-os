@@ -20,6 +20,8 @@
 
 #if !defined(PATCH_H)
 
+#include <cmath>
+
 #include "constants.hpp"
 #include "io/OptionParser.h"
 #include "data/Grid.hpp"
