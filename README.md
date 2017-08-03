@@ -1,4 +1,4 @@
-# awp-odc-os
+# awp-odc-os [![Build Status](https://travis-ci.org/HPGeoC/awp-odc-os.svg?branch=develop)](https://travis-ci.org/HPGeoC/awp-odc-os) [![Coverage Status](https://coveralls.io/repos/github/HPGeoC/awp-odc-os/badge.svg?branch=develop)](https://coveralls.io/github/HPGeoC/awp-odc-os?branch=develop)
 The Anelastic Wave Propagation software (awp-odc-os) simulates wave propagation
 in a 3D viscoelastic or elastic solid. Wave propagation use a variant of the staggered
 grid finite difference scheme to approximately solve the 3D elastodynamic

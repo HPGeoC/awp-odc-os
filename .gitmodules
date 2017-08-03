@@ -1,3 +1,9 @@
 [submodule "submodules/wiki"]
 	path = submodules/wiki
 	url = https://github.com/HPGeoC/awp-odc-os.wiki.git
+[submodule "submodules/scons/cuda"]
+	path = submodules/scons/cuda
+	url = https://github.com/bryancatanzaro/cuda-scons.git
+[submodule "src/yask"]
+	path = submodules/yask
+	url = https://github.com/HPGeoC/yask-kernels.git

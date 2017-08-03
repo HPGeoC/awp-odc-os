@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<!--
+
+##
+# @author Josh Tobin (rjtobin AT ucsd.edu)
+#
+# @section LICENSE
+# Copyright (c) 2016, Regents of the University of California
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+##
+
+/-------------------------------------------------------------------------\
+|                                                                         |
+| TODO:                                                                   |
+|  (1) Proper tab selection                                               |
+|  (2) Allow for multiple workflow insertions                             |
+|  (3) State which images are x,y,z coordinates                           |
+|  (4) More statistics                                                    |
+|                                                                         |
+\----- -------------------------------------------------------------------/
+
+-->
+
+<html>
+  <head>
+    <title>Test Report</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/2.3.2/css/bootstrap.min.css" rel="stylesheet" media="screen">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/styles/default.css">
+    
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fancybox/2.1.5/jquery.fancybox.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fancybox/2.1.5/jquery.fancybox.js"></script>    
+    
+    <script>
+
+      var Sections = new Array();
+      var SectionNames = new Array();
+      
+// BEGIN AUTOMATICALLY GENERATED CODE
+//INSERTHERE
+// END AUTOMATICALLY GENERATED CODE
+            
+
+      function clearBody()
+      {
+        $("#main_body").empty();
+      }
+
+      function addToBody(x)
+      {
+        $("#main_body").append("\n" + x);
+      }
+
+      function clearGlobal()
+      {
+        $("#global_body").empty();
+      }
+
+      function addToGlobal(x)
+      {
+        $("#global_body").append("\n" + x);
+      }
+      
+      function clearBar()
+      {
+        $("#up_list").empty();
+      }
+      
+      function addToBar(x, y)
+      {
+        $("#up_list").append('<li><a href="#" onclick="' + y + '">' + x + "</a></li>");
+      }
+
+      function clearCol()
+      {
+        $("#col_list").empty();
+        $("#col_list").append('<li class="nav-header"><a href="#">Benchmarks</a></li>');
+      }
+
+      function addToCol(x, y)
+      {
+        $("#col_list").append('<li><a href="#" onclick="' + y + '">' + x + "</a></li>");
+      }
+      
+      function changeContent(x)
+      {
+        $("#content").text(x);
+      }
+
+      function changeBenchName(x)
+      {
+        $("#bench_name1").text(x);
+        $("#bench_name2").text(x);
+        $("#bench_name3").text(x);
+      }
+
+      function changePerformance(gflops, time)
+      {
+        $("#gflops").text(gflops);
+        $("#tpt").text(time);
+      }
+      
+      function setSection(i)
+      {
+        clearCol();
+        for(var j=0; j<Sections[i].length; j++)
+        {
+          var func = "setPage(" + i + "," + j + "); return false;";
+          addToCol(Sections[i][j].name, func);
+        }                                 
+      }
+
+      function setPage(i,j)
+      {
+        var new_text = "";
+                                           
+        changeBenchName(Sections[i][j].name);
+        changePerformance(Sections[i][j].gflops, Sections[i][j].tpt);
+
+        clearGlobal();
+
+        new_text = '<h2 id="head_text">Min velocities</h2>\n';                                                          
+        new_text += '<div class="row">\n';
+                                           
+        new_text += '<div id="content" class="span3">\n';
+        new_text += '<a href="javascript:FancyShow(' + "'" + Sections[i][j].name + '_min_X.png' + "'" + ');" id="fancybox-manual-a">';
+        new_text += '<img src="' + Sections[i][j].name + '_min_X.png" />\n';
+        new_text += '</a>'
+        new_text += '</div>\n';
+                                                  
+        new_text += '<div id="content" class="span3">\n';
+        new_text += '<a href="javascript:FancyShow(' + "'" + Sections[i][j].name + '_min_Y.png' + "'" + ');" id="fancybox-manual-a">';
+        new_text += '<img src="' + Sections[i][j].name + '_min_Y.png" />\n';
+        new_text += '</a>'
+        new_text += '</div>\n';
+
+        new_text += '<div id="content" class="span3">\n';
+        new_text += '<a href="javascript:FancyShow(' + "'" + Sections[i][j].name + '_min_Z.png' + "'" + ');" id="fancybox-manual-a">';
+        new_text += '<img src="' + Sections[i][j].name + '_min_Z.png" />\n';
+        new_text += '</a>'
+        new_text += '</div>\n';
+
+        new_text += '</div>\n';
+
+        new_text += '<h2 id="head_text">Max velocities</h2>\n';                                                          
+        new_text += '<div class="row">\n';
+                                           
+        new_text += '<div id="content" class="span3">\n';
+        new_text += '<a href="javascript:FancyShow(' + "'" + Sections[i][j].name + '_max_X.png' + "'" + ');" id="fancybox-manual-a">';
+        new_text += '<img src="' + Sections[i][j].name + '_max_X.png" />\n';
+        new_text += '</a>'
+        new_text += '</div>\n';
+                                                  
+        new_text += '<div id="content" class="span3">\n';
+        new_text += '<a href="javascript:FancyShow(' + "'" + Sections[i][j].name + '_max_Y.png' + "'" + ');" id="fancybox-manual-a">';
+        new_text += '<img src="' + Sections[i][j].name + '_max_Y.png" />\n';
+        new_text += '</a>'
+        new_text += '</div>\n';
+
+        new_text += '<div id="content" class="span3">\n';
+        new_text += '<a href="javascript:FancyShow(' + "'" + Sections[i][j].name + '_max_Z.png' + "'" + ');" id="fancybox-manual-a">';
+        new_text += '<img src="' + Sections[i][j].name + '_max_Z.png" />\n';
+        new_text += '</a>'
+        new_text += '</div>\n';
+
+        new_text += '</div>\n';
+
+        new_text += '<h2 id="head_text">Avg velocities</h2>\n';                                                                                                     
+        new_text += '<div class="row">\n';
+                                           
+        new_text += '<div id="content" class="span3">\n';
+        new_text += '<a href="javascript:FancyShow(' + "'" + Sections[i][j].name + '_avg_X.png' + "'" + ');" id="fancybox-manual-a">';
+        new_text += '<img src="' + Sections[i][j].name + '_avg_X.png" />\n';
+        new_text += '</a>'
+        new_text += '</div>\n';
+                                                  
+        new_text += '<div id="content" class="span3">\n';
+        new_text += '<a href="javascript:FancyShow(' + "'" + Sections[i][j].name + '_avg_Y.png' + "'" + ');" id="fancybox-manual-a">';
+        new_text += '<img src="' + Sections[i][j].name + '_avg_Y.png" />\n';
+        new_text += '</a>'
+        new_text += '</div>\n';
+
+        new_text += '<div id="content" class="span3">\n';
+        new_text += '<a href="javascript:FancyShow(' + "'" + Sections[i][j].name + '_avg_Z.png' + "'" + ');" id="fancybox-manual-a">';
+        new_text += '<img src="' + Sections[i][j].name + '_avg_Z.png" />\n';
+        new_text += '</a>'
+        new_text += '</div>\n';
+
+        new_text += '</div>\n';
+                                           
+                                           
+        addToGlobal(new_text);
+        
+                                           
+        clearBody();
+
+        for(var k=0; k<Sections[i][j].rec.length; k++)
+        {
+          var x = Sections[i][j].rec[k].x;
+          var y = Sections[i][j].rec[k].y;
+          var z = Sections[i][j].rec[k].z;
+
+          var tuple = '(' + x + ',' + y + ',' + z + ')';
+                                                  
+          new_text = '<h2 id="head_text">Receiver ' + tuple + '</h2>\n';                       
+          new_text += '<div class="row">\n';
+
+          new_text += '<div id="content" class="span3">\n';
+          new_text += '<a href="javascript:FancyShow(' + "'" + Sections[i][j].rec[k].image + 'X.png' + "'" + ');" id="fancybox-manual-a">';
+          new_text += '<img src="' + Sections[i][j].rec[k].image + 'X.png" />\n';
+          new_text += '</a>'
+          new_text += '</div>\n';
+                                                  
+          new_text += '<div id="content" class="span3">\n';
+          new_text += '<a href="javascript:FancyShow(' + "'" + Sections[i][j].rec[k].image + 'Y.png' + "'" + ');" id="fancybox-manual-a">';
+          new_text += '<img src="' + Sections[i][j].rec[k].image + 'Y.png" />\n';
+          new_text += '</a>'
+          new_text += '</div>\n';
+
+          new_text += '<div id="content" class="span3">\n';
+          new_text += '<a href="javascript:FancyShow(' + "'" + Sections[i][j].rec[k].image + 'Z.png' + "'" + ');" id="fancybox-manual-a">';
+          new_text += '<img src="' + Sections[i][j].rec[k].image + 'Z.png" />\n';
+          new_text += '</a>'
+          new_text += '</div>\n';
+
+          new_text += '</div>\n';
+
+          addToBody(new_text);
+        }
+      }
+
+      function FancyShow(x)
+      {
+        $.fancybox.open(x);
+      }
+                                                  
+                                                  
+      $( document ).ready(function() {
+        $(".fancybox").fancybox();                    
+        for(var i=0; i<Sections.length; i++)
+          addToBar(SectionNames[i], "setSection("+i+"); return false;");
+        setSection(0);
+        setPage(0,0);
+      });
+    </script>
+    
+    <style type="text/css">
+      body {
+        padding-top: 60px;
+      }
+      
+      .sidebar-nav {
+        padding: 9px 0;
+      }
+    </style>
+  </head>
+  <body>
+   
+    <div class="navbar navbar-fixed-top">
+      <div class="navbar-inner">
+        <div class="container-fluid">
+          <div class="nav">
+            <ul class="nav nav-tabs" id="up_list">
+              <!--<li role="presentation"><a href="#">Log</a></li>-->
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+        
+    <div class="container-fluid">
+      <div class="row-fluid">
+        <div class="span2">
+         <div class="well sidebar-nav">
+           <ul class="nav nav-pills nav-stacked" id="col_list">
+             <!--<li class="nav-header"><a href="#">Navbar</a></li>
+             <li role="presentation"><a href="#">s2</a></li>-->
+           </ul>
+         </div>
+        </div>
+
+        <div class="span10">
+
+          <div class="hero-unit">
+            <h2>Min/Max/Average Velocities</h2>
+            <p>Global statistics for benchmark <strong id="bench_name3">BENCHMARK NAME</strong></p>
+          </div>
+
+          <div id="global_body">
+          </div>
+
+        
+          <div class="hero-unit">
+            <h2>Seismic Receivers</h2>
+            <p>The seismic receivers for benchmark <strong id="bench_name2">BENCHMARK NAME</strong></p>
+          </div>
+
+          <div id="main_body">
+          </div>
+
+          <div class="hero-unit">
+            <h2>Performance Counters</h2>
+            <p>GFLOPs:<div id="gflops"></div></p>
+            <p>Time per timestep:<div id="tpt"></div></p>
+          </div>
+
+        </div>
+      </div>
+    </div>
+    <!--<script src="http://code.jquery.com/jquery.js"></script>-->
+    <!--<script src="bootstrap/js/jbootstrap.min.js"></script>-->
+  </body>
+</html>
+

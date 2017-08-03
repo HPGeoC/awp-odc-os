@@ -1,0 +1,106 @@
+##
+# @brief Continuous integration via travis ci.
+#
+# @author Alexander Breuer (anbreuer AT ucsd.edu)
+#         Arjun Srinivasan (a3sriniv AT ucsd.edu)
+#
+# @section LICENSE
+# Copyright (c) 2016, Regents of the University of California
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+##
+
+sudo: required
+
+notifications:
+  email:
+    on_success: always
+    on_failure: always
+
+language: cpp
+
+matrix:
+  include:
+    - os: linux
+      compiler: gcc
+      addons:
+        apt:
+          sources: ['ubuntu-toolchain-r-test']
+          packages: ['g++-4.9']
+      env:
+      - CXX_COMPILER=g++-4.9
+      - CC_COMPILER=gcc-4.9
+      - GCOV=gcov-4.9
+
+    - os: linux
+      compiler: gcc
+      addons:
+        apt:
+          sources: ['ubuntu-toolchain-r-test']
+          packages: ['g++-5']
+      env:
+      - CXX_COMPILER=g++-5
+      - CC_COMPILER=gcc-5
+      - GCOV=gcov-5
+
+before_install:
+  - cd ..
+  - sudo apt-get update -qq
+
+install:
+  - sudo apt-get install -qq openmpi-bin libopenmpi-dev
+  - sudo apt-get install lcov rubygems
+  - pip install --user cpp-coveralls
+
+  # update binutils
+  - wget http://ftp.gnu.org/gnu/binutils/binutils-2.26.tar.gz
+  - tar -xzf binutils-2.26.tar.gz
+  - cd binutils-2.26
+  - ./configure && make -j 4 > /dev/null && sudo make install
+  - cd ..
+
+  # install valgrind
+  - sudo apt-get install libc6-dbg
+  - wget http://valgrind.org/downloads/valgrind-3.11.0.tar.bz2
+  - tar -xjf valgrind-3.11.0.tar.bz2
+  - cd valgrind-3.11.0
+  - ./configure && make -j 4 > /dev/null && sudo make install
+  - cd ..
+
+  # get the input file
+  - cd awp-odc-os
+  - wget hpgeoc.sdsc.edu/downloads/plane_wave.tar.gz
+  - tar -xvzf plane_wave.tar.gz
+  - cd ..
+
+script:
+  - export CXX=mpiCC && export OMPI_CXX=${CXX_COMPILER}
+  - export CC=mpicc && export OMPI_CC=${CC_COMPILER}
+  - ${CC} --version
+  - ${CXX} --version
+  - as --version
+
+  - cd awp-odc-os
+
+  - scons parallelization=mpi_omp
+  - OMP_NUM_THREADS=1 mpiexec -n 1 ./bin/pmcl3d -X 128 -Y 128 -Z  64 -x 1 -y 1 --TMAX 1.0 --DH 10.0 --DT 0.0025 --NVAR 8 --NSRC 7744 --NST 400 --IFAULT 1 --MEDIASTART 2 --FAC 1.0 --Q0 150.0 --EX 0.6 --FP 0.5 --READ_STEP 400 --WRITE_STEP 1 --NSKPX 2 --NSKPY 1 --NEDZ 64 --NTISKP 2000 -c stats.log -o output_sfc --INSRC planeP.bin --INVEL gvalley.otc
+
+# free Alloc1D mem
+#  - scons parallelization=mpi_omp mode=debug
+#  - OMP_NUM_THREADS=1 mpiexec -n 1 valgrind --suppressions=usr/share/openmpi/openmpi-valgrind.supp --leak-check=full --error-exitcode=1 ./bin/pmcl3d -X 128 -Y 128 -Z  64 -x 1 -y 1 --TMAX 1.0 --DH 10.0 --DT 0.0025 --NVAR 8 --NSRC 7744 --NST 400 --IFAULT 1 --MEDIASTART 2 --FAC 1.0 --Q0 150.0 --EX 0.6 --FP 0.5 --READ_STEP 400 --WRITE_STEP 1 --NSKPX 2 --NSKPY 1 --NEDZ 64 --NTISKP 2000 -c stats.log -o output_sfc --INSRC planeP.bin --INVEL gvalley.otc
+
+  - scons parallelization=mpi_omp cov=1 mode=debug
+  - OMP_NUM_THREADS=1 mpiexec -n 1 ./bin/pmcl3d -X 128 -Y 128 -Z  64 -x 1 -y 1 --TMAX 1.0 --DH 10.0 --DT 0.0025 --NVAR 8 --NSRC 7744 --NST 400 --IFAULT 1 --MEDIASTART 2 --FAC 1.0 --Q0 150.0 --EX 0.6 --FP 0.5 --READ_STEP 400 --WRITE_STEP     1 --NSKPX 2 --NSKPY 1 --NEDZ 64 --NTISKP 2000 -c stats.log -o output_sfc --INSRC planeP.bin --INVEL gvalley.otc
+
+  - scons parallelization=mpi_omp cpu_arch=knl
+
+after_success:
+  - ${GCOV} -v
+  - coveralls --exclude bin/submodules --exclude bin/yask --gcov ${GCOV} --gcov-options '\-lp'

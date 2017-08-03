@@ -1,0 +1,4 @@
+<!-- This is the footer of the templates, closing the XDMF output -->
+    </Grid>
+</Domain>
+</Xdmf>
