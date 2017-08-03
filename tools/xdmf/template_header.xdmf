@@ -1,0 +1,25 @@
+<?xml version="1.0" ?>
+<!DOCTYPE Xdmf SYSTEM "Xdmf.dtd" []>
+<!-- This is the header of the three templates, containing shared information -->
+<Xdmf xmlns:xi="http://www.w3.org/2001/XInclude" Version="2.0">
+<Domain>
+    <Topology name="topo" TopologyType="3DCoRectMesh"
+        Dimensions="TMPL_NODES_XYZ">
+    </Topology>
+    <Geometry name="geo" Type="ORIGIN_DXDYDZ">
+        <!-- Origin -->
+        <DataItem Format="XML" Dimensions="3">
+        TMPL_ORIGIN_XYZ
+        </DataItem>
+        <!-- DxDyDz -->
+        <DataItem Format="XML" Dimensions="3">
+        TMPL_D_XYZ
+        </DataItem>
+    </Geometry>
+
+    <Grid Name="TimeSeries" GridType="Collection" CollectionType="Temporal">
+        <Time TimeType="HyperSlab">
+            <DataItem Format="XML" NumberType="Float" Dimensions="3">
+            TMPL_PLOT_TIMES
+            </DataItem>
+        </Time>

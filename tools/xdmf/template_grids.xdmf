@@ -1,0 +1,26 @@
+<!-- This is the main part of the templates, wrapping AWP's raw output -->
+        <Grid Name="TMPL_TS_NAME" GridType="Uniform">
+            <Topology Reference="/Xdmf/Domain/Topology[1]"/>
+            <Geometry Reference="/Xdmf/Domain/Geometry[1]"/>
+            <Attribute Name="vel_x" Center="Node">
+                <DataItem Format="Binary"
+                 DataType="Float" Precision="4" Endian="Little"
+                 Dimensions="TMPL_NODES_XYZ">
+                    TMPL_BINARY_X
+                </DataItem>
+            </Attribute>
+            <Attribute Name="vel_y" Center="Node">
+                <DataItem Format="Binary"
+                 DataType="Float" Precision="4" Endian="Little"
+                 Dimensions="TMPL_NODES_XYZ">
+                    TMPL_BINARY_Y
+                </DataItem>
+            </Attribute>
+            <Attribute Name="vel_z" Center="Node">
+                <DataItem Format="Binary"
+                 DataType="Float" Precision="4" Endian="Little"
+                 Dimensions="TMPL_NODES_XYZ">
+                    TMPL_BINARY_Z
+                </DataItem>
+            </Attribute>
+        </Grid>
