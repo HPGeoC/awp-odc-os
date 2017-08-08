@@ -22,128 +22,120 @@
 
 #include "constants.hpp"
 #include "common.hpp"
-#include "io/OptionParser.h"
 #include "Grid.hpp"
+#include "io/OptionParser.h"
 
 namespace odc {
-    namespace data {
-        class SoA;
-    }
+  namespace data {
+    class SoA;
+  }
 }
 
 class odc::data::SoA {
 public:
-    /**
-     * Meta data.
-     **/
-    // number of grid points
-    int_pt m_numGridPoints;
-    
-    // number of x grid points
-    int_pt m_numXGridPoints;
-    
-    // number of y grid points
-    int_pt m_numYGridPoints;
-    
-    // number of z grid points
-    int_pt m_numZGridPoints;
-    
-    /**
-     * Solution data.
-     **/
-    // velocity in x-, y- and z-direction.
-    Grid3D m_velocityX, m_velocityY, m_velocityZ;
-    
-    Grid3D m_stressXX, m_stressYY, m_stressZZ;
-    Grid3D m_stressXY, m_stressXZ, m_stressYZ;
-    
-    // normal stress components
-    //real *m_stressXX, *m_stressYY, *m_stressZZ;
-    
-    // shear stress components
-    //real *m_stressXY, *m_stressXZ, *m_stressYZ;
-    
-    // attenuation
-    Grid3D m_memXX, m_memYY, m_memZZ, m_memXY, m_memXZ, m_memYZ;
-    
-    
-    /**
-     * Initializes the meta data.
-     *
-     * @param i_options     Parsed command line options
-     **/
-    void initialize( int_pt i_numPointsX,
-                     int_pt i_numPointsY,
-                     int_pt i_numPointsZ ) {
-        m_numXGridPoints = i_numPointsX;
-        m_numYGridPoints = i_numPointsY;
-        m_numZGridPoints = i_numPointsZ;
-        
-        m_numGridPoints = m_numXGridPoints * m_numYGridPoints * m_numZGridPoints;
-    }
-    
-    /**
-     * Derives the memory requirements.
-     *
-     * @return required size in GiB
-     **/
-    float getSize() {
-        return ( m_numGridPoints * sizeof(real) * 15.0 ) / (1024 * 1024 * 1024);
-    }
-    
-    
-    /**
-     * Allocates the memory.
-     **/
-    void allocate() {
-        
-        m_velocityX = odc::data::Alloc3D(m_numXGridPoints, m_numYGridPoints, m_numZGridPoints, odc::constants::boundary);
-        m_velocityY = odc::data::Alloc3D(m_numXGridPoints, m_numYGridPoints, m_numZGridPoints, odc::constants::boundary);
-        m_velocityZ = odc::data::Alloc3D(m_numXGridPoints, m_numYGridPoints, m_numZGridPoints, odc::constants::boundary);
-        
-        m_stressXX = odc::data::Alloc3D(m_numXGridPoints, m_numYGridPoints, m_numZGridPoints, odc::constants::boundary);
-        m_stressYY = odc::data::Alloc3D(m_numXGridPoints, m_numYGridPoints, m_numZGridPoints, odc::constants::boundary);
-        m_stressZZ = odc::data::Alloc3D(m_numXGridPoints, m_numYGridPoints, m_numZGridPoints, odc::constants::boundary);
-        
-        m_stressXY = odc::data::Alloc3D(m_numXGridPoints, m_numYGridPoints, m_numZGridPoints, odc::constants::boundary);
-        m_stressXZ = odc::data::Alloc3D(m_numXGridPoints, m_numYGridPoints, m_numZGridPoints, odc::constants::boundary);
-        m_stressYZ = odc::data::Alloc3D(m_numXGridPoints, m_numYGridPoints, m_numZGridPoints, odc::constants::boundary);
-        
-        m_memXX = odc::data::Alloc3D(m_numXGridPoints, m_numYGridPoints, m_numZGridPoints, odc::constants::boundary);
-        m_memYY = odc::data::Alloc3D(m_numXGridPoints, m_numYGridPoints, m_numZGridPoints, odc::constants::boundary);
-        m_memZZ = odc::data::Alloc3D(m_numXGridPoints, m_numYGridPoints, m_numZGridPoints, odc::constants::boundary);
-        m_memXY = odc::data::Alloc3D(m_numXGridPoints, m_numYGridPoints, m_numZGridPoints, odc::constants::boundary);
-        m_memXZ = odc::data::Alloc3D(m_numXGridPoints, m_numYGridPoints, m_numZGridPoints, odc::constants::boundary);
-        m_memYZ = odc::data::Alloc3D(m_numXGridPoints, m_numYGridPoints, m_numZGridPoints, odc::constants::boundary);
-        
-    }
-    
-    
-    
-    /**
-     * Finalizes the data structures.
-     **/
-    void finalize() {
-        odc::data::Delloc3D(m_velocityX, odc::constants::boundary);
-        odc::data::Delloc3D(m_velocityY, odc::constants::boundary);
-        odc::data::Delloc3D(m_velocityZ, odc::constants::boundary);
-        
-        odc::data::Delloc3D(m_stressXX, odc::constants::boundary);
-        odc::data::Delloc3D(m_stressYY, odc::constants::boundary);
-        odc::data::Delloc3D(m_stressZZ, odc::constants::boundary);
-        
-        odc::data::Delloc3D(m_stressXY, odc::constants::boundary);
-        odc::data::Delloc3D(m_stressXZ, odc::constants::boundary);
-        odc::data::Delloc3D(m_stressYZ, odc::constants::boundary);
-        
-        odc::data::Delloc3D(m_memXX, odc::constants::boundary);
-        odc::data::Delloc3D(m_memYY, odc::constants::boundary);
-        odc::data::Delloc3D(m_memZZ, odc::constants::boundary);
-        odc::data::Delloc3D(m_memXY, odc::constants::boundary);
-        odc::data::Delloc3D(m_memXZ, odc::constants::boundary);
-        odc::data::Delloc3D(m_memYZ, odc::constants::boundary);
+  /**
+   * Meta data.
+   **/
+  // number of grid points
+  int_pt m_numGridPoints;
 
-    }
+  // number of x grid points
+  int_pt m_numXGridPoints;
+
+  // number of y grid points
+  int_pt m_numYGridPoints;
+
+  // number of z grid points
+  int_pt m_numZGridPoints;
+
+  /**
+   * Solution data.
+   **/
+  // velocity in x-, y- and z-direction.
+  Grid3D m_velocityX, m_velocityY, m_velocityZ;
+
+  Grid3D m_stressXX, m_stressYY, m_stressZZ;
+  Grid3D m_stressXY, m_stressXZ, m_stressYZ;
+
+  // normal stress components
+  //real *m_stressXX, *m_stressYY, *m_stressZZ;
+
+  // shear stress components
+  //real *m_stressXY, *m_stressXZ, *m_stressYZ;
+
+  // attenuation
+  Grid3D m_memXX, m_memYY, m_memZZ, m_memXY, m_memXZ, m_memYZ;
+
+  /**
+   * Initializes the meta data.
+   *
+   * @param i_options     Parsed command line options
+   **/
+  void initialize( int_pt i_numPointsX,
+                   int_pt i_numPointsY,
+                   int_pt i_numPointsZ ) {
+    m_numXGridPoints  = i_numPointsX;
+    m_numYGridPoints  = i_numPointsY;
+    m_numZGridPoints  = i_numPointsZ;
+    m_numGridPoints   = m_numXGridPoints * m_numYGridPoints * m_numZGridPoints;
+  }
+
+  /**
+   * Derives the memory requirements.
+   *
+   * @return required size in GiB
+   **/
+  float getSize() {
+    return (m_numGridPoints * sizeof( real ) * 15.0 ) / (1024 * 1024 * 1024);
+  }
+
+  /**
+   * Allocates the memory.
+   **/
+  void allocate() {
+    m_velocityX = odc::data::Alloc3D( m_numXGridPoints, m_numYGridPoints, m_numZGridPoints, odc::constants::boundary );
+    m_velocityY = odc::data::Alloc3D( m_numXGridPoints, m_numYGridPoints, m_numZGridPoints, odc::constants::boundary );
+    m_velocityZ = odc::data::Alloc3D( m_numXGridPoints, m_numYGridPoints, m_numZGridPoints, odc::constants::boundary );
+
+    m_stressXX  = odc::data::Alloc3D( m_numXGridPoints, m_numYGridPoints, m_numZGridPoints, odc::constants::boundary );
+    m_stressYY  = odc::data::Alloc3D( m_numXGridPoints, m_numYGridPoints, m_numZGridPoints, odc::constants::boundary );
+    m_stressZZ  = odc::data::Alloc3D( m_numXGridPoints, m_numYGridPoints, m_numZGridPoints, odc::constants::boundary );
+
+    m_stressXY  = odc::data::Alloc3D( m_numXGridPoints, m_numYGridPoints, m_numZGridPoints, odc::constants::boundary );
+    m_stressXZ  = odc::data::Alloc3D( m_numXGridPoints, m_numYGridPoints, m_numZGridPoints, odc::constants::boundary );
+    m_stressYZ  = odc::data::Alloc3D( m_numXGridPoints, m_numYGridPoints, m_numZGridPoints, odc::constants::boundary );
+
+    m_memXX     = odc::data::Alloc3D( m_numXGridPoints, m_numYGridPoints, m_numZGridPoints, odc::constants::boundary );
+    m_memYY     = odc::data::Alloc3D( m_numXGridPoints, m_numYGridPoints, m_numZGridPoints, odc::constants::boundary );
+    m_memZZ     = odc::data::Alloc3D( m_numXGridPoints, m_numYGridPoints, m_numZGridPoints, odc::constants::boundary );
+    m_memXY     = odc::data::Alloc3D( m_numXGridPoints, m_numYGridPoints, m_numZGridPoints, odc::constants::boundary );
+    m_memXZ     = odc::data::Alloc3D( m_numXGridPoints, m_numYGridPoints, m_numZGridPoints, odc::constants::boundary );
+    m_memYZ     = odc::data::Alloc3D( m_numXGridPoints, m_numYGridPoints, m_numZGridPoints, odc::constants::boundary );
+  }
+
+  /**
+   * Finalizes the data structures.
+   **/
+  void finalize() {
+    odc::data::Delloc3D( m_velocityX, odc::constants::boundary );
+    odc::data::Delloc3D( m_velocityY, odc::constants::boundary );
+    odc::data::Delloc3D( m_velocityZ, odc::constants::boundary );
+
+    odc::data::Delloc3D( m_stressXX, odc::constants::boundary );
+    odc::data::Delloc3D( m_stressYY, odc::constants::boundary );
+    odc::data::Delloc3D( m_stressZZ, odc::constants::boundary );
+
+    odc::data::Delloc3D( m_stressXY, odc::constants::boundary );
+    odc::data::Delloc3D( m_stressXZ, odc::constants::boundary );
+    odc::data::Delloc3D( m_stressYZ, odc::constants::boundary );
+
+    odc::data::Delloc3D( m_memXX, odc::constants::boundary );
+    odc::data::Delloc3D( m_memYY, odc::constants::boundary );
+    odc::data::Delloc3D( m_memZZ, odc::constants::boundary );
+    odc::data::Delloc3D( m_memXY, odc::constants::boundary );
+    odc::data::Delloc3D( m_memXZ, odc::constants::boundary );
+    odc::data::Delloc3D( m_memYZ, odc::constants::boundary );
+  }
 };
 
 #endif

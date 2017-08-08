@@ -22,6 +22,7 @@
 
 #include <cstdlib>
 #include <iostream>
+
 #include "constants.hpp"
 
 namespace odc {
@@ -31,45 +32,42 @@ namespace odc {
 }
 
 class odc::data::common {
-  public:
-    /**
-     * Allocates aligned memory of the given size.
-     *
-     * @param i_size size in bytes.
-     * @param i_alignment alignment of the base pointer.
-     **/
-    static void* allocate( size_t i_size,
-                           size_t i_alignment ) {
+public:
+  /**
+   * Allocates aligned memory of the given size.
+   *
+   * @param i_size size in bytes.
+   * @param i_alignment alignment of the base pointer.
+   **/
+  static void* allocate( size_t i_size, size_t i_alignment ) {
+    void* l_ptrBuffer;
+    bool l_error = (posix_memalign( &l_ptrBuffer, i_alignment, i_size ) != 0);
 
-      void* l_ptrBuffer;
-      bool l_error = (posix_memalign( &l_ptrBuffer, i_alignment, i_size ) != 0);
+    if( l_error ) {
+      // TODO: Log
+      std::cout << "The malloc failed (bytes: " << i_size
+                << ", alignment: " << i_alignment << ")."
+                << std::endl;
+    }
 
-      if( l_error ) {
-        // TODO: Log
-        std::cout << "The malloc failed (bytes: " << i_size
-                  << ", alignment: " << i_alignment << ")."
-                  << std::endl;
-      }
-
-      return l_ptrBuffer;
-    }
-    
-    /**
-     Initalizes memory block of @c real's to a set value
-     
-     @param location        A pointer to the beginning of the memory block
-     @param toValue         The value to which all @c real's in the memory block should be set
-     @param length          The number of @c real's in the block
-     */
-    static void set_mem(real *location, real toValue, int_pt length) {
-        for (int_pt i=0; i<length; i++) {
-            location[i] = toValue;
-        }
-    }
-    
-    static void release( void *io_memory ) {
-      free(io_memory);
-    }
+    return l_ptrBuffer;
+  }
+  
+  /**
+   Initalizes memory block of @c real's to a set value
+   
+   @param location        A pointer to the beginning of the memory block
+   @param toValue         The value to which all @c real's in the memory block should be set
+   @param length          The number of @c real's in the block
+   */
+  static void set_mem( real *location, real toValue, int_pt length ) {
+    for( int_pt i = 0; i < length; i++ )
+      location[i] = toValue;
+  }
+  
+  static void release( void *io_memory ) {
+    free(io_memory);
+  }
 };
 
 #endif

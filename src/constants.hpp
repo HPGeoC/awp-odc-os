@@ -24,7 +24,7 @@
 
 #define AWP_PATH_MAX (PATH_MAX+1)
 
-// constants of shared code - start
+//! constants of shared code - start
 #ifdef __RESTRICT
 #define RESTRICT restrict
 #else
@@ -40,30 +40,28 @@ typedef float *RESTRICT *RESTRICT *RESTRICT Grid3D;
 typedef int   *RESTRICT *RESTRICT *RESTRICT Grid3Dww;
 typedef float *RESTRICT                     Grid1D;
 typedef int   *RESTRICT                     PosInf;
-// constants of shared code - end
+//! constants of shared code - end
 
-// floating point precision
+//! floating point precision
 typedef float real;
 #define AWP_MPI_REAL MPI_FLOAT
 
-// int for grid points
+//! int for grid points
 typedef long long int_pt;
 #define AWP_PT_FORMAT_STRING "lld"
 
-// constants used in patch decomposition
+//! constants used in patch decomposition
 #define PATCH_X 2048
 #define PATCH_Y 2048
 #define PATCH_Z 2048
 #define BDRY_SIZE 4
 
-
 #ifdef __cplusplus
 namespace odc {
-    namespace constants {
-        static const int_pt boundary = 2;
-    }
+  namespace constants {
+    static const int_pt boundary = 2;
+  }
 }
 #endif
-
 
 #endif
