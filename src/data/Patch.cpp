@@ -145,14 +145,14 @@ bool Patch::checkStressNaN() {
             isnan( yask_context.stress_yz->readElem( 0, x, y, z, 0 ) ) ||
             isnan( yask_context.stress_zz->readElem( 0, x, y, z, 0 ) ) )
           return true;
-#elif
-       if( isnan( soa.m_stressXX[x][y][z] )
-           isnan( soa.m_stressXY[x][y][z] )
-           isnan( soa.m_stressXZ[x][y][z] )
-           isnan( soa.m_stressYY[x][y][z] )
-           isnan( soa.m_stressYZ[x][y][z] )
-           isnan( soa.m_stressZZ[x][y][z] ) )
-        return true;
+#else
+       if( std::isnan( soa.m_stressXX[x][y][z] ) ||
+           std::isnan( soa.m_stressXY[x][y][z] ) ||
+           std::isnan( soa.m_stressXZ[x][y][z] ) ||
+           std::isnan( soa.m_stressYY[x][y][z] ) ||
+           std::isnan( soa.m_stressYZ[x][y][z] ) ||
+           std::isnan( soa.m_stressZZ[x][y][z] ) )
+          return true;
 #endif
       }
     }
