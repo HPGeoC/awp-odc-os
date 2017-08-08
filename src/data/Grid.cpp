@@ -17,16 +17,7 @@
  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <cstdlib>
-#include <cstdio>
-#include <cstdint>
-
-#ifdef YASK
-#include <numa.h>
-#endif
-
 #include "Grid.hpp"
-
 
 /**
  Allocates and returns pointer to three dimensional grid structure of @c float 's. All of the values
@@ -42,63 +33,50 @@
  
  @warning Terminates with exit code -1 if unable to allocate requested memory.
  */
-Grid3D odc::data::Alloc3D(int_pt nx, int_pt ny, int_pt nz, int_pt boundary, bool use_hbw)
-{
-    int_pt i, j, k;
+Grid3D odc::data::Alloc3D( int_pt nx, int_pt ny, int_pt nz, int_pt boundary, bool use_hbw ) {
+  int_pt i, j, k;
+  Grid3D U;
 
-    Grid3D U;
-
-    if(!use_hbw)
-    {
-        U = (Grid3D)malloc(sizeof(real**)*(nx+2*boundary) +
-                           sizeof(real *)*(nx+2*boundary)*(ny+2*boundary) +
-                           sizeof(real)*(nx+2*boundary)*(ny+2*boundary)*(nz+2*boundary));
-    }
-
-    else
-    {
+  if( !use_hbw ) {
+    U = (Grid3D)malloc( sizeof( real** ) * (nx + 2 * boundary) +
+                        sizeof( real * ) * (nx + 2 * boundary) * (ny + 2 * boundary) +
+                        sizeof( real   ) * (nx + 2 * boundary) * (ny + 2 * boundary) * (nz + 2 * boundary) );
+  } else {
 #if defined YASK && !defined CACHE_MODE
-        const unsigned int alignment = 4096;
-        void *ptr = numa_alloc_onnode(sizeof(real**)*(nx+2*boundary) +
-				      sizeof(real *)*(nx+2*boundary)*(ny+2*boundary) +
-                                      sizeof(real)*(nx+2*boundary)*(ny+2*boundary)*(nz+2*boundary) +
-				      alignment, 1);
-        uintptr_t mask = ~((uintptr_t) (alignment - 1));
-        U = (Grid3D) (((uintptr_t)ptr + (alignment-1)) & mask);
+    const unsigned int alignment = 4096;
+    void *ptr = numa_alloc_onnode( sizeof( real** ) * (nx + 2 * boundary) +
+                                   sizeof( real * ) * (nx + 2 * boundary) * (ny + 2 * boundary) +
+                                   sizeof( real   ) * (nx + 2 * boundary) * (ny + 2 * boundary) * (nz + 2 * boundary) +
+                                   alignment, 1 );
+    uintptr_t mask = ~((uintptr_t) (alignment - 1));
+    U = (Grid3D) (((uintptr_t)ptr + (alignment-1)) & mask);
 #else
-
-        U = (Grid3D)malloc(sizeof(real**)*(nx+2*boundary) +
-                           sizeof(real *)*(nx+2*boundary)*(ny+2*boundary) +
-                           sizeof(real)*(nx+2*boundary)*(ny+2*boundary)*(nz+2*boundary));
+    U = (Grid3D)malloc( sizeof( real** ) * (nx + 2 * boundary) +
+                        sizeof( real * ) * (nx + 2 * boundary) * (ny + 2 * boundary) +
+                        sizeof( real   ) * (nx + 2 * boundary) * (ny + 2 * boundary) * (nz + 2 * boundary) );
 #endif
-    }
-    
-    if (!U){
-        printf("Cannot allocate 3D float array\n");
-        exit(-1);
-    }
-    for(i=0;i<nx+2*boundary;i++){
-        U[i] = ((real**) U) + (nx+2*boundary) + i*(ny+2*boundary) + boundary;
-    }
-    
-    real *Ustart = (real *) (U[nx+2*boundary-1] + ny+boundary);
-    for(i=0;i<nx+2*boundary;i++) {
-        for(j=0;j<ny+2*boundary;j++) {
-            U[i][j-boundary] = Ustart + i*(ny+2*boundary)*(nz+2*boundary) + j*(nz+2*boundary) + boundary;
-        }
-    }
-    
-    for(i=0;i<nx+2*boundary;i++) {
-        for(j=0;j<ny+2*boundary;j++) {
-            for(k=0;k<nz+2*boundary;k++) {
-                U[i][j-boundary][k-boundary] = 0.0;
-            }
-        }
-    }
-    
-    return U+boundary;
-}
+  }
 
+  if( !U ) {
+    std::cerr << "Cannot allocate 3D float array\n";
+    exit(-1);
+  }
+
+  for( i = 0; i < nx + 2 * boundary; i++ )
+    U[i] = ((real**) U) + (nx + 2 * boundary) + i * (ny + 2 * boundary) + boundary;
+
+  real *Ustart = (real *) (U[nx+2*boundary-1] + ny + boundary);
+  for( i = 0; i < nx + 2 * boundary; i++ )
+    for( j = 0; j < ny + 2 * boundary; j++ )
+      U[i][j-boundary] = Ustart + i * (ny + 2 * boundary) * (nz + 2 * boundary) + j * (nz + 2 * boundary) + boundary;
+
+  for( i = 0; i < nx + 2 * boundary; i++ )
+    for( j = 0; j < ny + 2 * boundary; j++ )
+      for( k = 0; k < nz + 2 * boundary; k++ )
+        U[i][j-boundary][k-boundary] = 0.0;
+
+  return U + boundary;
+}
 
 /**
  Allocates and returns pointer to three dimensional grid structure of @c int 's. All of the values are initialized to @c 0.
@@ -115,42 +93,32 @@ Grid3D odc::data::Alloc3D(int_pt nx, int_pt ny, int_pt nz, int_pt boundary, bool
  
  @warning Terminates with exit code -1 if unable to allocate requested memory.
  */
-Grid3Dww odc::data::Alloc3Dww(int_pt nx, int_pt ny, int_pt nz, int_pt boundary)
-{
-    
-    int_pt i, j, k;
-    
-    Grid3Dww U = (Grid3Dww)malloc(sizeof(int**)*(nx+2*boundary) +
-                              sizeof(int *)*(nx+2*boundary)*(ny+2*boundary) +
-                              sizeof(int)*(nx+2*boundary)*(ny+2*boundary)*(nz+2*boundary));
-    
-    if (!U){
-        printf("Cannot allocate 3D integer array\n");
-        exit(-1);
-    }
-    for(i=0;i<nx+2*boundary;i++){
-        U[i] = ((int**) U) + (nx+2*boundary) + i*(ny+2*boundary) + boundary;
-    }
-    
-    int *Ustart = (int *) (U[nx+2*boundary-1] + ny+boundary);
-    for(i=0;i<nx+2*boundary;i++) {
-        for(j=0;j<ny+2*boundary;j++) {
-            U[i][j-boundary] = Ustart + i*(ny+2*boundary)*(nz+2*boundary) + j*(nz+2*boundary) + boundary;
-        }
-    }
-    
-    for(i=0;i<nx+2*boundary;i++) {
-        for(j=0;j<ny+2*boundary;j++) {
-            for(k=0;k<nz+2*boundary;k++) {
-                U[i][j-boundary][k-boundary] = 0;
-            }
-        }
-    }
-    
-    return U+boundary;
+Grid3Dww odc::data::Alloc3Dww( int_pt nx, int_pt ny, int_pt nz, int_pt boundary ) {
+  int_pt i, j, k;
+  Grid3Dww U = (Grid3Dww)malloc( sizeof( int** ) * (nx + 2 * boundary) +
+                                 sizeof( int * ) * (nx + 2 * boundary) * (ny + 2 * boundary) +
+                                 sizeof( int   ) * (nx + 2 * boundary) * (ny + 2 * boundary) * (nz + 2 * boundary) );
 
+  if( !U ) {
+    std::cerr << "Cannot allocate 3D integer array\n";
+    exit(-1);
+  }
+
+  for( i = 0; i < nx + 2 * boundary; i++ )
+    U[i] = ((int**) U) + (nx + 2 * boundary) + i * (ny + 2 * boundary) + boundary;
+
+  int *Ustart = (int *) (U[nx+2*boundary-1] + ny + boundary);
+  for( i = 0; i < nx + 2 * boundary; i++ )
+    for( j = 0; j < ny + 2 * boundary; j++ )
+      U[i][j-boundary] = Ustart + i * (ny + 2 * boundary) * (nz + 2 * boundary) + j * (nz + 2 * boundary) + boundary;
+
+  for( i = 0;i < nx + 2 * boundary; i++ )
+    for( j = 0; j < ny + 2 * boundary; j++ )
+      for( k = 0; k < nz + 2 * boundary; k++ )
+        U[i][j-boundary][k-boundary] = 0;
+
+  return U + boundary;
 }
-
 
 /**
  Allocates and returns pointer to one dimensional grid structure of @c float 's. All of the values are initialized to 0.0f.
@@ -164,21 +132,19 @@ Grid3Dww odc::data::Alloc3Dww(int_pt nx, int_pt ny, int_pt nz, int_pt boundary)
  
  @warning Terminates with exit code -1 if unable to allocate requested memory.
  */
-Grid1D odc::data::Alloc1D(int_pt nx, int_pt boundary)
-{
-    int_pt i;
-    Grid1D U = (Grid1D)malloc(sizeof(real)*(nx+2*boundary));
-    
-    if (!U){
-        printf("Cannot allocate 1D real array\n");
-        exit(-1);
-    }
-    
-    for(i=0;i<nx+2*boundary;i++) {
-        U[i] = 0.0;
-    }
-    
-    return U+boundary;
+Grid1D odc::data::Alloc1D( int_pt nx, int_pt boundary ) {
+  int_pt i;
+  Grid1D U = (Grid1D)malloc( sizeof( real ) * (nx + 2 * boundary) );
+
+  if( !U ) {
+    std::cerr << "Cannot allocate 1D real array\n";
+    exit(-1);
+  }
+
+  for( i = 0; i < nx + 2 * boundary; i++ )
+    U[i] = 0.0;
+
+  return U + boundary;
 }
 
 /**
@@ -193,20 +159,19 @@ Grid1D odc::data::Alloc1D(int_pt nx, int_pt boundary)
  
  @warning Terminates with exit code -1 if unable to allocate requested memory.
  */
-PosInf odc::data::Alloc1P(int_pt nx, int_pt boundary)
-{
-    int_pt i;
-    PosInf U = (PosInf)malloc(sizeof(int)*(nx+2*boundary));
-    
-    if (!U){
-        printf("Cannot allocate 1D integer array\n");
-        exit(-1);
-    }
-    
-    for(i=0;i<nx+2*boundary;i++)
-        U[i] = 0;
-    
-    return U+boundary;
+PosInf odc::data::Alloc1P( int_pt nx, int_pt boundary ) {
+  int_pt i;
+  PosInf U = (PosInf)malloc( sizeof( int ) * (nx + 2 * boundary) );
+
+  if( !U ) {
+    std::cerr << "Cannot allocate 1D integer array\n";
+    exit(-1);
+  }
+
+  for( i = 0; i < nx + 2 * boundary; i++ )
+    U[i] = 0;
+
+  return U + boundary;
 }
 
 /**
@@ -216,16 +181,14 @@ PosInf odc::data::Alloc1P(int_pt nx, int_pt boundary)
  
  @warning If @c U is not either @c NULL or a pointer that was allocated from a call to @c Alloc3D then this will cause a memory leak.
  */
-void odc::data::Delloc3D(Grid3D U, int_pt boundary)
-{
-    if (U-boundary)
-    {
-        free(U-boundary);
-        U -= boundary;
-        U = NULL;
-    }
-    
-    return;
+void odc::data::Delloc3D( Grid3D U, int_pt boundary ) {
+  if( U - boundary ) {
+    free( U - boundary );
+    U -= boundary;
+    U = NULL;
+  }
+
+  return;
 }
 
 /**
@@ -235,16 +198,14 @@ void odc::data::Delloc3D(Grid3D U, int_pt boundary)
  
  @warning If @c U is not either @c NULL or a pointer that was allocated from a call to @c Alloc3Dww then this will cause a memory leak.
  */
-void odc::data::Delloc3Dww(Grid3Dww U, int_pt boundary)
-{
-    if (U-boundary)
-    {
-        free(U-boundary);
-        U -= boundary;
-        U = NULL;
-    }
-    
-    return;
+void odc::data::Delloc3Dww( Grid3Dww U, int_pt boundary ) {
+  if( U - boundary ) {
+    free( U - boundary );
+    U -= boundary;
+    U = NULL;
+  }
+
+  return;
 }
 
 /**
@@ -254,16 +215,14 @@ void odc::data::Delloc3Dww(Grid3Dww U, int_pt boundary)
  
  @warning If @c U is not either @c NULL or a pointer that was allocated from a call to @c Alloc1D then this will cause a memory leak.
  */
-void odc::data::Delloc1D(Grid1D U, int_pt boundary)
-{
-    if (U-boundary)
-    {
-        free(U-boundary);
-        U -= boundary;
-        U= NULL;
-    }
-    
-    return;
+void odc::data::Delloc1D( Grid1D U, int_pt boundary ) {
+  if( U - boundary ) {
+    free( U - boundary );
+    U -= boundary;
+    U = NULL;
+  }
+
+  return;
 }
 
 /**
@@ -273,21 +232,15 @@ void odc::data::Delloc1D(Grid1D U, int_pt boundary)
  
  @warning If @c U is not either @c NULL or a pointer that was allocated from a call to @c Alloc1P then this will cause a memory leak.
  */
-void odc::data::Delloc1P(PosInf U, int_pt boundary)
-{
-    if (U-boundary)
-    {
-        free(U-boundary);
-        U -= boundary;
-        U = NULL;
-    }
-    
-    return;
+void odc::data::Delloc1P( PosInf U, int_pt boundary ) {
+  if( U - boundary ) {
+    free( U - boundary );
+    U -= boundary;
+    U = NULL;
+  }
+
+  return;
 }
-
-
-
-
 
 /**
  Allocates and returns pointer to three dimensional grid structure of @c float 's. All of the values
@@ -302,32 +255,30 @@ void odc::data::Delloc1P(PosInf U, int_pt boundary)
  
  @warning Terminates with exit code -1 if unable to allocate requested memory.
  */
-Grid3D odc::data::Alloc3D(int_pt nx, int_pt ny, int_pt nz)
-{
-    int_pt i, j, k;
-    Grid3D U = (Grid3D)malloc(sizeof(float**)*nx + sizeof(float *)*nx*ny +sizeof(float)*nx*ny*nz);
-    
-    if (!U){
-        printf("Cannot allocate 3D float array\n");
-        exit(-1);
-    }
-    for(i=0;i<nx;i++){
-        U[i] = ((float**) U) + nx + i*ny;
-    }
-    
-    float *Ustart = (float *) (U[nx-1] + ny);
-    for(i=0;i<nx;i++)
-        for(j=0;j<ny;j++)
-            U[i][j] = Ustart + i*ny*nz + j*nz;
-    
-    for(i=0;i<nx;i++)
-        for(j=0;j<ny;j++)
-            for(k=0;k<nz;k++)
-                U[i][j][k] = 0.0f;
-    
-    return U;
-}
+Grid3D odc::data::Alloc3D( int_pt nx, int_pt ny, int_pt nz ) {
+  int_pt i, j, k;
+  Grid3D U = (Grid3D)malloc( sizeof( float** ) * nx + sizeof( float * ) * nx * ny + sizeof( float ) * nx * ny * nz );
 
+  if( !U ) {
+    std::cerr << "Cannot allocate 3D float array\n";
+    exit(-1);
+  }
+
+  for( i = 0; i < nx; i++ )
+    U[i] = ((float**) U) + nx + i * ny;
+
+  float *Ustart = (float *) (U[nx-1] + ny);
+  for( i = 0; i < nx; i++ )
+    for( j = 0; j < ny; j++ )
+      U[i][j] = Ustart + i * ny * nz + j * nz;
+
+  for( i = 0; i < nx; i++ )
+    for( j = 0; j < ny; j++ )
+      for( k = 0; k < nz; k++ )
+        U[i][j][k] = 0.0f;
+
+  return U;
+}
 
 /**
  Allocates and returns pointer to three dimensional grid structure of @c int 's. All of the values are initialized to @c 0.
@@ -342,32 +293,30 @@ Grid3D odc::data::Alloc3D(int_pt nx, int_pt ny, int_pt nz)
  
  @warning Terminates with exit code -1 if unable to allocate requested memory.
  */
-Grid3Dww odc::data::Alloc3Dww(int_pt nx, int_pt ny, int_pt nz)
-{
-    int_pt i, j, k;
-    Grid3Dww U = (Grid3Dww)malloc(sizeof(int**)*nx + sizeof(int *)*nx*ny +sizeof(int)*nx*ny*nz);
-    
-    if (!U){
-        printf("Cannot allocate 3D int array\n");
-        exit(-1);
-    }
-    for(i=0;i<nx;i++){
-        U[i] = ((int**) U) + nx + i*ny;
-    }
-    
-    int *Ustart = (int *) (U[nx-1] + ny);
-    for(i=0;i<nx;i++)
-        for(j=0;j<ny;j++)
-            U[i][j] = Ustart + i*ny*nz + j*nz;
-    
-    for(i=0;i<nx;i++)
-        for(j=0;j<ny;j++)
-            for(k=0;k<nz;k++)
-                U[i][j][k] = 0;
-    
-    return U;
-}
+Grid3Dww odc::data::Alloc3Dww( int_pt nx, int_pt ny, int_pt nz ) {
+  int_pt i, j, k;
+  Grid3Dww U = (Grid3Dww)malloc( sizeof( int** ) * nx + sizeof( int * ) * nx * ny +sizeof( int ) * nx * ny * nz );
 
+  if( !U ) {
+    std::cerr << "Cannot allocate 3D int array\n";
+    exit(-1);
+  }
+
+  for( i = 0; i < nx; i++ )
+    U[i] = ((int**) U) + nx + i * ny;
+
+  int *Ustart = (int *) (U[nx-1] + ny);
+  for( i = 0; i < nx; i++ )
+    for( j = 0; j < ny; j++ )
+      U[i][j] = Ustart + i * ny * nz + j * nz;
+
+  for( i = 0; i < nx; i++ )
+    for( j = 0; j < ny; j++ )
+      for( k = 0; k < nz; k++ )
+        U[i][j][k] = 0;
+
+  return U;
+}
 
 /**
  Allocates and returns pointer to one dimensional grid structure of @c float 's. All of the values are initialized to 0.0f.
@@ -380,20 +329,19 @@ Grid3Dww odc::data::Alloc3Dww(int_pt nx, int_pt ny, int_pt nz)
  
  @warning Terminates with exit code -1 if unable to allocate requested memory.
  */
-Grid1D odc::data::Alloc1D(int_pt nx)
-{
-    int_pt i;
-    Grid1D U = (Grid1D)malloc(sizeof(float)*nx);
-    
-    if (!U){
-        printf("Cannot allocate 1D float array\n");
-        exit(-1);
-    }
-    
-    for(i=0;i<nx;i++)
-        U[i] = 0.0f;
-    
-    return U;
+Grid1D odc::data::Alloc1D( int_pt nx ) {
+  int_pt i;
+  Grid1D U = (Grid1D)malloc( sizeof( float ) * nx );
+
+  if( !U ) {
+    std::cerr << "Cannot allocate 1D float array\n";
+    exit(-1);
+  }
+
+  for( i = 0; i < nx; i++ )
+    U[i] = 0.0f;
+
+  return U;
 }
 
 /**
@@ -407,20 +355,19 @@ Grid1D odc::data::Alloc1D(int_pt nx)
  
  @warning Terminates with exit code -1 if unable to allocate requested memory.
  */
-PosInf odc::data::Alloc1P(int_pt nx)
-{
-    int_pt i;
-    PosInf U = (PosInf)malloc(sizeof(int)*nx);
-    
-    if (!U){
-        printf("Cannot allocate 1D integer array\n");
-        exit(-1);
-    }
-    
-    for(i=0;i<nx;i++)
-        U[i] = 0;
-    
-    return U;
+PosInf odc::data::Alloc1P( int_pt nx ) {
+  int_pt i;
+  PosInf U = (PosInf)malloc( sizeof( int ) * nx );
+
+  if( !U ) {
+    std::cerr << "Cannot allocate 1D integer array\n";
+    exit(-1);
+  }
+
+  for( i = 0; i < nx; i++ )
+    U[i] = 0;
+
+  return U;
 }
 
 /**
@@ -430,15 +377,13 @@ PosInf odc::data::Alloc1P(int_pt nx)
  
  @warning If @c U is not either @c NULL or a pointer that was allocated from a call to @c Alloc3D then this will cause a memory leak.
  */
-void odc::data::Delloc3D(Grid3D U)
-{
-    if (U)
-    {
-        free(U);
-        U = NULL;
-    }
-    
-    return;
+void odc::data::Delloc3D( Grid3D U ) {
+  if( U ) {
+    free( U );
+    U = NULL;
+  }
+
+  return;
 }
 
 /**
@@ -448,15 +393,13 @@ void odc::data::Delloc3D(Grid3D U)
  
  @warning If @c U is not either @c NULL or a pointer that was allocated from a call to @c Alloc3Dww then this will cause a memory leak.
  */
-void odc::data::Delloc3Dww(Grid3Dww U)
-{
-    if (U)
-    {
-        free(U);
-        U = NULL;
-    }
-    
-    return;
+void odc::data::Delloc3Dww( Grid3Dww U ) {
+  if( U ) {
+    free( U );
+    U = NULL;
+  }
+
+  return;
 }
 
 /**
@@ -466,15 +409,13 @@ void odc::data::Delloc3Dww(Grid3Dww U)
  
  @warning If @c U is not either @c NULL or a pointer that was allocated from a call to @c Alloc1D then this will cause a memory leak.
  */
-void odc::data::Delloc1D(Grid1D U)
-{
-    if (U)
-    {
-        free(U);
-        U = NULL;
-    }
-    
-    return;
+void odc::data::Delloc1D( Grid1D U ) {
+  if( U ) {
+    free( U );
+    U = NULL;
+  }
+
+  return;
 }
 
 /**
@@ -484,17 +425,14 @@ void odc::data::Delloc1D(Grid1D U)
  
  @warning If @c U is not either @c NULL or a pointer that was allocated from a call to @c Alloc1P then this will cause a memory leak.
  */
-void odc::data::Delloc1P(PosInf U)
-{
-    if (U)
-    {
-        free(U);
-        U = NULL;
-    }
-    
-    return;
+void odc::data::Delloc1P( PosInf U ) {
+  if( U ) {
+    free( U );
+    U = NULL;
+  }
+  
+  return;
 }
-
 
 /**
  Copies data from YASK RealvGrid to Grid3D data structure. Both structures must already
@@ -513,19 +451,14 @@ void odc::data::Delloc1P(PosInf U)
  @warning This copy operation uses scalar read/writes, so it will be SLOW. Only use
  for validation and testing!!
  */
-
 #ifdef USING_YASK
-void odc::data::CopyFromYASKGrid(Grid3D grid, RealvGridBase* yaskGrid,
-int_pt xStart, int_pt yStart, int_pt zStart,
-int_pt nx, int_pt ny, int_pt nz) {
-
-    for (int_pt i=xStart; i<xStart+nx; i++) {
-        for (int_pt j=yStart, j<yStart+ny; j++) {
-            for (int_pt k=zStart; k<zStart+nz; k++) {
-                grid[i][j][k] = yaskGrid->readElem(i, j, k, 0);
-            }
-        }
-    }
+void odc::data::CopyFromYASKGrid( Grid3D grid, RealvGridBase* yaskGrid,
+                                  int_pt xStart, int_pt yStart, int_pt zStart,
+                                  int_pt nx, int_pt ny, int_pt nz ) {
+  for( int_pt i = xStart; i < xStart + nx; i++ )
+    for( int_pt j = yStart, j < yStart + ny; j++ )
+      for( int_pt k = zStart; k < zStart + nz; k++ )
+        grid[i][j][k] = yaskGrid->readElem( i, j, k, 0 );
 }
 
 /**
@@ -545,20 +478,12 @@ int_pt nx, int_pt ny, int_pt nz) {
  @warning This copy operation uses scalar read/writes, so it will be SLOW. Only use
  for validation and testing!!
  */
-void odc::data::WriteToYASKGrid(Grid3D grid, RealvGridBase* yaskGrid,
+void odc::data::WriteToYASKGrid( Grid3D grid, RealvGridBase* yaskGrid,
                                  int_pt xStart, int_pt yStart, int_pt zStart,
-                                 int_pt nx, int_pt ny, int_pt nz) {
-
-    for (int_pt i=xStart; i<xStart+nx; i++) {
-        for (int_pt j=yStart, j<yStart+ny; j++) {
-            for (int_pt k=zStart; k<zStart+nz; k++) {
-                yaskGrid->writeElem(grid[i][j][k], i, j, k, 0);
-            }
-        }
-    }
+                                 int_pt nx, int_pt ny, int_pt nz ) {
+  for( int_pt i = xStart; i < xStart + nx; i++ )
+    for( int_pt j = yStart, j < yStart + ny; j++ )
+      for( int_pt k = zStart; k < zStart + nz; k++ )
+        yaskGrid->writeElem( grid[i][j][k], i, j, k, 0 );
 }
-
 #endif
-
-
-

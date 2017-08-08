@@ -1,4 +1,5 @@
 /**
+ @author Josh Tobin (rjtobin AT ucsd.edu)
  @author Rajdeep Konwar (rkonwar AT ucsd.edu)
  
  @section DESCRIPTION
@@ -20,16 +21,14 @@
 #ifndef OutputWriter_hpp
 #define OutputWriter_hpp
 
-#include "parallel/Mpi.hpp"
-
 #include <cstring>
 #include <cstdio>
-
-#include "io/OptionParser.h"
 
 #include "data/common.hpp"
 #include "data/SoA.hpp"
 #include "data/PatchDecomp.hpp"
+#include "OptionParser.h"
+#include "parallel/Mpi.hpp"
 
 namespace odc {
   namespace io {
@@ -41,8 +40,8 @@ namespace odc {
 
 class odc::io::ReceiverWriter {
 public:
-  ReceiverWriter(char *inputFileName, char *outputFileName, real deltaH, int_pt numZGridPoints);
-  void    writeReceiverOutputFiles(int_pt currentTimeStep, int_pt numTimestepsToSkip, PatchDecomp& i_ptchDec);
+  ReceiverWriter( char *inputFileName, char *outputFileName, real deltaH, int_pt numZGridPoints );
+  void    writeReceiverOutputFiles( int_pt currentTimeStep, int_pt numTimestepsToSkip, PatchDecomp& i_ptchDec );
   void    finalize();
 
 private:
@@ -69,14 +68,13 @@ private:
 
 class odc::io::CheckpointWriter {
 public:
-  CheckpointWriter(char *i_fileName, int_pt nd, int_pt numTimestepsToSkip,
-                   int_pt numZGridPoints);
+  CheckpointWriter( char *i_fileName, int_pt nd, int_pt numTimestepsToSkip, int_pt numZGridPoints );
 
-  void writeInitialStats(int_pt ntiskp, real dt, real dh, int_pt nxt, int_pt nyt, int_pt nzt,
-                         int_pt nt, real arbc, int_pt npc, int_pt nve, real fac, real q0, real ex, real fp,
-                         real vse_min, real vse_max, real vpe_min, real vpe_max, real dde_min, real dde_max);
+  void writeInitialStats( int_pt ntiskp, real dt, real dh, int_pt nxt, int_pt nyt, int_pt nzt,
+                          int_pt nt, real arbc, int_pt npc, int_pt nve, real fac, real q0, real ex, real fp,
+                          real vse_min, real vse_max, real vpe_min, real vpe_max, real dde_min, real dde_max );
 
-  void writeUpdatedStats(int_pt currentTimeStep, PatchDecomp& i_ptchDec);
+  void writeUpdatedStats( int_pt currentTimeStep, PatchDecomp& i_ptchDec );
   void finalize();
 
 private:
@@ -93,10 +91,10 @@ private:
 
 class odc::io::OutputWriter {
 public:
-  void update(int_pt i_timestep, PatchDecomp& i_ptchDec);
+  void update( int_pt i_timestep, PatchDecomp& i_ptchDec );
 
   void finalize();
-  OutputWriter(OptionParser i_options);
+  OutputWriter( OptionParser i_options );
 
 private:
   char m_filenamebasex[AWP_PATH_MAX];
@@ -145,12 +143,12 @@ private:
   real *m_velocityYWriteBuffer;
   real *m_velocityZWriteBuffer;
 
-  void calcRecordingPoints(int *rec_nbgx, int *rec_nedx,
-                           int *rec_nbgy, int *rec_nedy, int *rec_nbgz, int *rec_nedz,
-                           int *rec_nxt, int *rec_nyt, int *rec_nzt, MPI_Offset *displacement,
-                           long int nxt, long int nyt, long int nzt, int rec_NX, int rec_NY, int rec_NZ,
-                           int NBGX, int NEDX, int NSKPX, int NBGY, int NEDY, int NSKPY,
-                           int NBGZ, int NEDZ, int NSKPZ, int *coord);
+  void calcRecordingPoints( int *rec_nbgx, int *rec_nedx,
+                            int *rec_nbgy, int *rec_nedy, int *rec_nbgz, int *rec_nedz,
+                            int *rec_nxt, int *rec_nyt, int *rec_nzt, MPI_Offset *displacement,
+                            long int nxt, long int nyt, long int nzt, int rec_NX, int rec_NY, int rec_NZ,
+                            int NBGX, int NEDX, int NSKPX, int NBGY, int NEDY, int NSKPY,
+                            int NBGZ, int NEDZ, int NSKPZ, int *coord );
 };
 
 #endif /* OutputWriter_hpp */
