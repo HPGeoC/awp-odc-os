@@ -5,7 +5,7 @@
  Main file.
  
  @section LICENSE
- Copyright (c) 2016, Regents of the University of California
+ Copyright (c) 2016-2017, Regents of the University of California
  All rights reserved.
  
  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -20,50 +20,49 @@
 #ifndef GRID_HPP
 #define GRID_HPP
 
+#include <cstdlib>
+#include <cstdio>
+#include <cstdint>
+#include <iostream>
+
+#ifdef YASK
+#include <numa.h>
+#endif
+
 #include "constants.hpp"
 
 namespace odc {
-    namespace data {
-        
-      Grid3D Alloc3D(int_pt nx, int_pt ny, int_pt nz, int_pt boundary, bool use_hbw=false);
-        
-        Grid3Dww Alloc3Dww(int_pt nx, int_pt ny, int_pt nz, int_pt boundary);
-        Grid1D Alloc1D(int_pt nx, int_pt boundary);
-        PosInf Alloc1P(int_pt nx, int_pt boundary);
-        
-        void Delloc3D(Grid3D U, int_pt boundary);
-        void Delloc3Dww(Grid3Dww U, int_pt boundary);
-        void Delloc1D(Grid1D U, int_pt boundary);
-        void Delloc1P(PosInf U, int_pt boundary);
-        
-        
-        Grid3D Alloc3D(int_pt nx, int_pt ny, int_pt nz);
-        Grid3Dww Alloc3Dww(int_pt nx, int_pt ny, int_pt nz);
-        Grid1D Alloc1D(int_pt nx);
-        PosInf Alloc1P(int_pt nx);
-        
-        void Delloc3D(Grid3D U);
-        void Delloc3Dww(Grid3Dww U);
-        void Delloc1D(Grid1D U);
-        void Delloc1P(PosInf U);
+  namespace data {
+  Grid3D    Alloc3D( int_pt nx, int_pt ny, int_pt nz, int_pt boundary, bool use_hbw = false );
 
+  Grid3Dww  Alloc3Dww( int_pt nx, int_pt ny, int_pt nz, int_pt boundary );
+  Grid1D    Alloc1D( int_pt nx, int_pt boundary );
+  PosInf    Alloc1P( int_pt nx, int_pt boundary );
+
+  void      Delloc3D( Grid3D U, int_pt boundary );
+  void      Delloc3Dww( Grid3Dww U, int_pt boundary );
+  void      Delloc1D( Grid1D U, int_pt boundary );
+  void      Delloc1P( PosInf U, int_pt boundary );
+
+  Grid3D    Alloc3D( int_pt nx, int_pt ny, int_pt nz );
+  Grid3Dww  Alloc3Dww( int_pt nx, int_pt ny, int_pt nz );
+  Grid1D    Alloc1D( int_pt nx );
+  PosInf    Alloc1P( int_pt nx );
+
+  void      Delloc3D( Grid3D U );
+  void      Delloc3Dww( Grid3Dww U );
+  void      Delloc1D( Grid1D U );
+  void      Delloc1P( PosInf U );
 
 #ifdef USING_YASK
-        void CopyFromYASKGrid(Grid3D grid, RealvGridBase* yaskGrid,
-                              int_pt xStart, int_pt yStart, int_pt zStart,
-                              int_pt nx, int_pt ny, int_pt nz);
-        void WriteToYASKGrid(Grid3D grid, RealvGridBase* yaskGrid,
-                             int_pt xStart, int_pt yStart, int_pt zStart,
-                             int_pt nx, int_pt ny, int_pt nz);
+  void CopyFromYASKGrid( Grid3D grid, RealvGridBase* yaskGrid,
+                         int_pt xStart, int_pt yStart, int_pt zStart,
+                         int_pt nx, int_pt ny, int_pt nz );
+  void WriteToYASKGrid( Grid3D grid, RealvGridBase* yaskGrid,
+                        int_pt xStart, int_pt yStart, int_pt zStart,
+                        int_pt nx, int_pt ny, int_pt nz );
 #endif
-        
-    }
+  }
 }
-
-
-
-
-
-
 
 #endif /* Grid_hpp */

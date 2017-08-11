@@ -184,19 +184,20 @@ void inimesh(int MEDIASTART, Grid3D d1, Grid3D mu, Grid3D lam, Grid3D qp, Grid3D
           Grid1D tmpta = Alloc1D(nvar*nxt*nyt*nzt);
           if(MEDIASTART==3 || (PX==1 && PY==1))
           {
-             FILE   *file;
-             file = fopen(filename,"rb");
-             if(!file)
-             {
-                printf("can't open file %s", filename);
-                return;
-             }
-             if(!fread(tmpta,sizeof(float),nvar*nxt*nyt*nzt,file))
-             {
-                printf("can't read file %s", filename);
-                return;
-             }
-             //printf("%d) 0-0-0,1-10-3=%f, %f\n",rank,tmpta[0],tmpta[1+10*nxt+3*nxt*nyt]);
+            FILE   *file;
+            file = fopen(filename,"rb");
+            if(!file)
+            {
+              printf("can't open file %s", filename);
+              return;
+            }
+            if(!fread(tmpta,sizeof(float),nvar*nxt*nyt*nzt,file))
+            {
+              printf("can't read file %s", filename);
+              fclose( file );
+              return;
+            }
+            //printf("%d) 0-0-0,1-10-3=%f, %f\n",rank,tmpta[0],tmpta[1+10*nxt+3*nxt*nyt]);
           }
           else{
 //            printf("%d) Media file will be read using MPI-IO\n", rank);

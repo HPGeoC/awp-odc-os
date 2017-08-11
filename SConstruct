@@ -40,7 +40,7 @@ vars.AddVariables(
   EnumVariable( 'mode',
                 'compile mode',
                 'release',
-                 allowed_values=( 'release', 'debug' )
+                 allowed_values=( 'release', 'debug', 'asan' )
               ),
   BoolVariable( 'cov',
                 'enable code coverage',
@@ -80,38 +80,25 @@ if 'CXXFLAGS' in env['ENV'].keys():
 if 'LINKFLAGS' in env['ENV'].keys():
   env['LINKFLAGS'] = env['ENV']['LINKFLAGS']
 
-# detect compilers
-try:
-  compVer = subprocess.check_output( [env['CXX'], "--version"] )
-except:
-  compVer = 'unknown'
-if( 'g++' in compVer ):
-  compilers='gnu'
-elif( 'icpc' in compVer ):
-  compilers='intel'
-elif( 'clang' in compVer):
-  compilers='clang'
-else:
-  compilers='gnu'
-  print '  no compiler detected'
-env['compilers']=compilers
-print '  using', compilers, 'as compiler suite'
-
 # set compiler and CPU architecture
 if env['cpu_arch'] == 'host':
-  if compilers == 'intel':
+  if env['CXX'] == 'icpc' or env['CXX'] == 'mpiicpc':
     env.Append( CPPFLAGS = ['-xHost'] )
-  elif compilers == 'intel':
+  elif 'g++' in env['CXX'] or 'mpicxx' == env['CXX']:
     env.Append( CPPFLAGS = ['-march=native'] )
 if env['cpu_arch'] == 'snb':
   env.Append( CPPFLAGS = ['-mavx'] )
 elif env['cpu_arch'] == 'hsw':
-  env.Append( CPPFLAGS = ['-march=core-avx2'] )
+  env.Append( CPPFLAGS = ['-mavx2'] )
 elif env['cpu_arch'] == 'knl':
-  if compilers == 'gnu':
+  if 'g++' in env['CXX'] or 'mpicxx' in env['CXX'] or 'mpiCC' in env['CXX']:
     env.Append( CPPFLAGS = ['-mavx512f', '-mavx512cd', '-mavx512er', '-mavx512pf'] )
   else:
-    env.Append( CPPFLAGS = ['-xHost'] ) 
+    env.Append( CPPFLAGS = ['-xHost'] )
+
+if 'clang' in env['CXX']:
+  env.Append( CPPFLAGS = ['-fopenmp=libiomp5'] )
+  env.Append( LINKFLAGS = ['-fopenmp=libiomp5'] )
 
 # add cuda support if requested
 if env['parallelization'] in ['cuda', 'mpi_cuda' ]:
@@ -134,13 +121,11 @@ elif env['parallelization'] in ['mpi_cuda']:
   env.Append( CPPDEFINES = ['USE_MPI'] )
 elif env['parallelization'] in ['mpi_omp']:
   env.Append( CPPDEFINES = ['AWP_USE_MPI'] )
-  env.Append( CPPDEFINES = ['ALIGNMENT=64'] )
-  env.Append( CPPFLAGS = ['-fopenmp'])
+  env.Append( CPPFLAGS = ['-fopenmp'] )
   env.Append( LINKFLAGS = ['-fopenmp'] )
 elif env['parallelization'] in ['mpi_omp_yask']:
   env.Append( CPPDEFINES = ['AWP_USE_MPI'] )
   env.Append( CPPDEFINES = ['YASK',
-                            'ALIGNMENT=64',
                             'REAL_BYTES=4',
                             'LAYOUT_3D=Layout_123',
                             'LAYOUT_4D=Layout_1234',
@@ -153,9 +138,10 @@ elif env['parallelization'] in ['mpi_omp_yask']:
     env.Append( CPPDEFINES = ['USE_INTRIN256'] )
   env.Append( CPPFLAGS = ['-fopenmp'] )
   env.Append( LINKFLAGS = ['-fopenmp'] )
-  if not conf.CheckLibWithHeader( 'numa', 'numa.h', 'cxx' ):
-    print( 'Did not find libnuma.a or numa.lib, exiting!' )
-    Exit( 1 )
+  if 'icpc' in env['CXX']:
+    if not conf.CheckLibWithHeader( 'numa', 'numa.h', 'cxx' ):
+      print( 'Did not find libnuma.a or numa.lib, exiting!' )
+      Exit( 1 )
 
 # add current path to seach path
 env.Append( CPPPATH = [Dir('#.').path, Dir('#./src')] )
@@ -170,7 +156,7 @@ else:
   env.Append( CXXFLAGS = ['-O3'] )
 
 # add sanitizers
-if 'san' in  env['mode']:
+if 'asan' in  env['mode']:
   env.Append( CXXFLAGS =  ['-g', '-fsanitize=address', '-fsanitize=undefined', '-fno-omit-frame-pointer'] )
   env.Append( LINKFLAGS = ['-g', '-fsanitize=address', '-fsanitize=undefined'] )
 

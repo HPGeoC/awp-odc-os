@@ -21,16 +21,18 @@
 #define SOURCES_H_
 
 #include <cmath>
+#include <fstream>
+#include <iostream>
+#include <mpi.h>
+#include <stdio.h>
 
-// TODO: Required for sources
+#include "constants.hpp"
+#include "data/Grid.hpp"
+#include "data/PatchDecomp.hpp"
 #include "parallel/Mpi.hpp"
 
-#include "data/PatchDecomp.hpp"
-#include "constants.hpp"
-
-extern "C" int inisource(int     IFAULT, int     NSRC,   int     READ_STEP, int     NST,     int     *SRCPROC, int     maxdim,   int    *NPSRC, int_pt NZ,
-                         PosInf   *ptpsrc, Grid1D  *ptaxx, Grid1D  *ptayy, Grid1D  *ptazz,    Grid1D  *ptaxz,  Grid1D  *ptayz,   Grid1D *ptaxy, char *INSRC, char *INSRC_I2);
-
+extern "C" int inisource( int IFAULT, int NSRC, int READ_STEP, int NST, int *SRCPROC, int maxdim, int *NPSRC, int_pt NZ, PosInf *ptpsrc,
+                          Grid1D *ptaxx, Grid1D *ptayy, Grid1D *ptazz, Grid1D *ptaxz, Grid1D *ptayz, Grid1D *ptaxy, char *INSRC, char *INSRC_I2 );
 
 namespace odc {
   namespace io {
@@ -39,63 +41,68 @@ namespace odc {
 }
 
 class odc::io::Sources {
-  public:
-    // If one or more fault source nodes present, @c SRCPROC is set to rank (MPI). -1 otherwise
-    int m_srcProc;
+public:
+  //! If one or more fault source nodes present, @c SRCPROC is set to rank (MPI). -1 otherwise
+  int     m_srcProc;
 
-    // Number of fault source nodes owned by calling process.
-    int m_nPsrc;
+  //! Number of fault source nodes owned by calling process.
+  int     m_nPsrc;
 
-    // indices of nodes owned by calling process that are fault sources \n
-    // <tt>psrc[i*maxdim]</tt>   = x node index of source fault @c i \n
-    // <tt>psrc[i*maxdim+1]</tt> = y node index of source fault @c i \n
-    // <tt>psrc[i*maxdim+2]</tt> = z node index of source fault @c i
-    PosInf m_ptpSrc;
+  /**
+    indices of nodes owned by calling process that are fault sources \n
+    <tt>psrc[i*maxdim]</tt>   = x node index of source fault @c i \n
+    <tt>psrc[i*maxdim+1]</tt> = y node index of source fault @c i \n
+    <tt>psrc[i*maxdim+2]</tt> = z node index of source fault @c i
+  */
+  PosInf  m_ptpSrc;
 
-    // Pointers to the location of each source node's stress components.
-    // This approach might seem unnecessarily dangerous, but source terms
-    // can exist either inside a plain 3d array, a YASK array, or a boundary
-    // MPI array.  This approach unifies the later code, and avoids costly
-    // lookups during the main loop.
-    real** m_locStrXX;
-    real** m_locStrXY;
-    real** m_locStrXZ;
-    real** m_locStrYY;
-    real** m_locStrYZ;
-    real** m_locStrZZ;
+  /**
+    Pointers to the location of each source node's stress components.
+    This approach might seem unnecessarily dangerous, but source terms
+    can exist either inside a plain 3d array, a YASK array, or a boundary
+    MPI array.  This approach unifies the later code, and avoids costly
+    lookups during the main loop.
+  */
+  real**  m_locStrXX;
+  real**  m_locStrXY;
+  real**  m_locStrXZ;
+  real**  m_locStrYY;
+  real**  m_locStrYZ;
+  real**  m_locStrZZ;
 
-    // TODO: documentation
-    Grid1D m_ptAxx;
-    Grid1D m_ptAyy;
-    Grid1D m_ptAzz;
+  //! TODO: documentation
+  Grid1D  m_ptAxx;
+  Grid1D  m_ptAyy;
+  Grid1D  m_ptAzz;
 
-    // TODO: documentation
-    Grid1D m_ptAxy;
-    Grid1D m_ptAxz;
-    Grid1D m_ptAyz;
+  //! TODO: documentation
+  Grid1D  m_ptAxy;
+  Grid1D  m_ptAxz;
+  Grid1D  m_ptAyz;
 
-    // Disable default constructor
-    Sources() = delete;
+  //! Disable default constructor
+  Sources() = delete;
 
-    // Constructor: Initializes the sources.
-    Sources( int   i_iFault,
-             int   i_nSrc,
-             int   i_readStep,
-             int   i_nSt,
-             int_pt   i_nZ,
-             int   i_nXt, int i_nYt, int i_nZt,
-             char *i_inSrc,
-             char *i_inSrcI2,
-             PatchDecomp& i_pd);
+  //! Constructor: Initializes the sources.
+  Sources( int           i_iFault,
+           int           i_nSrc,
+           int           i_readStep,
+           int           i_nSt,
+           int_pt        i_nZ,
+           int           i_nXt, int i_nYt, int i_nZt,
+           char*         i_inSrc,
+           char*         i_inSrcI2,
+           PatchDecomp&  i_pd );
 
-    ~Sources();
-  
-    // Add source to all stress components at time step i, DH, DT, NST, READ_STEP all
-    // correspond to the eponymous input parameters.  dim is number of dimensions
-    // (always 3), pd is the PatchDecomposition for this rank.
-    // TODO: remove the dim parameter, this is always going to be 3.
-    void addsrc(int_pt i, float DH,   float DT,   int NST,  int READ_STEP, int dim, PatchDecomp& pd);
-    
+  ~Sources();
+
+  /**
+    Add source to all stress components at time step i, DH, DT, NST, READ_STEP all
+    correspond to the eponymous input parameters.  dim is number of dimensions
+    (always 3), pd is the PatchDecomposition for this rank.
+    TODO: remove the dim parameter, this is always going to be 3.
+  */
+  void addsrc( int_pt i, float DH, float DT, int NST, int READ_STEP, int dim, PatchDecomp& pd );
 };
 
 #endif
