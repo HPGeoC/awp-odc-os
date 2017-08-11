@@ -1,6 +1,4 @@
 /**
- @author Rajdeep Konwar (rkonwar AT ucsd.edu)
- 
  @section DESCRIPTION
  Process Command Line.
 
@@ -76,60 +74,76 @@
 ****************************************************************************************************************
 */
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <getopt.h>
-#include <math.h>
-#include <string.h>
 #include "constants.hpp"
 
+#include <getopt.h>
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 //! Default IN3D Values
-const float def_TMAX          = 20.00;
-const float def_DH            = 200.0;
-const float def_DT            = 0.01; 
-const float def_ARBC          = 0.92;
-const float def_PHT           = 0.1;
+const float def_TMAX                      = 20.00;
+const float def_DH                        = 200.0;
+const float def_DT                        = 0.01; 
+const float def_ARBC                      = 0.92;
+const float def_PHT                       = 0.1;
 
-const int   def_NPC           = 0;
-const int   def_ND            = 20;
-const int   def_NSRC          = 1;
-const int   def_NST           = 91;
-const int   def_NVAR          = 3;
+const int   def_NPC                       = 0;
+const int   def_ND                        = 20;
+const int   def_NSRC                      = 1;
+const int   def_NST                       = 91;
+const int   def_NVAR                      = 3;
 
-const int   def_NVE           = 1;
-const int   def_MEDIASTART    = 0;
-const int   def_IFAULT        = 1; 
-const int   def_READ_STEP     = 91;
-const int   def_READ_STEP_GPU = 91;
+const int   def_NVE                       = 1;
+const int   def_MEDIASTART                = 0;
+const int   def_IFAULT                    = 1;
+const int   def_READ_STEP                 = 91;
+const int   def_READ_STEP_GPU             = 91;
 
-const int   def_NTISKP        = 10;
-const int   def_WRITE_STEP    = 10;
+const int   def_NTISKP                    = 10;
+const int   def_WRITE_STEP                = 10;
 
-const int   def_NX            = 224;
-const int   def_NY            = 224; 
-const int   def_NZ            = 1024;
+const int   def_NX                        = 224;
+const int   def_NY                        = 224; 
+const int   def_NZ                        = 1024;
 
-const int   def_PX            = 1;
-const int   def_PY            = 1;
+const int   def_PX                        = 1;
+const int   def_PY                        = 1;
 
-const int   def_NBGX          = 1;
-const int   def_NEDX          = -1;   //! use -1 for all
-const int   def_NSKPX         = 1;
-const int   def_NBGY          = 1;
-const int   def_NEDY          = -1;   //! use -1 for all
-const int   def_NSKPY         = 1;
-const int   def_NBGZ          = 1;
-const int   def_NEDZ          = 1;    //! only surface
-const int   def_NSKPZ         = 1;
+const int   def_NBGX                      = 1;
+const int   def_NEDX                      = -1;   //! use -1 for all
+const int   def_NSKPX                     = 1;
+const int   def_NBGY                      = 1;
+const int   def_NEDY                      = -1;   //! use -1 for all
+const int   def_NSKPY                     = 1;
+const int   def_NBGZ                      = 1;
+const int   def_NEDZ                      = 1;    //! only surface
+const int   def_NSKPZ                     = 1;
 
-const int   def_IDYNA         = 0;
-const int   def_SoCalQ        = 1;
+const int   def_IDYNA                     = 0;
+const int   def_SoCalQ                    = 1;
 
-const float def_FAC           = 0.005;
-const float def_Q0            = 5.0;
-const float def_EX            = 0.0;
-const float def_FP            = 2.5;
+const float def_FAC                       = 0.005;
+const float def_Q0                        = 5.0;
+const float def_EX                        = 0.0;
+const float def_FP                        = 2.5;
 
+const char  def_INSRC[AWP_PATH_MAX]       = "";
+const char  def_INVEL[AWP_PATH_MAX]       = "";
+
+const char  def_OUT[AWP_PATH_MAX]         = "";
+
+const char  def_INSRC_TPSRC[AWP_PATH_MAX] = "";
+const char  def_INSRC_I2[AWP_PATH_MAX]    = "";
+
+const char  def_CHKFILE[AWP_PATH_MAX]     = "";
+
+const char  def_INRCVR[AWP_PATH_MAX]      = "";
+const char  def_OUTRCVR[AWP_PATH_MAX]     = "";
+
+//! Raj: commented default paths..do we need these?
+/**
 const char  def_INSRC[AWP_PATH_MAX]       = "input/FAULTPOW";
 const char  def_INVEL[AWP_PATH_MAX]       = "input/media";
 
@@ -142,6 +156,7 @@ const char  def_CHKFILE[AWP_PATH_MAX]     = "output_sfc/CHKP";
 
 const char  def_INRCVR[AWP_PATH_MAX]      = "input/receiverList.txt";
 const char  def_OUTRCVR[AWP_PATH_MAX]     = "output_sfc/receiverOutput";
+*/
 
 /**
  Reads command line arguments and assigns them to corresponding variables.
@@ -217,19 +232,17 @@ const char  def_OUTRCVR[AWP_PATH_MAX]     = "output_sfc/receiverOutput";
  
  @warning All file names must be under 50 characters in length!!!
  */
-void command(int argc,    char **argv,
-             float *TMAX, float *DH,       float *DT,   float *ARBC,    float *PHT,
-             int *NPC,    int *ND,         int *NSRC,   int *NST,       int *NVAR,
-             int *NVE,    int *MEDIASTART, int *IFAULT, int *READ_STEP, int *READ_STEP_GPU,
-             int *NTISKP, int *WRITE_STEP,
-             int *NX,     int *NY,         int *NZ,     int *PX,        int *PY,
-             int *NBGX,   int *NEDX,       int *NSKPX, 
-             int *NBGY,   int *NEDY,       int *NSKPY, 
-             int *NBGZ,   int *NEDZ,       int *NSKPZ, 
-             float *FAC,   float *Q0,      float *EX,   float *FP,      int *IDYNA,     int *SoCalQ,
-             char *INSRC, char *INVEL,     char *OUT,   char *INSRC_I2, char *CHKFILE,  char *INRCVR,   char *OUTRCVR )
-{
-
+void command( int argc,    char **argv,
+              float *TMAX, float *DH,       float *DT,   float *ARBC,    float *PHT,
+              int *NPC,    int *ND,         int *NSRC,   int *NST,       int *NVAR,
+              int *NVE,    int *MEDIASTART, int *IFAULT, int *READ_STEP, int *READ_STEP_GPU,
+              int *NTISKP, int *WRITE_STEP,
+              int *NX,     int *NY,         int *NZ,     int *PX,        int *PY,
+              int *NBGX,   int *NEDX,       int *NSKPX, 
+              int *NBGY,   int *NEDY,       int *NSKPY, 
+              int *NBGZ,   int *NEDZ,       int *NSKPZ, 
+              float *FAC,   float *Q0,      float *EX,   float *FP,      int *IDYNA,     int *SoCalQ,
+              char *INSRC, char *INVEL,     char *OUT,   char *INSRC_I2, char *CHKFILE,  char *INRCVR,   char *OUTRCVR ) {
   // Fill in default values
   *TMAX           = def_TMAX;
   *DH             = def_DH;
@@ -333,13 +346,13 @@ void command(int argc,    char **argv,
   };
 
   //! If IFAULT=2 and INSRC is not set, then *INSRC = def_INSRC_TPSRC, not def_INSRC
-  int insrcIsSet = 0;
+  int insrcIsSet        = 0;
   //! If IFAULT=1 and READ_STEP_GPU is not set, it should be = READ_STEP
-  int readstepGpuIsSet = 0;
+  int readstepGpuIsSet  = 0;
   int c;
 
-  while ((c=getopt_long(argc, argv, optstring, long_options, NULL)) != -1) {
-    switch (c) {
+  while( (c = getopt_long( argc, argv, optstring, long_options, NULL )) != -1 ) {
+    switch( c ) {
       case 'T':
         *TMAX       = atof(optarg);     break;
       case 'H':
@@ -431,25 +444,24 @@ void command(int argc,    char **argv,
       case 'O':
         strcpy(OUTRCVR, optarg);        break;
       default:
-        printf("Usage: %s \nOptions:\n\t[(-T | --TMAX) <TMAX>]\n\t[(-H | --DH) <DH>]\n\t[(-t | --DT) <DT>]\n\t[(-A | --ARBC) <ARBC>]\n\t[(-P | --PHT) <PHT>]\n\t[(-M | --NPC) <NPC>]\n\t[(-D | --ND) <ND>]\n\t[(-S | --NSRC) <NSRC>]\n\t[(-N | --NST) <NST>]\n",argv[0]);
-        printf("\n\t[(-V | --NVE) <NVE>]\n\t[(-B | --MEDIASTART) <MEDIASTART>]\n\t[(-n | --NVAR) <NVAR>]\n\t[(-I | --IFAULT) <IFAULT>]\n\t[(-R | --READ_STEP) <x READ_STEP for CPU>]\n\t[(-Q | --READ_STEP_GPU) <READ_STEP for GPU>]\n");
-        printf("\n\t[(-X | --NX) <x length]\n\t[(-Y | --NY) <y length>]\n\t[(-Z | --NZ) <z length]\n\t[(-x | --NPX) <x processors]\n\t[(-y | --NPY) <y processors>]\n\t[(-z | --NPZ) <z processors>]\n");
-        printf("\n\t[(-1 | --NBGX) <starting point to record in X>]\n\t[(-2 | --NEDX) <ending point to record in X>]\n\t[(-3 | --NSKPX) <skipping points to record in X>]\n\t[(-11 | --NBGY) <starting point to record in Y>]\n\t[(-12 | --NEDY) <ending point to record in Y>]\n\t[(-13 | --NSKPY) <skipping points to record in Y>]\n\t[(-21 | --NBGZ) <starting point to record in Z>]\n\t[(-22 | --NEDZ) <ending point to record in Z>]\n\t[(-23 | --NSKPZ) <skipping points to record in Z>]\n");
-        printf("\n\t[(-i | --IDYNA) <i IDYNA>]\n\t[(-s | --SoCalQ) <s SoCalQ>]\n\t[(-l | --FAC) <l FAC>]\n\t[(-h | --Q0) <h Q0>]\n\t[(-30 | --EX) <e EX>]\n\t[(-p | --FP) <p FP>]\n\t[(-r | --NTISKP) <time skipping in writing>]\n\t[(-W | --WRITE_STEP) <time aggregation in writing>]\n");
-        printf("\n\t[(-100 | --INSRC) <source file>]\n\t[(-101 | --INVEL) <mesh file>]\n\t[(-o | --OUT) <output file>]\n\t[(-102 | --INSRC_I2) <split source file prefix (IFAULT=2)>]\n\t[(-c | --CHKFILE) <checkpoint file to write statistics>]\n\t[(-C | --INRCVR) <receiver list input file>]\n\t[(-O | --OUTRCVR) <receiver output log file>]\n\n");
-        exit(-1);
+        printf( "Usage: %s \nOptions:\n\t[(-T | --TMAX) <TMAX>]\n\t[(-H | --DH) <DH>]\n\t[(-t | --DT) <DT>]\n\t[(-A | --ARBC) <ARBC>]\n\t[(-P | --PHT) <PHT>]\n\t[(-M | --NPC) <NPC>]\n\t[(-D | --ND) <ND>]\n\t[(-S | --NSRC) <NSRC>]\n\t[(-N | --NST) <NST>]\n",argv[0] );
+        printf( "\n\t[(-V | --NVE) <NVE>]\n\t[(-B | --MEDIASTART) <MEDIASTART>]\n\t[(-n | --NVAR) <NVAR>]\n\t[(-I | --IFAULT) <IFAULT>]\n\t[(-R | --READ_STEP) <x READ_STEP for CPU>]\n\t[(-Q | --READ_STEP_GPU) <READ_STEP for GPU>]\n" );
+        printf( "\n\t[(-X | --NX) <x length]\n\t[(-Y | --NY) <y length>]\n\t[(-Z | --NZ) <z length]\n\t[(-x | --NPX) <x processors]\n\t[(-y | --NPY) <y processors>]\n\t[(-z | --NPZ) <z processors>]\n" );
+        printf( "\n\t[(-1 | --NBGX) <starting point to record in X>]\n\t[(-2 | --NEDX) <ending point to record in X>]\n\t[(-3 | --NSKPX) <skipping points to record in X>]\n\t[(-11 | --NBGY) <starting point to record in Y>]\n\t[(-12 | --NEDY) <ending point to record in Y>]\n\t[(-13 | --NSKPY) <skipping points to record in Y>]\n\t[(-21 | --NBGZ) <starting point to record in Z>]\n\t[(-22 | --NEDZ) <ending point to record in Z>]\n\t[(-23 | --NSKPZ) <skipping points to record in Z>]\n" );
+        printf( "\n\t[(-i | --IDYNA) <i IDYNA>]\n\t[(-s | --SoCalQ) <s SoCalQ>]\n\t[(-l | --FAC) <l FAC>]\n\t[(-h | --Q0) <h Q0>]\n\t[(-30 | --EX) <e EX>]\n\t[(-p | --FP) <p FP>]\n\t[(-r | --NTISKP) <time skipping in writing>]\n\t[(-W | --WRITE_STEP) <time aggregation in writing>]\n" );
+        printf( "\n\t[(-100 | --INSRC) <source file>]\n\t[(-101 | --INVEL) <mesh file>]\n\t[(-o | --OUT) <output file>]\n\t[(-102 | --INSRC_I2) <split source file prefix (IFAULT=2)>]\n\t[(-c | --CHKFILE) <checkpoint file to write statistics>]\n\t[(-C | --INRCVR) <receiver list input file>]\n\t[(-O | --OUTRCVR) <receiver output log file>]\n\n" );
+        exit( -1 );
     }
   }
 
   //! If IFAULT=2 and INSRC is not set, then *INSRC = def_INSRC_TPSRC, not def_INSRC
-  if(*IFAULT == 2 && !insrcIsSet) {
+  if( *IFAULT == 2 && !insrcIsSet ) {
     strcpy(INSRC, def_INSRC_TPSRC);
   }
 
-  if(!readstepGpuIsSet) {
+  if( !readstepGpuIsSet ) {
     *READ_STEP_GPU = *READ_STEP;
   }
 
   return;
 }
-

@@ -20,8 +20,6 @@
 
 #include "OptionParser.h"
 
-#include <iostream>
-
 extern "C" {
   void command( int argc,    char **argv,
                 float *TMAX, float *DH,       float *DT,   float *ARBC,    float *PHT,
@@ -77,7 +75,7 @@ odc::io::OptionParser::OptionParser( int i_argc, char **i_argv ) {
             m_inRcvr,
             m_outRcvr );
 
-  m_numTimesteps = (int_pt)((m_tMax/m_dT) + 1);
+  m_numTimesteps = (int_pt)((m_tMax / m_dT) + 1);
 
   //! print options
   // TODO: Log
