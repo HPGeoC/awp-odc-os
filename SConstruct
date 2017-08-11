@@ -93,6 +93,8 @@ elif env['cpu_arch'] == 'hsw':
 elif env['cpu_arch'] == 'knl':
   if 'g++' in env['CXX'] or 'mpicxx' in env['CXX'] or 'mpiCC' in env['CXX']:
     env.Append( CPPFLAGS = ['-mavx512f', '-mavx512cd', '-mavx512er', '-mavx512pf'] )
+  elif 'clang' in env['CXX']:
+    env.Append( CPPFLAGS = ['-march=knl'] )
   else:
     env.Append( CPPFLAGS = ['-xHost'] )
 

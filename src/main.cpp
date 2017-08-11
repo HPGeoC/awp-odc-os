@@ -488,6 +488,7 @@ int main( int i_argc, char *i_argv[] ) {
         patch_decomp.synchronize();
 
         // l_output.update(tstep, patch_decomp);
+
         if( l_rank == 0 )
           l_checkpoint.writeUpdatedStats( tstep, patch_decomp );
         l_receiver.writeReceiverOutputFiles( tstep, l_options.m_nTiSkp, patch_decomp );
@@ -497,7 +498,7 @@ int main( int i_argc, char *i_argv[] ) {
     if( l_omp.getThreadNumAll() == 0 && l_rank == 0 ) {
       double cur_time = wall_time();
       double avg = (cur_time - start_time) / (l_options.m_numTimesteps - start_ts);
-      std::cout << " done\nFinal time per timestep: " << avg <<  "; mpi time: " << mpi_time / l_options.m_numTimesteps << std::endl;
+      std::cout << " done\n\nFinal time per timestep: " << avg <<  "; mpi time: " << mpi_time / l_options.m_numTimesteps << std::endl;
       double mlups = (double) l_rangeX * (double) l_rangeY * (double) l_rangeZ / (avg * 1e6);
       std::cout << "Final MLUPS: " << mlups << std::endl;
     }

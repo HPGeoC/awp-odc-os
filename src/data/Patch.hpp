@@ -19,6 +19,8 @@
 
 #if !defined(PATCH_H)
 
+#include <cmath>
+
 #include "constants.hpp"
 #include "data/Grid.hpp"
 #include "data/SoA.hpp"

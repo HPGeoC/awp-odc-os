@@ -377,6 +377,7 @@ void odc::data::Mesh::inimesh( int       MEDIASTART,
           mu[offset]    = 1.0 / (dd * vs * vs);
           d1[offset]    = dd;
 #endif
+
           //! If viscoelastic (by default 1)
           if( NVE == 1 ) {
             qp[offset]  = i_inputBuffer[l_readOffset+3];

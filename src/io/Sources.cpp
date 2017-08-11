@@ -471,7 +471,7 @@ int inisource( int IFAULT, int NSRC, int READ_STEP, int NST, int *SRCPROC, int m
 
     in.open( INSRC );
     if( !in.is_open() ) {
-      std::cerr << "Error: Could not open source input file." << std::endl;
+      std::cerr << "Error: Could not open source input file " << INSRC << std::endl;
       return 1;
     }
 
