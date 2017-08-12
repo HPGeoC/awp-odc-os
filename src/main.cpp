@@ -52,7 +52,7 @@
 #include "util.hpp"
 
 int main( int i_argc, char *i_argv[] ) {
-  int     currentThreadId, numCompThreads;
+  int     currentThreadId, numCompThreads = 0;
   double  mpi_time = 0.0;
 
   //! parse options
@@ -71,7 +71,7 @@ int main( int i_argc, char *i_argv[] ) {
   const int_pt l_rangeZ   = odc::parallel::Mpi::m_rangeZ;
 
   if( l_rank == 0 )
-    std::cout << "Welcome to awp-odc-os\nCopyright (c) 2013-2017, Regents of the University of California\n\nStarting MPI... done" << std::endl;
+    std::cout << "Welcome to AWP-ODC-OS\nCopyright (c) 2013-2017, Regents of the University of California\n\nStarting MPI... done" << std::endl;
 
   //! initialize patches
   PatchDecomp patch_decomp;

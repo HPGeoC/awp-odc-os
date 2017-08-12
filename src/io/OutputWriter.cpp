@@ -306,7 +306,6 @@ odc::io::ReceiverWriter::ReceiverWriter( char *inputFileName, char *outputFileNa
   char    line[1024];               //! line read from receiver input file
 
   if( inputFileName != NULL && inputFileName[0] == '\0' ) {
-    std::cerr << "Warning: no receiver-list specified in input parameters!\n";
     m_numberOfReceivers = 0;
     return;
   }
