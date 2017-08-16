@@ -44,6 +44,8 @@ Grid3D odc::data::Alloc3D( int_pt nx, int_pt ny, int_pt nz, int_pt boundary, boo
   } else {
 #if defined YASK && !defined CACHE_MODE
     const unsigned int alignment = 4096;
+
+    //! Raj: numa_alloc_onnode throws memleak error; suppressing for now in inspxe (needs to be freed?)
     void *ptr = numa_alloc_onnode( sizeof( real** ) * (nx + 2 * boundary) +
                                    sizeof( real * ) * (nx + 2 * boundary) * (ny + 2 * boundary) +
                                    sizeof( real   ) * (nx + 2 * boundary) * (ny + 2 * boundary) * (nz + 2 * boundary) +
