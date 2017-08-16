@@ -145,21 +145,6 @@ void PatchDecomp::synchronize( bool allGrids ) {
     m_patches[i].synchronize( allGrids );
 }
 
-void PatchDecomp::finalize() {
-  delete[] m_patches;
-
-  for( int i = 0; i < m_numXPatches; i++ ) {
-    for( int j = 0; j < m_numYPatches; j++ )
-      delete[] m_coordToId[i][j];
-    delete[] m_coordToId[i];
-  }
-  delete[] m_coordToId;
-
-  delete[] m_idToGridX;
-  delete[] m_idToGridY;
-  delete[] m_idToGridZ;
-}
-
 int PatchDecomp::globalToPatch( int_pt x, int_pt y, int_pt z ) {
   int_pt patch_x = x / m_patchXSize;
   int_pt patch_y = y / m_patchYSize;
@@ -1268,4 +1253,19 @@ real PatchDecomp::getDde( bool max ) {
     return max_dde;
   else
     return min_dde;
+}
+
+void PatchDecomp::finalize() {
+  delete[] m_patches;
+
+  for( int i = 0; i < m_numXPatches; i++ ) {
+    for( int j = 0; j < m_numYPatches; j++ )
+      delete[] m_coordToId[i][j];
+    delete[] m_coordToId[i];
+  }
+  delete[] m_coordToId;
+
+  delete[] m_idToGridX;
+  delete[] m_idToGridY;
+  delete[] m_idToGridZ;
 }

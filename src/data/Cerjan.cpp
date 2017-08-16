@@ -114,6 +114,8 @@ void odc::data::Cerjan::inicrj( float ARBC,                                //! c
   return;
 }
 
-// TODO(Josh): looks like Cerjan is never freed?
 void odc::data::Cerjan::finalize() {
+  Delloc1D( m_spongeCoeffX, odc::constants::boundary );
+  Delloc1D( m_spongeCoeffY, odc::constants::boundary );
+  Delloc1D( m_spongeCoeffZ, odc::constants::boundary );
 }

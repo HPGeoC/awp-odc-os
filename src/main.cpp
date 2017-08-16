@@ -31,6 +31,8 @@
 #include <iostream>
 #include <omp.h>
 
+#include "constants.hpp"
+
 #include "data/SoA.hpp"
 #include "data/common.hpp"
 #include "data/Mesh.hpp"
@@ -48,7 +50,6 @@
 #include "parallel/Mpi.hpp"
 #include "parallel/OpenMP.h"
 
-#include "constants.hpp"
 #include "util.hpp"
 
 int main( int i_argc, char *i_argv[] ) {
