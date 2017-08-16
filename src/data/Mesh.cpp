@@ -63,7 +63,7 @@ void odc::data::Mesh::initialize( odc::io::OptionParser i_options, int_pt x, int
   m_mu              = odc::data::Alloc3D( totalX, totalY, totalZ, odc::constants::boundary );
   m_lam             = odc::data::Alloc3D( totalX, totalY, totalZ, odc::constants::boundary );
 #endif
-  m_lam_mu          = odc::data::Alloc3D(totalX, totalY, 1, odc::constants::boundary, true);
+  m_lam_mu          = odc::data::Alloc3D( totalX, totalY, 1, odc::constants::boundary, true );
 
   if( m_usingAnelastic ) {
     m_qp            = odc::data::Alloc3D(   totalX, totalY, totalZ, odc::constants::boundary );
@@ -193,27 +193,6 @@ void odc::data::Mesh::initialize( odc::io::OptionParser i_options, int_pt x, int
     odc::data::Delloc3Dww( m_weight_index, 2 );
   }
 #endif
-}
-
-void odc::data::Mesh::finalize() {
-#ifndef YASK
-  odc::data::Delloc3D( m_density, 2 );
-  odc::data::Delloc3D( m_lam, 2 );
-  odc::data::Delloc3D( m_mu, 2 );
-#endif
-  //odc::data::Delloc3D(m_lam_mu, 2);
-
-  if( m_usingAnelastic ) {
-#ifndef YASK
-    odc::data::Delloc3D( m_qp, 2 );
-    odc::data::Delloc3D( m_qs, 2 );
-    odc::data::Delloc3D( m_tau1, 2 );
-    odc::data::Delloc3D( m_tau2, 2 );
-    odc::data::Delloc3D( m_weights, 2 );
-    odc::data::Delloc3Dww( m_weight_index, 2 );
-#endif
-    Delloc1D( m_coeff );
-  }
 }
 
 void odc::data::Mesh::inimesh( int       MEDIASTART,
@@ -578,13 +557,13 @@ void odc::data::Mesh::inimesh( int       MEDIASTART,
           density_grid->writeElem( recvBuff2[5][k][i], i + bdry_width, -2 + bdry_width, k + bdry_width, 0 );
 #else
           //! Writes grid-properties (lambda, mu and density) for grid-points -1 from bottom-face in xy-plane
-          offset      = i * i_strideX + -1 * i_strideY + k * i_strideZ;
+          offset      = i * i_strideX - 1 * i_strideY + k * i_strideZ;
           lam[offset] = recvBuff2[0][k][j];
           mu[offset]  = recvBuff2[1][k][j];
           d1[offset]  = recvBuff2[2][k][j];
 
           //! Writes grid-properties (lambda, mu and density) for grid-points -2 from bottom-face in xy-plane
-          offset      = i * i_strideX + -2 * i_strideY + k * i_strideZ;
+          offset      = i * i_strideX - 2 * i_strideY + k * i_strideZ;
           lam[offset] = recvBuff2[3][k][j];
           mu[offset]  = recvBuff2[4][k][j];
           d1[offset]  = recvBuff2[5][k][j];
@@ -644,13 +623,13 @@ void odc::data::Mesh::inimesh( int       MEDIASTART,
           density_grid->writeElem( recvBuff2[5][k][i], i + bdry_width, nyt + 1 + bdry_width, k + bdry_width, 0 );
 #else
           //! Writes grid-properties (lambda, mu and density) for grid-points +1 (y-dir) from top-face (xz-plane)
-          offset      = i * i_strideX + 0 * i_strideY + k * i_strideZ;
+          offset      = i * i_strideX + (nyt + 0) * i_strideY + k * i_strideZ;
           lam[offset] = recvBuff2[0][k][j];
           mu[offset]  = recvBuff2[1][k][j];
           d1[offset]  = recvBuff2[2][k][j];
 
           //! Writes grid-properties (lambda, mu and density) for grid-points +2 (y-dir) from top-face (xz-plane)
-          offset      = i * i_strideX + 1 * i_strideY + k * i_strideZ;
+          offset      = i * i_strideX + (nyt + 1) * i_strideY + k * i_strideZ;
           lam[offset] = recvBuff2[3][k][j];
           mu[offset]  = recvBuff2[4][k][j];
           d1[offset]  = recvBuff2[5][k][j];
@@ -658,13 +637,6 @@ void odc::data::Mesh::inimesh( int       MEDIASTART,
         }
       }
     }
-
-//    m_vse[0] = min_vse;
-//    m_vse[1] = max_vse;
-//    m_vpe[0] = min_vpe;
-//    m_vpe[1] = max_vpe;
-//    m_dde[0] = min_dde;
-//    m_dde[1] = max_dde;
   }
 
   else {
@@ -905,13 +877,6 @@ void odc::data::Mesh::inimesh( int       MEDIASTART,
       }
     }
 
-//    m_vse[0] = min_vse;
-//    m_vse[1] = max_vse;
-//    m_vpe[0] = min_vpe;
-//    m_vpe[1] = max_vpe;
-//    m_dde[0] = min_dde;
-//    m_dde[1] = max_dde;
-
     Delloc3D( tmpvp );
     Delloc3D( tmpvs );
     Delloc3D( tmpdd );
@@ -922,6 +887,7 @@ void odc::data::Mesh::inimesh( int       MEDIASTART,
     }
   }
 
+  //! Getting max and min values of Vs, Vp and density across all MPIs
   MPI_Allreduce( &min_vse, &m_vse[0], 1, AWP_MPI_REAL, MPI_MIN, MPI_COMM_WORLD );
   MPI_Allreduce( &max_vse, &m_vse[1], 1, AWP_MPI_REAL, MPI_MAX, MPI_COMM_WORLD );
   MPI_Allreduce( &min_vpe, &m_vpe[0], 1, AWP_MPI_REAL, MPI_MIN, MPI_COMM_WORLD );
@@ -1525,5 +1491,26 @@ void odc::data::Mesh::set_boundaries(
         qs[h+i][h+j][h+k] = qs[h+i][h+j][h+k-1];
       }
     }
+  }
+}
+
+void odc::data::Mesh::finalize() {
+#ifndef YASK
+  odc::data::Delloc3D( m_density, odc::constants::boundary );
+  odc::data::Delloc3D( m_lam, odc::constants::boundary );
+  odc::data::Delloc3D( m_mu, odc::constants::boundary );
+  odc::data::Delloc3D( m_lam_mu, odc::constants::boundary );
+#endif
+
+  if( m_usingAnelastic ) {
+#ifndef YASK
+    odc::data::Delloc3D( m_qp, odc::constants::boundary );
+    odc::data::Delloc3D( m_qs, odc::constants::boundary );
+    odc::data::Delloc3D( m_tau1, odc::constants::boundary );
+    odc::data::Delloc3D( m_tau2, odc::constants::boundary );
+    odc::data::Delloc3D( m_weights, odc::constants::boundary );
+    odc::data::Delloc3Dww( m_weight_index, odc::constants::boundary );
+#endif
+    Delloc1D( m_coeff );
   }
 }

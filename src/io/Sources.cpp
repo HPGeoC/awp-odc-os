@@ -60,7 +60,7 @@ odc::io::Sources::Sources( int           i_iFault,
     int_pt idy = m_ptpSrc[j*dim+1]  - odc::parallel::Mpi::m_startY;
     int_pt idz = m_ptpSrc[j*dim+2]  - odc::parallel::Mpi::m_startZ;
 
-    //! TODO (Raj): BUG in this if loop...fix it
+    //! TODO (Raj): BUG in this if loop...fix it!!
     //! check if this source term is on one of the MPI boundaries
     //! PPP: are these upper bounds correct?
     if( idx < 0 || idx >= i_pd.m_numXGridPoints ||
@@ -169,19 +169,6 @@ odc::io::Sources::Sources( int           i_iFault,
     m_locStrYZ[j] = &i_pd.m_patches[patch_id].soa.m_stressYZ[x][y][z];
     m_locStrZZ[j] = &i_pd.m_patches[patch_id].soa.m_stressZZ[x][y][z];
 #endif
-  }
-}
-
-odc::io::Sources::~Sources() {
-  //! TODO(Josh): deal with other source term data
-
-  if( m_nPsrc > 0 ) {
-    delete[] m_locStrXX;
-    delete[] m_locStrXY;
-    delete[] m_locStrXZ;
-    delete[] m_locStrYY;
-    delete[] m_locStrYZ;
-    delete[] m_locStrZZ;
   }
 }
 
@@ -461,7 +448,7 @@ int inisource( int IFAULT, int NSRC, int READ_STEP, int NST, int *SRCPROC, int m
       *ptayz   = tayzp;
       *ptaxy   = taxyp;
   } else if( IFAULT == 2 ) {
-      std::cerr << "Error: IFAULT == 2 is not implemented in CPU version.  Please use IFAULT=1 instead" << std::endl;
+      std::cerr << "Error: IFAULT == 2 is not implemented in CPU version.  Please use IFAULT=1 instead\n";
       return 1;
   } else if( IFAULT == 3 ) {
     int boundary = 0, within = 0;
@@ -618,4 +605,23 @@ void odc::io::Sources::addsrc( int_pt i, float DH, float DT, int NST, int READ_S
     *sZZ      -= vtst * m_ptAzz[j*READ_STEP+i];
   }
   return;
+}
+
+odc::io::Sources::~Sources() {
+  odc::data::Delloc1P( m_ptpSrc );
+  odc::data::Delloc1D( m_ptAxx );
+  odc::data::Delloc1D( m_ptAyy );
+  odc::data::Delloc1D( m_ptAzz );
+  odc::data::Delloc1D( m_ptAxy );
+  odc::data::Delloc1D( m_ptAxz );
+  odc::data::Delloc1D( m_ptAyz );
+
+  if( m_nPsrc > 0 ) {
+    delete[] m_locStrXX;
+    delete[] m_locStrXY;
+    delete[] m_locStrXZ;
+    delete[] m_locStrYY;
+    delete[] m_locStrYZ;
+    delete[] m_locStrZZ;
+  }
 }
