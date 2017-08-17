@@ -21,451 +21,121 @@
 # Suppressions for Intel Inspector XE.
 ##
 
+##
+# Dynamic linker
+##
 suppression = {
-	type = {thread_start}
-	stacks = {
-		{
-			!!!;
-			func=_start,mod=ld-linux-x86-64.so.2,line=4576,func_line=4576;
-		}
-	}
+  type = {thread_start}
+  stacks = {
+    {
+      !!!;
+      func=_start,mod=ld-linux-x86-64.so.2;
+    }
+  }
+}
+
+##
+# Suppress posix_memalign memleak
+##
+suppression = {
+  type = {unreachable_memory_leak}
+  stacks = {
+    allocation={
+      !!!;
+      func=GenericGridBase,mod=pmcl3d,src=generic_grids.hpp;
+    }
+  }
+}
+
+##
+# Suppress not deleting after new (generated code)
+##
+suppression = {
+  type = {unreachable_memory_leak}
+  stacks = {
+    allocation={
+      !!!;
+      func=allocGrids,mod=pmcl3d,src=stencil_code.hpp;
+    }
+  }
 }
 suppression = {
-	type = {invalid_memory_access_partial}
-	stacks = {
-		{
-			!!!;
-			func=iPMI_Get_r2h_table,mod=libmpi.so.12,src=simple_pmi.c,line=1562,func_line=90;
-		}
-		allocation={
-			!!!;
-			func=iPMI_Get_r2h_table,mod=libmpi.so.12,src=simple_pmi.c,line=1523,func_line=51;
-		}
-	}
+  type = {unreachable_memory_leak}
+  stacks = {
+    allocation={
+      !!!;
+      func=allocParams,mod=pmcl3d,src=stencil_code.hpp;
+    }
+  }
+}
+
+##
+# Suppress numa_alloc_onnode memleak (needs to be freed?)
+##
+suppression = {
+  type = {unreachable_memory_leak}
+  stacks = {
+    allocation={
+      !!!;
+      func=Alloc3D,mod=pmcl3d,src=Grid.cpp;
+    }
+  }
+}
+
+##
+# Intel MPI
+##
+suppression = {
+  type = {invalid_memory_access_partial}
+  stacks = {
+    allocation={
+      !!!;
+      func=iPMI_Get_r2h_table,mod=libmpi.so.12,src=simple_pmi.c;
+    }
+  }
 }
 suppression = {
-	type = {invalid_memory_access_partial}
-	stacks = {
-		{
-			!!!;
-			func=iPMI_Get_r2h_table,mod=libmpi.so.12,src=simple_pmi.c,line=1568,func_line=96;
-		}
-		allocation={
-			!!!;
-			func=iPMI_Get_r2h_table,mod=libmpi.so.12,src=simple_pmi.c,line=1523,func_line=51;
-		}
-	}
+  type = {invalid_memory_access_partial}
+  stacks = {
+    allocation={
+      !!!;
+      func=MPID_nem_impi_create_numa_nodes_map,mod=libmpi.so.12,src=mpid_init.c;
+    }
+  }
 }
 suppression = {
-	type = {invalid_memory_access_partial}
-	stacks = {
-		{
-			!!!;
-			func=iPMI_Get_r2h_table,mod=libmpi.so.12,src=simple_pmi.c,line=1575,func_line=103;
-		}
-		allocation={
-			!!!;
-			func=iPMI_Get_r2h_table,mod=libmpi.so.12,src=simple_pmi.c,line=1523,func_line=51;
-		}
-	}
+  type = {invalid_call}
+  stacks = {
+    {
+      !!!;
+      func=MPID_nem_impi_create_numa_nodes_map,mod=libmpi.so.12,src=mpid_init.c;
+    }
+  }
 }
 suppression = {
-	type = {invalid_memory_access_partial}
-	stacks = {
-		{
-			!!!;
-			func=MPID_nem_impi_create_numa_nodes_map,mod=libmpi.so.12,src=mpid_init.c,line=345,func_line=174;
-		}
-		allocation={
-			!!!;
-			func=MPID_nem_impi_create_numa_nodes_map,mod=libmpi.so.12,src=mpid_init.c,line=282,func_line=111;
-		}
-	}
+  type = {reachable_memory_leak}
+  stacks = {
+    allocation={
+      !!!;
+      func=MPID_nem_impi_create_numa_nodes_map,mod=libmpi.so.12,src=mpid_init.c;
+    }
+  }
 }
 suppression = {
-	type = {invalid_call}
-	stacks = {
-		{
-			!!!;
-			func=MPID_nem_impi_create_numa_nodes_map,mod=libmpi.so.12,src=mpid_init.c,line=1207,func_line=1036;
-		}
-	}
+  type = {reachable_memory_leak}
+  stacks = {
+    allocation={
+      !!!;
+      func=I_MPI_Get_cpu_info,mod=libmpi.so.12,src=init_pinning.c;
+    }
+  }
 }
 suppression = {
-	type = {unreachable_memory_leak}
-	stacks = {
-		allocation={
-			!!!;
-			func=GenericGridBase,mod=pmcl3d,src=generic_grids.hpp,line=83,func_line=16;
-		}
-	}
-}
-suppression = {
-	type = {unreachable_memory_leak}
-	stacks = {
-		allocation={
-			!!!;
-			func=allocGrids,mod=pmcl3d,src=stencil_code.hpp,line=183,func_line=25;
-		}
-	}
-}
-suppression = {
-	type = {unreachable_memory_leak}
-	stacks = {
-		allocation={
-			!!!;
-			func=allocGrids,mod=pmcl3d,src=stencil_code.hpp,line=186,func_line=28;
-		}
-	}
-}
-suppression = {
-	type = {unreachable_memory_leak}
-	stacks = {
-		allocation={
-			!!!;
-			func=allocGrids,mod=pmcl3d,src=stencil_code.hpp,line=189,func_line=31;
-		}
-	}
-}
-suppression = {
-	type = {unreachable_memory_leak}
-	stacks = {
-		allocation={
-			!!!;
-			func=allocGrids,mod=pmcl3d,src=stencil_code.hpp,line=192,func_line=34;
-		}
-	}
-}
-suppression = {
-	type = {unreachable_memory_leak}
-	stacks = {
-		allocation={
-			!!!;
-			func=allocGrids,mod=pmcl3d,src=stencil_code.hpp,line=195,func_line=37;
-		}
-	}
-}
-suppression = {
-	type = {unreachable_memory_leak}
-	stacks = {
-		allocation={
-			!!!;
-			func=allocGrids,mod=pmcl3d,src=stencil_code.hpp,line=198,func_line=40;
-		}
-	}
-}
-suppression = {
-	type = {unreachable_memory_leak}
-	stacks = {
-		allocation={
-			!!!;
-			func=allocGrids,mod=pmcl3d,src=stencil_code.hpp,line=201,func_line=43;
-		}
-	}
-}
-suppression = {
-	type = {unreachable_memory_leak}
-	stacks = {
-		allocation={
-			!!!;
-			func=allocGrids,mod=pmcl3d,src=stencil_code.hpp,line=204,func_line=46;
-		}
-	}
-}
-suppression = {
-	type = {unreachable_memory_leak}
-	stacks = {
-		allocation={
-			!!!;
-			func=allocGrids,mod=pmcl3d,src=stencil_code.hpp,line=207,func_line=49;
-		}
-	}
-}
-suppression = {
-	type = {unreachable_memory_leak}
-	stacks = {
-		allocation={
-			!!!;
-			func=allocGrids,mod=pmcl3d,src=stencil_code.hpp,line=210,func_line=52;
-		}
-	}
-}
-suppression = {
-	type = {unreachable_memory_leak}
-	stacks = {
-		allocation={
-			!!!;
-			func=allocGrids,mod=pmcl3d,src=stencil_code.hpp,line=213,func_line=55;
-		}
-	}
-}
-suppression = {
-	type = {unreachable_memory_leak}
-	stacks = {
-		allocation={
-			!!!;
-			func=allocGrids,mod=pmcl3d,src=stencil_code.hpp,line=216,func_line=58;
-		}
-	}
-}
-suppression = {
-	type = {unreachable_memory_leak}
-	stacks = {
-		allocation={
-			!!!;
-			func=allocGrids,mod=pmcl3d,src=stencil_code.hpp,line=219,func_line=61;
-		}
-	}
-}
-suppression = {
-	type = {unreachable_memory_leak}
-	stacks = {
-		allocation={
-			!!!;
-			func=allocGrids,mod=pmcl3d,src=stencil_code.hpp,line=222,func_line=64;
-		}
-	}
-}
-suppression = {
-	type = {unreachable_memory_leak}
-	stacks = {
-		allocation={
-			!!!;
-			func=allocGrids,mod=pmcl3d,src=stencil_code.hpp,line=225,func_line=67;
-		}
-	}
-}
-suppression = {
-	type = {unreachable_memory_leak}
-	stacks = {
-		allocation={
-			!!!;
-			func=allocGrids,mod=pmcl3d,src=stencil_code.hpp,line=228,func_line=70;
-		}
-	}
-}
-suppression = {
-	type = {unreachable_memory_leak}
-	stacks = {
-		allocation={
-			!!!;
-			func=allocGrids,mod=pmcl3d,src=stencil_code.hpp,line=230,func_line=72;
-		}
-	}
-}
-suppression = {
-	type = {unreachable_memory_leak}
-	stacks = {
-		allocation={
-			!!!;
-			func=allocGrids,mod=pmcl3d,src=stencil_code.hpp,line=232,func_line=74;
-		}
-	}
-}
-suppression = {
-	type = {unreachable_memory_leak}
-	stacks = {
-		allocation={
-			!!!;
-			func=allocGrids,mod=pmcl3d,src=stencil_code.hpp,line=234,func_line=76;
-		}
-	}
-}
-suppression = {
-	type = {unreachable_memory_leak}
-	stacks = {
-		allocation={
-			!!!;
-			func=allocGrids,mod=pmcl3d,src=stencil_code.hpp,line=236,func_line=78;
-		}
-	}
-}
-suppression = {
-	type = {unreachable_memory_leak}
-	stacks = {
-		allocation={
-			!!!;
-			func=allocGrids,mod=pmcl3d,src=stencil_code.hpp,line=238,func_line=80;
-		}
-	}
-}
-suppression = {
-	type = {unreachable_memory_leak}
-	stacks = {
-		allocation={
-			!!!;
-			func=allocGrids,mod=pmcl3d,src=stencil_code.hpp,line=240,func_line=82;
-		}
-	}
-}
-suppression = {
-	type = {unreachable_memory_leak}
-	stacks = {
-		allocation={
-			!!!;
-			func=allocGrids,mod=pmcl3d,src=stencil_code.hpp,line=242,func_line=84;
-		}
-	}
-}
-suppression = {
-	type = {unreachable_memory_leak}
-	stacks = {
-		allocation={
-			!!!;
-			func=allocGrids,mod=pmcl3d,src=stencil_code.hpp,line=244,func_line=86;
-		}
-	}
-}
-suppression = {
-	type = {unreachable_memory_leak}
-	stacks = {
-		allocation={
-			!!!;
-			func=allocGrids,mod=pmcl3d,src=stencil_code.hpp,line=246,func_line=88;
-		}
-	}
-}
-suppression = {
-	type = {unreachable_memory_leak}
-	stacks = {
-		allocation={
-			!!!;
-			func=allocGrids,mod=pmcl3d,src=stencil_code.hpp,line=248,func_line=90;
-		}
-	}
-}
-suppression = {
-	type = {unreachable_memory_leak}
-	stacks = {
-		allocation={
-			!!!;
-			func=allocParams,mod=pmcl3d,src=stencil_code.hpp,line=254,func_line=2;
-		}
-	}
-}
-suppression = {
-	type = {unreachable_memory_leak}
-	stacks = {
-		allocation={
-			!!!;
-			func=allocParams,mod=pmcl3d,src=stencil_code.hpp,line=256,func_line=4;
-		}
-	}
-}
-suppression = {
-	type = {unreachable_memory_leak}
-	stacks = {
-		allocation={
-			!!!;
-			func=GenericGridBase,mod=pmcl3d,src=generic_grids.hpp,line=74,func_line=7;
-		}
-	}
-}
-suppression = {
-	type = {unreachable_memory_leak}
-	stacks = {
-		allocation={
-			!!!;
-			func=Alloc3D,mod=pmcl3d,src=Grid.cpp,line=49,func_line=13;
-		}
-	}
-}
-suppression = {
-	type = {reachable_memory_leak}
-	stacks = {
-		allocation={
-			!!!;
-			func=MPID_nem_impi_create_numa_nodes_map,mod=libmpi.so.12,src=mpid_init.c,line=1207,func_line=1036;
-		}
-	}
-}
-suppression = {
-	type = {reachable_memory_leak}
-	stacks = {
-		allocation={
-			!!!;
-			func=I_MPI_Get_cpu_info,mod=libmpi.so.12,src=init_pinning.c,line=141,func_line=2;
-		}
-	}
-}
-suppression = {
-	type = {reachable_memory_leak}
-	stacks = {
-		allocation={
-			!!!;
-			func=I_MPI_Get_cpu_info,mod=libmpi.so.12,src=init_pinning.c,line=157,func_line=18;
-		}
-	}
-}
-suppression = {
-	type = {reachable_memory_leak}
-	stacks = {
-		allocation={
-			!!!;
-			func=I_MPI_Get_cpu_info,mod=libmpi.so.12,src=init_pinning.c,line=160,func_line=21;
-		}
-	}
-}
-suppression = {
-	type = {reachable_memory_leak}
-	stacks = {
-		allocation={
-			!!!;
-			func=I_MPI_Get_cpu_info,mod=libmpi.so.12,src=init_pinning.c,line=163,func_line=24;
-		}
-	}
-}
-suppression = {
-	type = {reachable_memory_leak}
-	stacks = {
-		allocation={
-			!!!;
-			func=I_MPI_Get_cpu_info,mod=libmpi.so.12,src=init_pinning.c,line=166,func_line=27;
-		}
-	}
-}
-suppression = {
-	type = {reachable_memory_leak}
-	stacks = {
-		allocation={
-			!!!;
-			func=I_MPI_Get_cpu_info,mod=libmpi.so.12,src=init_pinning.c,line=169,func_line=30;
-		}
-	}
-}
-suppression = {
-	type = {reachable_memory_leak}
-	stacks = {
-		allocation={
-			!!!;
-			func=I_MPI_Get_cpu_info,mod=libmpi.so.12,src=init_pinning.c,line=172,func_line=33;
-		}
-	}
-}
-suppression = {
-	type = {reachable_memory_leak}
-	stacks = {
-		allocation={
-			!!!;
-			func=I_MPI_Get_cpu_info,mod=libmpi.so.12,src=init_pinning.c,line=179,func_line=40;
-		}
-	}
-}
-suppression = {
-	type = {reachable_memory_leak}
-	stacks = {
-		allocation={
-			!!!;
-			func=I_MPI_Get_cpu_info,mod=libmpi.so.12,src=init_pinning.c,line=182,func_line=43;
-		}
-	}
-}
-suppression = {
-	type = {reachable_memory_leak}
-	stacks = {
-		allocation={
-			!!!;
-			func=I_MPI_Get_pin_map,mod=libmpi.so.12,src=init_pinning.c,line=112,func_line=25;
-		}
-	}
+  type = {reachable_memory_leak}
+  stacks = {
+    allocation={
+      !!!;
+      func=I_MPI_Get_pin_map,mod=libmpi.so.12,src=init_pinning.c;
+    }
+  }
 }
