@@ -391,7 +391,7 @@ odc::io::ReceiverWriter::ReceiverWriter( char *inputFileName, char *outputFileNa
 
     //! Construct name of receiver output log based on receiver, for ex: receiverOutput_13.log and store in an array
     std::strncpy( m_receiverOutputFileName, outputFileName, sizeof( m_receiverOutputFileName ) );
-    sprintf( m_receiverOutputLogs[i], "%s_%d.csv", m_receiverOutputFileName, i + 1 );
+    sprintf( m_receiverOutputLogs[i], "%s_%lld.csv", m_receiverOutputFileName, i + 1 );
 
     //! If the current MPI owns the grid point, we create a corresponding file
     if( m_ownedByThisRank[i] ) {
