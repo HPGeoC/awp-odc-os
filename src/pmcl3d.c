@@ -137,7 +137,7 @@ int main(int argc,char **argv)
     float* d_tayz;
     float* d_taxy;
     //  end of GPU variables
-    int i,j,k,idx,idy,idz;
+    int i,j,k;
     long int idtmp;
     long int tmpInd;
     const int maxdim = 3;
@@ -145,7 +145,7 @@ int main(int argc,char **argv)
     Grid3D tau=NULL, tau1=NULL, tau2=NULL;
     Grid3D weights=NULL;
     int npsrc;
-    long int nt, cur_step, source_step;
+    long int nt, source_step, cur_step = 0;
     double time_un = 0.0;
     // time_src and time_mesh measures the time spent
     // in source and mesh reading
@@ -527,7 +527,6 @@ int main(int argc,char **argv)
 
     if(NVE==1)
     {
-        float dt1 = 1.0/DT;
         for(i=0;i<2;i++)
             for(j=0;j<2;j++)
                 for(k=0;k<2;k++)

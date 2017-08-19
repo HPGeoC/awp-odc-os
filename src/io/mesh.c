@@ -69,7 +69,6 @@ void inimesh(int MEDIASTART, Grid3D d1, Grid3D mu, Grid3D lam, Grid3D qp, Grid3D
              int NZ, int *coords, MPI_Comm MCW, int IDYNA, int NVE, int SoCalQ, char *INVEL, 
              float *vse, float *vpe, float *dde)
 {
-  int merr;
   int rank;
   int i,j,k,err;
   float vp,vs,dd,pi; 
@@ -197,6 +196,7 @@ void inimesh(int MEDIASTART, Grid3D d1, Grid3D mu, Grid3D lam, Grid3D qp, Grid3D
               fclose( file );
               return;
             }
+            fclose( file );
             //printf("%d) 0-0-0,1-10-3=%f, %f\n",rank,tmpta[0],tmpta[1+10*nxt+3*nxt*nyt]);
           }
           else{
@@ -277,7 +277,7 @@ void inimesh(int MEDIASTART, Grid3D d1, Grid3D mu, Grid3D lam, Grid3D qp, Grid3D
           }
       }
 */     
-      float w0=0.0f, ww1=0.0f, w2=0.0f, tmp1=0.0f, tmp2=0.0f;
+      float w0=0.0f;
       float qpinv=0.0f, qsinv=0.0f, vpvs=0.0f;
       if(NVE==1)
       {
@@ -576,15 +576,15 @@ void inimesh(int MEDIASTART, Grid3D d1, Grid3D mu, Grid3D lam, Grid3D qp, Grid3D
         printf("Before MPI_Allreduce for vpe, vse, dde\n");
       float tmpvse[2],tmpvpe[2],tmpdde[2];
 
-      merr = MPI_Allreduce(vse,tmpvse,2,MPI_FLOAT,MPI_MAX,MCW);
-      merr = MPI_Allreduce(vpe,tmpvpe,2,MPI_FLOAT,MPI_MAX,MCW);
-      merr = MPI_Allreduce(dde,tmpdde,2,MPI_FLOAT,MPI_MAX,MCW);
+      MPI_Allreduce(vse,tmpvse,2,MPI_FLOAT,MPI_MAX,MCW);
+      MPI_Allreduce(vpe,tmpvpe,2,MPI_FLOAT,MPI_MAX,MCW);
+      MPI_Allreduce(dde,tmpdde,2,MPI_FLOAT,MPI_MAX,MCW);
       vse[1] = tmpvse[1];
       vpe[1] = tmpvpe[1];
       dde[1] = tmpdde[1];
-      merr = MPI_Allreduce(vse,tmpvse,2,MPI_FLOAT,MPI_MIN,MCW);
-      merr = MPI_Allreduce(vpe,tmpvpe,2,MPI_FLOAT,MPI_MIN,MCW);
-      merr = MPI_Allreduce(dde,tmpdde,2,MPI_FLOAT,MPI_MIN,MCW);
+      MPI_Allreduce(vse,tmpvse,2,MPI_FLOAT,MPI_MIN,MCW);
+      MPI_Allreduce(vpe,tmpvpe,2,MPI_FLOAT,MPI_MIN,MCW);
+      MPI_Allreduce(dde,tmpdde,2,MPI_FLOAT,MPI_MIN,MCW);
       vse[0] = tmpvse[0];
       vpe[0] = tmpvpe[0];
       dde[0] = tmpdde[0];

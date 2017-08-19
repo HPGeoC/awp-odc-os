@@ -77,7 +77,7 @@ void PatchDecomp::initialize( odc::io::OptionParser i_options, int_pt xSize, int
   else
     sprintf( meshFile, "%s.%d", i_options.m_inVel, odc::parallel::Mpi::m_rank );
 
-  if( meshFile != NULL && meshFile[0] == '\0' ) {
+  if( meshFile[0] == '\0' ) {
     std::cerr << "Warning: no mesh file specified in parameters!\n";
     return;
   }

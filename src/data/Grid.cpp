@@ -186,7 +186,7 @@ PosInf odc::data::Alloc1P( int_pt nx, int_pt boundary ) {
 void odc::data::Delloc3D( Grid3D U, int_pt boundary ) {
   if( U - boundary ) {
     free( U - boundary );
-    U -= boundary;
+//    U -= boundary;
     U = NULL;
   }
 
@@ -203,7 +203,7 @@ void odc::data::Delloc3D( Grid3D U, int_pt boundary ) {
 void odc::data::Delloc3Dww( Grid3Dww U, int_pt boundary ) {
   if( U - boundary ) {
     free( U - boundary );
-    U -= boundary;
+//    U -= boundary;
     U = NULL;
   }
 
@@ -220,7 +220,7 @@ void odc::data::Delloc3Dww( Grid3Dww U, int_pt boundary ) {
 void odc::data::Delloc1D( Grid1D U, int_pt boundary ) {
   if( U - boundary ) {
     free( U - boundary );
-    U -= boundary;
+//    U -= boundary;
     U = NULL;
   }
 
@@ -237,7 +237,7 @@ void odc::data::Delloc1D( Grid1D U, int_pt boundary ) {
 void odc::data::Delloc1P( PosInf U, int_pt boundary ) {
   if( U - boundary ) {
     free( U - boundary );
-    U -= boundary;
+//    U -= boundary;
     U = NULL;
   }
 

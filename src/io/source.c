@@ -82,13 +82,25 @@ int read_src_ifault_2(int rank, int READ_STEP,
     nbx     = nxt*coords[0] + 1 - 2*LOOP;
     nby     = nyt*coords[1] + 1 - 2*LOOP;
     // not sure what happens if maxdim != 3
-    fread(NPSRC, sizeof(int), 1, f);
-    fread(dummy, sizeof(int), 2, f);
+    if( !fread( NPSRC, sizeof( int ), 1, f ) ) {
+      printf( "can't read file %s", fname );
+      fclose( f );
+      return 0;
+    }
+    if( !fread( dummy, sizeof( int ), 2, f ) ) {
+      printf( "can't read file %s", fname );
+      fclose( f );
+      return 0;
+    }
 
     printf("SOURCE I am, rank=%d npsrc=%d\n",rank,*NPSRC);    
 
     tpsrc = Alloc1P((*NPSRC)*maxdim);
-    fread(tpsrc, sizeof(int), (*NPSRC)*maxdim, f);
+    if( !fread( tpsrc, sizeof( int ), (*NPSRC) * maxdim, f ) ) {
+      printf( "can't read file %s", fname );
+      fclose( f );
+      return 0;
+    }
     // assuming nzt=NZ
     for(i=0; i<*NPSRC; i++){
       //tpsrc[i*maxdim] = (tpsrc[i*maxdim]-1)%nxt+1;
@@ -130,27 +142,51 @@ int read_src_ifault_2(int rank, int READ_STEP,
       taxz = *axz;
       tayz = *ayz;
     }
-    fread(tmpta, sizeof(float), (*NPSRC)*READ_STEP, f);
+    if( !fread( tmpta, sizeof( float ), (*NPSRC) * READ_STEP, f ) ) {
+      printf( "can't read file %s", fname );
+      fclose( f );
+      return 0;
+    }
     for(i=0; i<*NPSRC; i++)
       for(j=0; j<READ_STEP; j++)
         taxx[i*READ_STEP+j] = tmpta[j*(*NPSRC)+i];
-    fread(tmpta, sizeof(float), (*NPSRC)*READ_STEP, f);
+    if( !fread( tmpta, sizeof( float ), (*NPSRC) * READ_STEP, f ) ) {
+      printf( "can't read file %s", fname );
+      fclose( f );
+      return 0;
+    }
     for(i=0; i<*NPSRC; i++)
       for(j=0; j<READ_STEP; j++)
         tayy[i*READ_STEP+j] = tmpta[j*(*NPSRC)+i];
-    fread(tmpta, sizeof(float), (*NPSRC)*READ_STEP, f);
+    if( !fread( tmpta, sizeof( float ), (*NPSRC) * READ_STEP, f ) ) {
+      printf( "can't read file %s", fname );
+      fclose( f );
+      return 0;
+    }
     for(i=0; i<*NPSRC; i++)
       for(j=0; j<READ_STEP; j++)
         tazz[i*READ_STEP+j] = tmpta[j*(*NPSRC)+i];
-    fread(tmpta, sizeof(float), (*NPSRC)*READ_STEP, f);
+    if( !fread( tmpta, sizeof( float ), (*NPSRC) * READ_STEP, f ) ) {
+      printf( "can't read file %s", fname );
+      fclose( f );
+      return 0;
+    }
     for(i=0; i<*NPSRC; i++)
       for(j=0; j<READ_STEP; j++)
         taxz[i*READ_STEP+j] = tmpta[j*(*NPSRC)+i];
-    fread(tmpta, sizeof(float), (*NPSRC)*READ_STEP, f);
+    if( !fread( tmpta, sizeof( float ), (*NPSRC) * READ_STEP, f ) ) {
+      printf( "can't read file %s", fname );
+      fclose( f );
+      return 0;
+    }
     for(i=0; i<*NPSRC; i++)
       for(j=0; j<READ_STEP; j++)
         tayz[i*READ_STEP+j] = tmpta[j*(*NPSRC)+i];
-    fread(tmpta, sizeof(float), (*NPSRC)*READ_STEP, f);
+    if( !fread( tmpta, sizeof( float ), (*NPSRC) * READ_STEP, f ) ) {
+      printf( "can't read file %s", fname );
+      fclose( f );
+      return 0;
+    }
     for(i=0; i<*NPSRC; i++)
       for(j=0; j<READ_STEP; j++)
         taxy[i*READ_STEP+j] = tmpta[j*(*NPSRC)+i];
@@ -255,7 +291,7 @@ int inisource(int      rank,    int     IFAULT, int     NSRC,   int     READ_STE
        // Read rupture function data from input file
       if(rank==master)
       {
-      	 FILE   *file;
+      	 FILE   *file = NULL;
          int    tmpsrc[3];
          Grid1D tmpta;
          if(IFAULT == 1){
@@ -295,16 +331,24 @@ int inisource(int      rank,    int     IFAULT, int     NSRC,   int     READ_STE
          else if(IFAULT == 0)
           for(i=0;i<NSRC;i++)
           {
-            fscanf(file, " %d %d %d ",&tmpsrc[0], &tmpsrc[1], &tmpsrc[2]);
+            if( !fscanf(file, " %d %d %d ",&tmpsrc[0], &tmpsrc[1], &tmpsrc[2]) ) {
+              printf( "can't read file %s", INSRC );
+              fclose( file );
+              return 0;
+            }
             tpsrc[i*maxdim]   = tmpsrc[0];
             tpsrc[i*maxdim+1] = tmpsrc[1];
             tpsrc[i*maxdim+2] = NZ+1-tmpsrc[2];
             //printf("SOURCE: %d,%d,%d\n",tpsrc[0],tpsrc[1],tpsrc[2]);
             for(j=0;j<READ_STEP;j++){
-              fscanf(file, " %f %f %f %f %f %f ",
+              if( !fscanf(file, " %f %f %f %f %f %f ",
                 &taxx[i*READ_STEP+j], &tayy[i*READ_STEP+j],
                 &tazz[i*READ_STEP+j], &taxz[i*READ_STEP+j],
-                &tayz[i*READ_STEP+j], &taxy[i*READ_STEP+j]);
+                &tayz[i*READ_STEP+j], &taxy[i*READ_STEP+j]) ) {
+                printf( "can't read file %s", INSRC );
+                fclose( file );
+                return 0;
+              }
               //printf("SOURCE VAL %d: %f,%f\n",j,taxx[j],tayy[j]);
             }
           }

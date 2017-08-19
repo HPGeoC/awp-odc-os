@@ -19,9 +19,9 @@
 ##
 
 import os
+import SCons
 import subprocess
 import warnings
-import SCons
 
 # configuration
 vars = Variables()
@@ -30,17 +30,17 @@ vars.AddVariables(
   EnumVariable( 'parallelization',
                 'parallelization',
                 'mpi_omp',
-                 allowed_values=( 'mpi_cuda', 'mpi_omp', 'mpi_omp_yask' )
+                 allowed_values = ( 'mpi_cuda', 'mpi_omp', 'mpi_omp_yask' )
               ),
   EnumVariable( 'cpu_arch',
                 'CPU architecture to compile for',
                 'host',
-                 allowed_values=( 'host', 'snb', 'hsw', 'knl' )
+                 allowed_values = ( 'host', 'snb', 'hsw', 'skx', 'knl' )
               ),
   EnumVariable( 'mode',
                 'compile mode',
                 'release',
-                 allowed_values=( 'release', 'debug', 'asan' )
+                 allowed_values = ( 'release', 'debug', 'asan' )
               ),
   BoolVariable( 'cov',
                 'enable code coverage',
@@ -68,39 +68,87 @@ env['ENV'] = os.environ
 
 # forward compiler
 if 'CC' in env['ENV'].keys():
-  env['CC'] = env['ENV']['CC']
+  env['CC']   = env['ENV']['CC']
 if 'CXX' in env['ENV'].keys():
-  env['CXX'] = env['ENV']['CXX']
+  env['CXX']  = env['ENV']['CXX']
 
 # forward flags
 if 'CFLAGS' in env['ENV'].keys():
-  env['CFLAGS'] = env['ENV']['CFLAGS']
+  env['CFLAGS']     = env['ENV']['CFLAGS']
 if 'CXXFLAGS' in env['ENV'].keys():
-  env['CXXFLAGS'] = env['ENV']['CXXFLAGS']
+  env['CXXFLAGS']   = env['ENV']['CXXFLAGS']
 if 'LINKFLAGS' in env['ENV'].keys():
-  env['LINKFLAGS'] = env['ENV']['LINKFLAGS']
+  env['LINKFLAGS']  = env['ENV']['LINKFLAGS']
+
+# detect compilers
+try:
+  compVer = subprocess.check_output( [env['CXX'], "--version"] )
+except:
+  compVer = 'unknown'
+
+if 'clang' in compVer:
+  compilers = 'clang'
+elif 'g++' in compVer:
+  compilers = 'gnu'
+elif 'icpc' in compVer:
+  compilers = 'intel'
+else:
+  compilers = 'gnu'
+  print '  no compiler detected'
+env['compilers']  = compilers
+print '  using', compilers, 'as compiler suite'
 
 # set compiler and CPU architecture
 if env['cpu_arch'] == 'host':
-  if env['CXX'] == 'icpc' or env['CXX'] == 'mpiicpc':
+  if compilers == 'intel':
     env.Append( CPPFLAGS = ['-xHost'] )
-  elif 'g++' in env['CXX'] or 'mpicxx' == env['CXX']:
+  elif compilers == 'gnu':
     env.Append( CPPFLAGS = ['-march=native'] )
-if env['cpu_arch'] == 'snb':
+elif env['cpu_arch'] == 'snb':
   env.Append( CPPFLAGS = ['-mavx'] )
 elif env['cpu_arch'] == 'hsw':
   env.Append( CPPFLAGS = ['-mavx2'] )
+elif env['cpu_arch'] == 'skx':
+  if compilers == 'gnu':
+    env.Append( CPPFLAGS = ['-mavx512f', '-mavx512cd'] )
+  elif compilers == 'intel':
+    env.Append( CPPFLAGS = ['-xCOMMON-AVX512'] )
 elif env['cpu_arch'] == 'knl':
-  if 'g++' in env['CXX'] or 'mpicxx' in env['CXX'] or 'mpiCC' in env['CXX']:
+  if compilers == 'gnu':
     env.Append( CPPFLAGS = ['-mavx512f', '-mavx512cd', '-mavx512er', '-mavx512pf'] )
-  elif 'clang' in env['CXX']:
-    env.Append( CPPFLAGS = ['-march=knl'] )
-  else:
-    env.Append( CPPFLAGS = ['-xHost'] )
+  elif compilers == 'intel':
+    env.Append( CPPFLAGS = ['-xMIC-AVX512'] )
+#  else:
+#    env.Append( CPPFLAGS = ['-xHost'] )
 
-if 'clang' in env['CXX']:
-  env.Append( CPPFLAGS = ['-fopenmp=libiomp5'] )
-  env.Append( LINKFLAGS = ['-fopenmp=libiomp5'] )
+# set openmp flags
+if 'omp' in env['parallelization']:
+  if compilers == 'intel':
+    env.Append( CPPFLAGS  = ['-qopenmp'] )
+    env.Append( LINKFLAGS = ['-qopenmp'] )
+    env.Append( LINKFLAGS = ['-qopenmp-link=static'] )
+  elif compilers == 'gnu':
+    env.Append( CPPFLAGS  = ['-fopenmp'] )
+    env.Append( LINKFLAGS = ['-fopenmp'] )
+  elif compilers == 'clang':
+    env.Append( CPPFLAGS  = ['-fopenmp'] )
+    env.Append( LINKFLAGS = ['-fopenmp'] )
+    # get the path of libiomp5 from clang
+    try:
+      rpath = subprocess.check_output( [env['CXX'], "--print-file-name=libiomp5.so"] )
+      rpath = os.path.dirname( rpath )
+      env.Append( LINKFLAGS = [ '-Wl,-rpath='+rpath ] )
+    except:
+      print '  failed getting dir of libiomp5.so, not setting rpath'
+
+# fix clang's confusion with old libstdc++ at runtime (no proper automatic rpath)
+if compilers == 'clang':
+  try:
+    rpath = subprocess.check_output( [env['CXX'], "--print-file-name=libstdc++.so"] )
+    rpath = os.path.dirname( rpath )
+    env.Append( LINKFLAGS = [ '-Wl,-rpath='+rpath ] )
+  except:
+    print '  failed getting dir of libstdc++.so, not setting rpath'
 
 # add cuda support if requested
 if env['parallelization'] in ['cuda', 'mpi_cuda' ]:
@@ -108,10 +156,10 @@ if env['parallelization'] in ['cuda', 'mpi_cuda' ]:
     print( '*** cudaToolkitDir not set; defaulting to /usr/local/cuda' )
     env['cudaToolkitDir'] = '/usr/local/cuda'
 
-  env.Tool('nvcc', toolpath=['tools/scons'])
-  env.Append( CPPPATH = [ env['cudaToolkitDir']+'/include' ] )
-  env.Append( LIBPATH = [ env['cudaToolkitDir']+'/lib64' ] )
-  env.Append(LIBS = ['cudart'])
+  env.Tool( 'nvcc', toolpath = ['tools/scons'] )
+  env.Append( CPPPATH = [ env['cudaToolkitDir'] + '/include' ] )
+  env.Append( LIBPATH = [ env['cudaToolkitDir'] + '/lib64' ] )
+  env.Append( LIBS    = ['cudart'] )
 
 # set alignment and flags
 env.Append( CPPDEFINES = ['ALIGNMENT=64'] )
@@ -123,8 +171,6 @@ elif env['parallelization'] in ['mpi_cuda']:
   env.Append( CPPDEFINES = ['USE_MPI'] )
 elif env['parallelization'] in ['mpi_omp']:
   env.Append( CPPDEFINES = ['AWP_USE_MPI'] )
-  env.Append( CPPFLAGS = ['-fopenmp'] )
-  env.Append( LINKFLAGS = ['-fopenmp'] )
 elif env['parallelization'] in ['mpi_omp_yask']:
   env.Append( CPPDEFINES = ['AWP_USE_MPI'] )
   env.Append( CPPDEFINES = ['YASK',
@@ -138,12 +184,9 @@ elif env['parallelization'] in ['mpi_omp_yask']:
     env.Append( CPPDEFINES = ['USE_INTRIN512'] )
   else:
     env.Append( CPPDEFINES = ['USE_INTRIN256'] )
-  env.Append( CPPFLAGS = ['-fopenmp'] )
-  env.Append( LINKFLAGS = ['-fopenmp'] )
-  if 'icpc' in env['CXX']:
-    if not conf.CheckLibWithHeader( 'numa', 'numa.h', 'cxx' ):
-      print( 'Did not find libnuma.a or numa.lib, exiting!' )
-      Exit( 1 )
+  if not conf.CheckLibWithHeader( 'numa', 'numa.h', 'cxx' ):
+    print( 'Did not find libnuma.a or numa.lib, exiting!' )
+    Exit( 1 )
 
 # add current path to seach path
 env.Append( CPPPATH = [Dir('#.').path, Dir('#./src')] )
@@ -154,17 +197,19 @@ env.Append( CXXFLAGS="-std=c++11" )
 # set optimization mode
 if 'debug' in env['mode']:
   env.Append( CXXFLAGS = ['-g', '-O0'] )
-else:
+elif 'release' in env['mode']:
   env.Append( CXXFLAGS = ['-O3'] )
+  if compilers == 'gnu':
+    env.Append( CXXFLAGS = '-ftree-vectorize' )
 
 # add sanitizers
 if 'asan' in  env['mode']:
-  env.Append( CXXFLAGS =  ['-g', '-fsanitize=address', '-fsanitize=undefined', '-fno-omit-frame-pointer'] )
-  env.Append( LINKFLAGS = ['-g', '-fsanitize=address', '-fsanitize=undefined'] )
+  env.Append( CXXFLAGS  = ['-g', '-fsanitize=address', '-O1', '-fno-omit-frame-pointer'] )
+  env.Append( LINKFLAGS = ['-g', '-fsanitize=address', '-O1'] )
 
 # enable code coverage, if requested
 if env['cov'] == True:
-  env.Append( CXXFLAGS = ['-coverage', '-fno-inline', '-fno-inline-small-functions', '-fno-default-inline'] )
+  env.Append( CXXFLAGS  = ['-coverage', '-fno-inline', '-fno-inline-small-functions', '-fno-default-inline'] )
   env.Append( LINKFLAGS = ['-coverage'] )
 
 # add math library for gcc
