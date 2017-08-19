@@ -938,9 +938,9 @@ void odc::data::Mesh::init_texture( Grid3D tau1, Grid3D tau2, Grid3D vx1, Grid3D
                                     int_pt globalStartX, int_pt globalStartY, int_pt globalStartZ, int_pt sizeZ ) {
   int_pt i, j, k, itx, ity, itz;
 
-  itx = (std::abs( (int)(globalStartX + startX) )) % 2;
-  ity = (std::abs( (int)(globalStartY + startY) )) % 2;
-  itz = (std::abs( (int)(globalStartZ + startZ + sizeZ - 1) )) % 2;
+  itx = (std::abs( (int_pt)(globalStartX + startX) )) % 2;
+  ity = (std::abs( (int_pt)(globalStartY + startY) )) % 2;
+  itz = (std::abs( (int_pt)(globalStartZ + startZ + sizeZ - 1) )) % 2;
 
   for( i = startX; i < endX; i++ ) {
     itx = 1 - itx;
