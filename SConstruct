@@ -125,25 +125,17 @@ elif env['cpu_arch'] == 'knl':
 if 'omp' in env['parallelization']:
   env.Append( CPPFLAGS  = ['-fopenmp'] )
   env.Append( LINKFLAGS = ['-fopenmp'] )
-#  if compilers == 'intel':
-#    env.Append( CPPFLAGS  = ['-qopenmp'] )
-#    env.Append( LINKFLAGS = ['-qopenmp'] )
-#    env.Append( LINKFLAGS = ['-qopenmp-link=static'] )
-#  elif compilers == 'gnu':
 
-#  elif compilers == 'clang':
-#    env.Append( CPPFLAGS  = ['-fopenmp'] )
-#    env.Append( LINKFLAGS = ['-fopenmp'] )
-#    # get the path of libiomp5 from clang
-#    try:
-#      rpath = subprocess.check_output( [env['CXX'], "--print-file-name=libiomp5.so"] )
-#      rpath = os.path.dirname( rpath )
-#      env.Append( LINKFLAGS = [ '-Wl,-rpath='+rpath ] )
-#    except:
-#      print '  failed getting dir of libiomp5.so, not setting rpath'
-
-# fix clang's confusion with old libstdc++ at runtime (no proper automatic rpath)
 if compilers == 'clang':
+  # get the path of libiomp5 from clang
+  try:
+    rpath = subprocess.check_output( [env['CXX'], "--print-file-name=libiomp5.so"] )
+    rpath = os.path.dirname( rpath )
+    env.Append( LINKFLAGS = [ '-Wl,-rpath='+rpath ] )
+  except:
+    print '  failed getting dir of libiomp5.so, not setting rpath'
+
+  # fix clang's confusion with old libstdc++ at runtime (no proper automatic rpath)
   try:
     rpath = subprocess.check_output( [env['CXX'], "--print-file-name=libstdc++.so"] )
     rpath = os.path.dirname( rpath )

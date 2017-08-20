@@ -295,7 +295,8 @@ int inisource( int IFAULT, int NSRC, int READ_STEP, int NST, int *SRCPROC, int m
           file = fopen( INSRC, "r" );
 
         if( !file ) {
-          std::cerr << "can't open file " << INSRC << std::endl;
+          std::cerr << "Cannot open file " << INSRC << std::endl;
+          file = nullptr;
           return 0;
         }
         
@@ -320,16 +321,26 @@ int inisource( int IFAULT, int NSRC, int READ_STEP, int NST, int *SRCPROC, int m
           odc::data::Delloc1D( tmpta );
         } else if( IFAULT == 0 ) {
           for( i = 0; i < NSRC; i++ ) {
-            fscanf( file, " %d %d %d ", &tmpsrc[0], &tmpsrc[1], &tmpsrc[2] );
+            if( !fscanf( file, " %d %d %d ", &tmpsrc[0], &tmpsrc[1], &tmpsrc[2] ) ) {
+              std::cerr << "Cannot read file " << INSRC << std::endl;
+              fclose( file );
+              file = nullptr;
+              return 0;
+            }
             tpsrc[i*maxdim]   = tmpsrc[0];
             tpsrc[i*maxdim+1] = tmpsrc[1];
             tpsrc[i*maxdim+2] = NZ + 1 - tmpsrc[2];
 
             for( j = 0; j < READ_STEP; j++ ) {
-              fscanf( file, " %f %f %f %f %f %f ",
+              if( !fscanf( file, " %f %f %f %f %f %f ",
                       &taxx[i*READ_STEP+j], &tayy[i*READ_STEP+j],
                       &tazz[i*READ_STEP+j], &taxz[i*READ_STEP+j],
-                      &tayz[i*READ_STEP+j], &taxy[i*READ_STEP+j] );
+                      &tayz[i*READ_STEP+j], &taxy[i*READ_STEP+j] ) ) {
+                std::cerr << "Cannot read file " << INSRC << std::endl;
+                fclose( file );
+                file = nullptr;
+                return 0;
+              }
             }
           }
         }
