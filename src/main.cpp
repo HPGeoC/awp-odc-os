@@ -197,7 +197,7 @@ int main( int i_argc, char *i_argv[] ) {
 
       if( amManageThread && l_rank == 0 )
         if( tstep % 10 == 0 )
-          std::cout << "Time Step = " << tstep << " of  Total Timesteps = " << l_options.m_numTimesteps << std::endl;
+          std::cout << "Time Step = " << tstep << " of Total Timesteps = " << l_options.m_numTimesteps << std::endl;
 
       if( amManageThread )
         l_ompManager.initialWorkPackages( &nextWP[0][0], communicationThreadId );
