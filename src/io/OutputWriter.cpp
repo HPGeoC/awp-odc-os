@@ -249,6 +249,7 @@ void odc::io::OutputWriter::update( int_pt i_timestep, PatchDecomp& i_ptchDec ) 
       if( odc::parallel::Mpi::m_rank == 0 )
         std::cout << "Writing to file" << std::endl;
 
+      char *datarep = "native";
       char filename[AWP_PATH_MAX];
       MPI_File file;
 
@@ -261,7 +262,7 @@ void odc::io::OutputWriter::update( int_pt i_timestep, PatchDecomp& i_ptchDec ) 
                                MPI_MODE_CREATE|MPI_MODE_WRONLY,
                                MPI_INFO_NULL, &file );
 
-      err = MPI_File_set_view( file, displacement, AWP_MPI_REAL, m_filetype, "native", MPI_INFO_NULL );
+      err = MPI_File_set_view( file, displacement, AWP_MPI_REAL, m_filetype, datarep, MPI_INFO_NULL );
       err = MPI_File_write_all( file, m_velocityXWriteBuffer, m_numGridPointsToRecord * m_writeStep, AWP_MPI_REAL, &filestatus );
       err = MPI_File_close( &file );
 
@@ -271,7 +272,7 @@ void odc::io::OutputWriter::update( int_pt i_timestep, PatchDecomp& i_ptchDec ) 
                            MPI_MODE_CREATE|MPI_MODE_WRONLY,
                            MPI_INFO_NULL, &file );
 
-      err = MPI_File_set_view( file, displacement, AWP_MPI_REAL, m_filetype, "native", MPI_INFO_NULL );
+      err = MPI_File_set_view( file, displacement, AWP_MPI_REAL, m_filetype, datarep, MPI_INFO_NULL );
       err = MPI_File_write_all( file, m_velocityYWriteBuffer, m_numGridPointsToRecord * m_writeStep, AWP_MPI_REAL, &filestatus );
       err = MPI_File_close( &file );
 
@@ -281,7 +282,7 @@ void odc::io::OutputWriter::update( int_pt i_timestep, PatchDecomp& i_ptchDec ) 
                            MPI_MODE_CREATE|MPI_MODE_WRONLY,
                            MPI_INFO_NULL, &file );
 
-      err = MPI_File_set_view( file, displacement, AWP_MPI_REAL, m_filetype, "native", MPI_INFO_NULL );
+      err = MPI_File_set_view( file, displacement, AWP_MPI_REAL, m_filetype, datarep, MPI_INFO_NULL );
       err = MPI_File_write_all( file, m_velocityZWriteBuffer, m_numGridPointsToRecord*m_writeStep, AWP_MPI_REAL, &filestatus );
       err = MPI_File_close( &file );
     }
@@ -324,7 +325,12 @@ odc::io::ReceiverWriter::ReceiverWriter( char *inputFileName, char *outputFileNa
   }
 
   //! Get the total no. of receivers (first line in input file)
-  fgets( line, sizeof( line ), m_receiverInputFilePtr );
+  if ( !fgets( line, sizeof( line ), m_receiverInputFilePtr ) ) {
+    std::cerr << "Cannot read file " << m_receiverInputFileName << std::endl;
+    fclose( m_receiverInputFilePtr );
+    m_receiverInputFilePtr = nullptr;
+    return;
+  }
   m_numberOfReceivers = atoi( line );
 
   //! Dynamic memory allocation

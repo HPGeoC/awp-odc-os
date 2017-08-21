@@ -72,7 +72,7 @@ int main( int i_argc, char *i_argv[] ) {
   const int_pt l_rangeZ   = odc::parallel::Mpi::m_rangeZ;
 
   if( l_rank == 0 )
-    std::cout << "Welcome to AWP-ODC-OS\nCopyright (c) 2013-2017, Regents of the University of California\n\nStarting MPI... done" << std::endl;
+    std::cout << "Welcome to AWP-ODC-OS\nCopyright (c) 2013-2017, Regents of the University of California\n\nStarting MPI... done\n";
 
   //! initialize patches
   PatchDecomp patch_decomp;
@@ -87,7 +87,7 @@ int main( int i_argc, char *i_argv[] ) {
   odc::io::ReceiverWriter l_receiver( l_options.m_inRcvr, l_options.m_outRcvr,
                                       l_options.m_dH, l_options.m_nZ );
 
-  if (l_rank == 0)
+  if( l_rank == 0 )
     l_checkpoint.writeInitialStats( l_options.m_nTiSkp, l_options.m_dT, l_options.m_dH,
                                     l_options.m_nX, l_options.m_nY,
                                     l_options.m_nZ, l_options.m_numTimesteps,
@@ -100,10 +100,6 @@ int main( int i_argc, char *i_argv[] ) {
   patch_decomp.synchronize( true );
 
   // odc::io::OutputWriter l_output(l_options);
-
-  //! initialize sources
-  if( l_rank == 0 )
-    std::cout << "Initializing sources...";
 
   // TODO: Number of nodes (nx, ny, nz) should be aware of MPI partitioning.
   odc::io::Sources l_sources( l_options.m_iFault,
@@ -118,7 +114,7 @@ int main( int i_argc, char *i_argv[] ) {
 
   //! If one or more source fault nodes are owned by this process then call "addsrc" to update the stress tensor values
   if( l_rank == 0 )
-    std::cout << " done\nAdding initial rupture source...";
+    std::cout << "Adding initial rupture source...";
 
   int_pt initial_ts = 0;
 #ifdef YASK
@@ -131,7 +127,7 @@ int main( int i_argc, char *i_argv[] ) {
                     l_options.m_readStep, 3, patch_decomp );
 
   if( l_rank == 0 )
-    std::cout <<" done\nSolving...";
+    std::cout << " done\n\n";
 
   //! PPP: bring this back
   //for(int i_dir=0; i_dir<3; i_dir++)
@@ -199,13 +195,12 @@ int main( int i_argc, char *i_argv[] ) {
       Patch* p = &patch_decomp.m_patches[p_id];
       int_pt h = p->bdry_width;
 
-      if( amManageThread && l_rank == 0 ) {
-        ;//std::cout << "Beginning  timestep: " << tstep << std::endl;
-      }
+      if( amManageThread && l_rank == 0 )
+        if( tstep % 10 == 0 )
+          std::cout << "Time Step = " << tstep << " of Total Timesteps = " << l_options.m_numTimesteps << std::endl;
 
-      if( amManageThread ) {
+      if( amManageThread )
         l_ompManager.initialWorkPackages( &nextWP[0][0], communicationThreadId );
-      }
 
       //! Barrier until we have assigned initial work packages
 #pragma omp barrier
@@ -499,7 +494,7 @@ int main( int i_argc, char *i_argv[] ) {
     if( l_omp.getThreadNumAll() == 0 && l_rank == 0 ) {
       double cur_time = wall_time();
       double avg = (cur_time - start_time) / (l_options.m_numTimesteps - start_ts);
-      std::cout << " done\n\nFinal time per timestep: " << avg <<  "; mpi time: " << mpi_time / l_options.m_numTimesteps << std::endl;
+      std::cout << "\nFinal time per timestep: " << avg <<  "; MPI time: " << mpi_time / l_options.m_numTimesteps << std::endl;
       double mlups = (double) l_rangeX * (double) l_rangeY * (double) l_rangeZ / (avg * 1e6);
       std::cout << "Final MLUPS: " << mlups << std::endl;
     }

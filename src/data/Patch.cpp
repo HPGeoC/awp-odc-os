@@ -82,9 +82,9 @@ void Patch::initialize( odc::io::OptionParser i_options, int_pt _nx, int_pt _ny,
   (*(yask_context.h))()       = i_options.m_dH;
   (*(yask_context.delta_t))() = i_options.m_dT;
 #else
-  std::cout << "\t setting up patch soa" << std::endl;
+  std::cout << "  setting up patch soa" << std::endl;
   soa.initialize( size_x, size_y, size_z );
-  std::cout << "\t size is " << soa.getSize() << std::endl;
+  std::cout << "  size is " << soa.getSize() << std::endl;
   soa.allocate();
 #endif
 
@@ -97,6 +97,7 @@ void Patch::initialize( odc::io::OptionParser i_options, int_pt _nx, int_pt _ny,
   //             the advantage of having it is that all memory gets
   //             allocated, just in case we need it
 
+  std::cout << "Initializing mesh...";
 #ifdef YASK
   mesh.initialize( i_options, nx, ny, nz, bdry_width, true, i_inputBuffer, i_globalX, i_globalY, i_globalZ,
                    (Grid_XYZ*) yask_context.rho, (Grid_XYZ*) yask_context.mu, (Grid_XYZ*) yask_context.lambda,
@@ -106,6 +107,7 @@ void Patch::initialize( odc::io::OptionParser i_options, int_pt _nx, int_pt _ny,
 #else
   mesh.initialize( i_options, nx, ny, nz, bdry_width, true, i_inputBuffer, i_globalX, i_globalY, i_globalZ );
 #endif
+  std::cout << " done\n";
 
   int_pt coords[] = { i_globalX + odc::parallel::Mpi::m_startX, i_globalY + odc::parallel::Mpi::m_startY, i_globalZ + odc::parallel::Mpi::m_startZ };
   cerjan.initialize( i_options, nx, ny, nz, bdry_width, coords );

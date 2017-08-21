@@ -32,143 +32,143 @@ namespace odc {
 class odc::io::OptionParser {
 public:
   //! Total simulation time in seconds.
-  real  m_tMax;
+  real    m_tMax;
 
   //! Number of timesteps
-  int   m_numTimesteps;
+  int_pt  m_numTimesteps;
 
   //! Spatial step size for x, y, and z dimensions in meters.
-  real  m_dH;
+  real    m_dH;
 
   //! Time step size in seconds.
-  real  m_dT;
+  real    m_dT;
 
   //! ARBC Coefficient for PML (3-4), or Cerjan (0.90-0.96).
-  real  m_arbc;
+  real    m_arbc;
 
   // TODO: missing description
-  real  m_pht;
+  real    m_pht;
 
   //! PML or Cerjan ABC (1=PML, 0=Cerjan).
-  int   m_nPc;
+  int     m_nPc;
 
   //! ABC thickness (grid-points) PML <= 20, Cerjan >= 20.
-  int   m_nD;
+  int     m_nD;
 
   //! Number of source nodes on fault.
-  int   m_nSrc;
+  int     m_nSrc;
 
   //! Number of time steps in rupture functions.
-  int   m_nSt;
+  int     m_nSt;
 
   //! Number of variables in a grid point.
-  int   m_nVar;
+  int     m_nVar;
 
   //! Visco or elastic scheme (1=visco, 0=elastic).
-  int   m_nVe;
+  int     m_nVe;
 
   //! Initial media restart option(0=homogenous).
-  int   m_mediaStart;
+  int     m_mediaStart;
 
   //! Mode selection and fault or initial stress setting (1 or 2).
-  int   m_iFault;
+  int     m_iFault;
 
   //! Number of rupture timesteps to read at a time from the source file.
-  int   m_readStep;
+  int     m_readStep;
 
   //! CPU reads larger chunks and sends to GPU at every @c READ_STEP_GPU. 
   //! If @c IFAULT==2 then @c READ_STEP must be divisible by @c READ_STEP_GPU.
-  int   m_readStepGpu;
+  int     m_readStepGpu;
 
   //! Number of timesteps to skip when copying velocities from GPU to CPU.
-  int   m_nTiSkp;
+  int     m_nTiSkp;
 
   //! Number of timesteps to skip when writing velocities from CPU to files. So the timesteps that get written to the files are
   //! ( @c n*NTISKP*WRITE_STEP for @c n=1,2,...).
-  int   m_writeStep;
+  int     m_writeStep;
 
   //! Number of nodes in the x dimension.
-  int   m_nX;
+  int     m_nX;
 
   //! Number of nodes in the y dimension.
-  int   m_nY;
+  int     m_nY;
 
   //! Number of nodes in the z dimension.
-  int   m_nZ;
+  int     m_nZ;
 
   //! Number of processes in the x dimension (using 2 dimensional MPI topology).
-  int   m_pX;
+  int     m_pX;
 
   //! Number of processes in the y dimension (using 2 dimensional MPI topology).
-  int   m_pY;
+  int     m_pY;
 
   //! Index (starting from 1) of the first x node to record values at (e.g. if @c NBGX==10, then the output file
   //! will not have data for the first 9 nodes in the x dimension).
-  int   m_nBgX;
+  int     m_nBgX;
 
   //! Index (starting from 1) of the last x node to record values at. Set to -1 to record all the way to the end.
-  int   m_nEdX;
+  int     m_nEdX;
 
   //! Number of nodes to skip in the x dimension when recording values. (e.g. if @c NBGX==10, @c NEDX==40, @c NSKPX==10, then
   //! x nodes 10, 20, 30, and 40 will have their values recorded in the output file.
-  int   m_nSkpX;
+  int     m_nSkpX;
 
   //! Index (starting from 1) of the first y node to record values at.
-  int   m_nBgY;
+  int     m_nBgY;
 
   //! Index (starting from 1) of the last y node to record values at.
-  int   m_nEdY;
+  int     m_nEdY;
 
   //! Number of nodes to skip in the y dimension when recording values.
-  int   m_nSkpY;
+  int     m_nSkpY;
 
   //! Index (starting from 1) of the first x node to record values at. Note that z==1 is the surface node.
-  int   m_nBgZ;
+  int     m_nBgZ;
 
   //! Index (starting from 1) of the last z node to record values at.
-  int   m_nEdZ;
+  int     m_nEdZ;
 
   //! Number of nodes to skip in the z dimension when recording values.
-  int   m_nSkpZ;
+  int     m_nSkpZ;
 
   // TODO: missing description
-  real  m_fac;
+  real    m_fac;
 
   // TODO: missing description
-  real  m_q0;
+  real    m_q0;
 
   // TODO: missing description
-  real  m_ex;
+  real    m_ex;
 
   //! Q bandwidth central frequency.
-  real  m_fp;
+  real    m_fp;
 
   //! IMode selection of dynamic rupture model.
-  int   m_iDyna;
+  int     m_iDyna;
 
   //! Southern California Vp-Vs Q relationship enabling flag.
-  int   m_soCalQ;
+  int     m_soCalQ;
 
   //! Source input file (if @c IFAULT==2, then this is prefix of @c tpsrc).
-  char  m_inSrc[AWP_PATH_MAX];
+  char    m_inSrc[AWP_PATH_MAX];
 
   //! Mesh input file.
-  char  m_inVel[AWP_PATH_MAX];
+  char    m_inVel[AWP_PATH_MAX];
 
   //! Output folder.
-  char  m_out[AWP_PATH_MAX];
+  char    m_out[AWP_PATH_MAX];
 
   //! Split source input file prefix for @c IFAULT==2 option.
-  char  m_inSrcI2[AWP_PATH_MAX];
+  char    m_inSrcI2[AWP_PATH_MAX];
 
   //! Checkpoint statistics file to write to.
-  char  m_chkFile[AWP_PATH_MAX];
+  char    m_chkFile[AWP_PATH_MAX];
 
   //! Receiver list input file.
-  char  m_inRcvr[AWP_PATH_MAX];
+  char    m_inRcvr[AWP_PATH_MAX];
 
   //! Receiver output log file.
-  char  m_outRcvr[AWP_PATH_MAX];
+  char    m_outRcvr[AWP_PATH_MAX];
 
   //! Constructor of the option parser.
   OptionParser( int i_argc, char **i_argv );
