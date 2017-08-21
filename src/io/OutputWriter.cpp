@@ -249,7 +249,7 @@ void odc::io::OutputWriter::update( int_pt i_timestep, PatchDecomp& i_ptchDec ) 
       if( odc::parallel::Mpi::m_rank == 0 )
         std::cout << "Writing to file" << std::endl;
 
-      char *datarep = "native";
+      char datarep[] = "native";
       char filename[AWP_PATH_MAX];
       MPI_File file;
 

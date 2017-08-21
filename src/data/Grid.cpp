@@ -458,7 +458,7 @@ void odc::data::CopyFromYASKGrid( Grid3D grid, RealvGridBase* yaskGrid,
                                   int_pt xStart, int_pt yStart, int_pt zStart,
                                   int_pt nx, int_pt ny, int_pt nz ) {
   for( int_pt i = xStart; i < xStart + nx; i++ )
-    for( int_pt j = yStart, j < yStart + ny; j++ )
+    for( int_pt j = yStart; j < yStart + ny; j++ )
       for( int_pt k = zStart; k < zStart + nz; k++ )
         grid[i][j][k] = yaskGrid->readElem( i, j, k, 0 );
 }
@@ -484,7 +484,7 @@ void odc::data::WriteToYASKGrid( Grid3D grid, RealvGridBase* yaskGrid,
                                  int_pt xStart, int_pt yStart, int_pt zStart,
                                  int_pt nx, int_pt ny, int_pt nz ) {
   for( int_pt i = xStart; i < xStart + nx; i++ )
-    for( int_pt j = yStart, j < yStart + ny; j++ )
+    for( int_pt j = yStart; j < yStart + ny; j++ )
       for( int_pt k = zStart; k < zStart + nz; k++ )
         yaskGrid->writeElem( grid[i][j][k], i, j, k, 0 );
 }

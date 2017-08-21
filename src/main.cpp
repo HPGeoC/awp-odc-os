@@ -513,7 +513,7 @@ int main( int i_argc, char *i_argv[] ) {
 
   //! close mpi
   if( l_rank == 0 )
-    std::cout << "Closing mpi" << std::endl;
+    std::cout << "Closing MPI" << std::endl;
   odc::parallel::Mpi::finalize();
 
   return 0;
