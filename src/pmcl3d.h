@@ -40,7 +40,7 @@ void command(int argc, char **argv,
              int *NBGZ, int *NEDZ, int *NSKPZ,
              float *FAC, float *Q0, float *EX, float *FP, int *IDYNA, int *SoCalQ,
              char  *INSRC,  char *INVEL, char *OUT, char *INSRC_I2,
-             char  *CHKFILE);
+             char  *CHKFILE, char *INRCVR, char *OUTRCVR);
 
 int read_src_ifault_2(int rank, int READ_STEP, 
     char *INSRC, char *INSRC_I2, 

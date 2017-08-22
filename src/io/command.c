@@ -129,21 +129,6 @@ const float def_Q0                        = 5.0;
 const float def_EX                        = 0.0;
 const float def_FP                        = 2.5;
 
-const char  def_INSRC[AWP_PATH_MAX]       = "";
-const char  def_INVEL[AWP_PATH_MAX]       = "";
-
-const char  def_OUT[AWP_PATH_MAX]         = "";
-
-const char  def_INSRC_TPSRC[AWP_PATH_MAX] = "";
-const char  def_INSRC_I2[AWP_PATH_MAX]    = "";
-
-const char  def_CHKFILE[AWP_PATH_MAX]     = "";
-
-const char  def_INRCVR[AWP_PATH_MAX]      = "";
-const char  def_OUTRCVR[AWP_PATH_MAX]     = "";
-
-//! Raj: commented default paths..do we need these?
-/**
 const char  def_INSRC[AWP_PATH_MAX]       = "input/FAULTPOW";
 const char  def_INVEL[AWP_PATH_MAX]       = "input/media";
 
@@ -154,9 +139,8 @@ const char  def_INSRC_I2[AWP_PATH_MAX]    = "input_rst/srcpart/split_faults/faul
 
 const char  def_CHKFILE[AWP_PATH_MAX]     = "output_sfc/CHKP";
 
-const char  def_INRCVR[AWP_PATH_MAX]      = "input/receiverList.txt";
-const char  def_OUTRCVR[AWP_PATH_MAX]     = "output_sfc/receiverOutput";
-*/
+const char  def_INRCVR[AWP_PATH_MAX]      = "";
+const char  def_OUTRCVR[AWP_PATH_MAX]     = "";
 
 /**
  Reads command line arguments and assigns them to corresponding variables.
