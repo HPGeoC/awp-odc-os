@@ -75,7 +75,7 @@ int main(int argc,char **argv)
     int   nxt, nyt, nzt;
     MPI_Offset displacement;
     float FAC, Q0, EX, FP;
-    char  INSRC[200], INVEL[200], OUT[200], INSRC_I2[200], CHKFILE[200];
+    char  INSRC[200], INVEL[200], OUT[200], INSRC_I2[200], CHKFILE[200], INRCVR[200], OUTRCVR[200];
     double GFLOPS = 1.0;
     double GFLOPS_SUM = 0.0;
     Grid3D u1=NULL, v1=NULL, w1=NULL;
@@ -204,7 +204,7 @@ int main(int argc,char **argv)
             &NVAR,&NVE,&MEDIASTART,&IFAULT,&READ_STEP,&READ_STEP_GPU,
             &NTISKP,&WRITE_STEP,&NX,&NY,&NZ,&PX,&PY,
             &NBGX,&NEDX,&NSKPX,&NBGY,&NEDY,&NSKPY,&NBGZ,&NEDZ,&NSKPZ,
-            &FAC,&Q0,&EX,&FP,&IDYNA,&SoCalQ,INSRC,INVEL,OUT,INSRC_I2,CHKFILE);
+            &FAC,&Q0,&EX,&FP,&IDYNA,&SoCalQ,INSRC,INVEL,OUT,INSRC_I2,CHKFILE,INRCVR,OUTRCVR);
 
     sprintf(filenamebasex,"%s/SX",OUT);
     sprintf(filenamebasey,"%s/SY",OUT);
