@@ -34,7 +34,7 @@ vars.AddVariables(
               ),
   EnumVariable( 'parallel',
                 'parallelization',
-                'none',
+                'mpi+omp',
                  allowed_values = ( 'none', 'mpi', 'mpi+omp' )
               ),
   EnumVariable( 'cpu_arch',
