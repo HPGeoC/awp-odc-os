@@ -27,10 +27,15 @@ import warnings
 vars = Variables()
 
 vars.AddVariables(
-  EnumVariable( 'parallelization',
+  EnumVariable( 'kernel',
+                'compute-kernel',
+                'vanilla',
+                 allowed_values = ( 'cuda', 'vanilla', 'yask' )
+              ),
+  EnumVariable( 'parallel',
                 'parallelization',
-                'mpi_omp',
-                 allowed_values = ( 'mpi_cuda', 'mpi_omp', 'mpi_omp_yask' )
+                'none',
+                 allowed_values = ( 'none', 'mpi', 'mpi+omp' )
               ),
   EnumVariable( 'cpu_arch',
                 'CPU architecture to compile for',
@@ -38,9 +43,9 @@ vars.AddVariables(
                  allowed_values = ( 'host', 'snb', 'hsw', 'skx', 'knl' )
               ),
   EnumVariable( 'mode',
-                'compile mode',
+                'compile mode, option \'san\' enables address and undefind sanitizers',
                 'release',
-                 allowed_values = ( 'release', 'debug', 'asan' )
+                 allowed_values = ( 'release', 'debug', 'release+san', 'debug+san' )
               ),
   BoolVariable( 'cov',
                 'enable code coverage',
@@ -48,14 +53,16 @@ vars.AddVariables(
 )
 
 vars.AddVariables(
-  PathVariable( 'cudaToolkitDir', 'directory of CUDA toolkit', None ),
+  PathVariable( 'cudaToolkitDir',
+                'directory of CUDA toolkit',
+                 None ),
 )
 
 # include environment
 env = Environment( variables = vars )
 
 # generate help message
-Help( vars.GenerateHelpText(env) )
+Help( vars.GenerateHelpText( env ) )
 
 # print welcome message
 print( 'Running build script of AWP-ODC-OS.' )
@@ -98,6 +105,13 @@ else:
 env['compilers']  = compilers
 print '  using', compilers, 'as compiler suite'
 
+# detect os
+if env['PLATFORM'] == 'darwin':
+  opSys = 'macos'
+else:
+  opSys = 'linux'
+print '  using', opSys, 'as operating system'
+
 # set compiler and CPU architecture
 if env['cpu_arch'] == 'host':
   if compilers == 'intel':
@@ -115,57 +129,40 @@ elif env['cpu_arch'] == 'skx':
     env.Append( CPPFLAGS = ['-xCOMMON-AVX512'] )
 elif env['cpu_arch'] == 'knl':
   if compilers == 'gnu':
-    env.Append( CPPFLAGS = ['-mavx512f', '-mavx512cd', '-mavx512er', '-mavx512pf'] )
+    env.Append( CPPFLAGS = ['-march=native'] )
   elif compilers == 'intel':
     env.Append( CPPFLAGS = ['-xMIC-AVX512'] )
-#  else:
-#    env.Append( CPPFLAGS = ['-xHost'] )
 
 # set openmp flags
-if 'omp' in env['parallelization']:
+if 'omp' in env['parallel']:
   env.Append( CPPFLAGS  = ['-fopenmp'] )
   env.Append( LINKFLAGS = ['-fopenmp'] )
 
+# enable mpi
+if 'mpi' in env['parallel']:
+  env.Append( CPPDEFINES = ['AWP_USE_MPI'] )
+
 if compilers == 'clang':
-  # get the path of libiomp5 from clang
+  # get the path of libomp from clang
   try:
-    rpath = subprocess.check_output( [env['CXX'], "--print-file-name=libiomp5.so"] )
+    rpath = subprocess.check_output( [env['CXX'], "--print-file-name=libomp.so"] )
     rpath = os.path.dirname( rpath )
     env.Append( LINKFLAGS = [ '-Wl,-rpath='+rpath ] )
   except:
-    print '  failed getting dir of libiomp5.so, not setting rpath'
+    print '  failed getting dir of libomp.so, not setting rpath'
 
-  # fix clang's confusion with old libstdc++ at runtime (no proper automatic rpath)
-  try:
-    rpath = subprocess.check_output( [env['CXX'], "--print-file-name=libstdc++.so"] )
-    rpath = os.path.dirname( rpath )
-    env.Append( LINKFLAGS = [ '-Wl,-rpath='+rpath ] )
-  except:
-    print '  failed getting dir of libstdc++.so, not setting rpath'
-
-# add cuda support if requested
-if env['parallelization'] in ['cuda', 'mpi_cuda' ]:
+# add flags and cuda support if requested
+if 'cuda' in env['kernel']:
   if 'cudaToolkitDir' not in env:
-    print( '*** cudaToolkitDir not set; defaulting to /usr/local/cuda' )
+    print( '  cudaToolkitDir not set; defaulting to /usr/local/cuda' )
     env['cudaToolkitDir'] = '/usr/local/cuda'
 
   env.Tool( 'nvcc', toolpath = ['tools/scons'] )
   env.Append( CPPPATH = [ env['cudaToolkitDir'] + '/include' ] )
   env.Append( LIBPATH = [ env['cudaToolkitDir'] + '/lib64' ] )
   env.Append( LIBS    = ['cudart'] )
-
-# set alignment and flags
-env.Append( CPPDEFINES = ['ALIGNMENT=64'] )
-
-if env['parallelization'] in ['cuda']:
-  env.Append( CPPDEFINES = ['USE_CUDA'] )
-elif env['parallelization'] in ['mpi_cuda']:
-  env.Append( CPPDEFINES = ['USE_CUDA'] )
-  env.Append( CPPDEFINES = ['USE_MPI'] )
-elif env['parallelization'] in ['mpi_omp']:
-  env.Append( CPPDEFINES = ['AWP_USE_MPI'] )
-elif env['parallelization'] in ['mpi_omp_yask']:
-  env.Append( CPPDEFINES = ['AWP_USE_MPI'] )
+  env.Append( CPPDEFINES = ['AWP_USE_CUDA'] )
+elif 'yask' in env['kernel']:
   env.Append( CPPDEFINES = ['YASK',
                             'REAL_BYTES=4',
                             'LAYOUT_3D=Layout_123',
@@ -181,6 +178,9 @@ elif env['parallelization'] in ['mpi_omp_yask']:
     print( 'Did not find libnuma.a or numa.lib, exiting!' )
     Exit( 1 )
 
+# set alignment
+env.Append( CPPDEFINES = ['ALIGNMENT=64'] )
+
 # add current path to seach path
 env.Append( CPPPATH = [Dir('#.').path, Dir('#./src')] )
 
@@ -190,15 +190,13 @@ env.Append( CXXFLAGS="-std=c++11" )
 # set optimization mode
 if 'debug' in env['mode']:
   env.Append( CXXFLAGS = ['-g', '-O0'] )
-elif 'release' in env['mode']:
+else:
   env.Append( CXXFLAGS = ['-O3'] )
-  if compilers == 'gnu':
-    env.Append( CXXFLAGS = '-ftree-vectorize' )
 
 # add sanitizers
-if 'asan' in  env['mode']:
-  env.Append( CXXFLAGS  = ['-g', '-fsanitize=address', '-O1', '-fno-omit-frame-pointer'] )
-  env.Append( LINKFLAGS = ['-g', '-fsanitize=address', '-O1'] )
+if 'san' in  env['mode']:
+  env.Append( CXXFLAGS  = ['-fsanitize=address', '-fsanitize=undefined', '-fno-omit-frame-pointer'] )
+  env.Append( LINKFLAGS = ['-fsanitize=address', '-fsanitize=undefined'] )
 
 # enable code coverage, if requested
 if env['cov'] == True:

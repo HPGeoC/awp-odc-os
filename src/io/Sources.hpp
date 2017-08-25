@@ -23,8 +23,11 @@
 #include <cmath>
 #include <fstream>
 #include <iostream>
-#include <mpi.h>
 #include <stdio.h>
+
+#ifdef AWP_USE_MPI
+#include <mpi.h>
+#endif
 
 #include "constants.hpp"
 #include "data/Grid.hpp"

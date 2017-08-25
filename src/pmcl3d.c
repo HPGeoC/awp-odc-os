@@ -206,6 +206,9 @@ int main(int argc,char **argv)
             &NBGX,&NEDX,&NSKPX,&NBGY,&NEDY,&NSKPY,&NBGZ,&NEDZ,&NSKPZ,
             &FAC,&Q0,&EX,&FP,&IDYNA,&SoCalQ,INSRC,INVEL,OUT,INSRC_I2,CHKFILE,INRCVR,OUTRCVR);
 
+    if( INRCVR[0] != '\0' || OUTRCVR[0] != '\0' )
+      printf( "Warning: Receivers not implemented in gpu code yet.\n" );
+
     sprintf(filenamebasex,"%s/SX",OUT);
     sprintf(filenamebasey,"%s/SY",OUT);
     sprintf(filenamebasez,"%s/SZ",OUT);

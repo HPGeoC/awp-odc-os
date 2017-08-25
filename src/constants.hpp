@@ -31,7 +31,7 @@
 #define RESTRICT
 #endif
 
-#ifdef USE_CUDA
+#ifdef AWP_USE_CUDA
 #define LOOP 1
 #define ALIGN 32
 #endif
@@ -44,7 +44,9 @@ typedef int   *RESTRICT                     PosInf;
 
 //! floating point precision
 typedef float real;
+#ifdef AWP_USE_MPI
 #define AWP_MPI_REAL MPI_FLOAT
+#endif
 
 //! int for grid points
 typedef long long int_pt;

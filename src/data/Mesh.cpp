@@ -322,9 +322,6 @@ void odc::data::Mesh::inimesh( int       MEDIASTART,
     real        sendBuff1[6][nzt][nyt], recvBuff1[6][nzt][nyt];
     real        sendBuff2[6][nzt][nxt], recvBuff2[6][nzt][nxt];
 
-    MPI_Request reqs[2];
-    MPI_Status  stats[2];
-
     for( k = 0; k < nzt; k++ ) {
       for( j = 0; j < nyt; j++ ) {
         for( i = 0; i < nxt; i++ ) {
@@ -373,6 +370,10 @@ void odc::data::Mesh::inimesh( int       MEDIASTART,
         z-direction : upwards
         origin      : lower-left corner towards screen/paper
     */
+
+#ifdef AWP_USE_MPI
+    MPI_Request reqs[2];
+    MPI_Status  stats[2];
 
     //! If right neighbor present
     if( rightNeighbor != -1 ) {
@@ -637,6 +638,7 @@ void odc::data::Mesh::inimesh( int       MEDIASTART,
         }
       }
     }
+#endif
   }
 
   else {
@@ -698,7 +700,9 @@ void odc::data::Mesh::inimesh( int       MEDIASTART,
             if( tmpvp[i][j][k] != tmpvp[i][j][k] ||
                 tmpvs[i][j][k] != tmpvs[i][j][k] ||
                 tmpdd[i][j][k] != tmpdd[i][j][k] ) {
+#ifdef AWP_USE_MPI
               MPI_Abort( MPI_COMM_WORLD, 1 );
+#endif
             }
           }
         }
@@ -887,6 +891,7 @@ void odc::data::Mesh::inimesh( int       MEDIASTART,
     }
   }
 
+#ifdef AWP_USE_MPI
   //! Getting max and min values of Vs, Vp and density across all MPIs
   MPI_Allreduce( &min_vse, &m_vse[0], 1, AWP_MPI_REAL, MPI_MIN, MPI_COMM_WORLD );
   MPI_Allreduce( &max_vse, &m_vse[1], 1, AWP_MPI_REAL, MPI_MAX, MPI_COMM_WORLD );
@@ -894,6 +899,14 @@ void odc::data::Mesh::inimesh( int       MEDIASTART,
   MPI_Allreduce( &max_vpe, &m_vpe[1], 1, AWP_MPI_REAL, MPI_MAX, MPI_COMM_WORLD );
   MPI_Allreduce( &min_dde, &m_dde[0], 1, AWP_MPI_REAL, MPI_MIN, MPI_COMM_WORLD );
   MPI_Allreduce( &max_dde, &m_dde[1], 1, AWP_MPI_REAL, MPI_MAX, MPI_COMM_WORLD );
+#else
+  m_vse[0] = min_vse;
+  m_vse[1] = max_vse;
+  m_vpe[0] = min_vpe;
+  m_vpe[1] = max_vpe;
+  m_dde[0] = min_dde;
+  m_dde[1] = max_dde;
+#endif
 }
 
 /**

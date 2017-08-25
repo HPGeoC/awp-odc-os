@@ -17,7 +17,7 @@
 Import('env')
 
 # GPU-version
-if env['parallelization'] in ['cuda', 'mpi_cuda' ]:
+if 'cuda' in env['kernel']:
   env.Program( 'pmcl3d', source = [ 'pmcl3d.c',
                                     'io/command.c',
                                     'io/io.c',
@@ -28,7 +28,8 @@ if env['parallelization'] in ['cuda', 'mpi_cuda' ]:
                                     'parallel/swap.c',
                                     'kernels/kernel.cu' ] )
 # CPU-version
-elif env['parallelization'] in ['mpi_omp']:
+# Vanilla kernel
+elif 'vanilla' in env['kernel']:
   env.Program( 'pmcl3d', source = [ 'main.cpp',
                                     'util.cpp',
                                     'data/Grid.cpp',
@@ -45,7 +46,8 @@ elif env['parallelization'] in ['mpi_omp']:
                                     'data/PatchDecomp.cpp',
                                     'data/Patch.cpp'
                                     ] )
-else:
+# YASK kernel
+elif 'yask' in env['kernel']:
   env.Program( 'pmcl3d', source = [ 'main.cpp',
                                     'util.cpp',
                                     'data/Grid.cpp',
