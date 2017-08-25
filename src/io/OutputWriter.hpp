@@ -136,12 +136,13 @@ private:
   int_pt m_numZNodesToRecord;
   int_pt m_numGridPointsToRecord;
 
-  MPI_Datatype m_filetype;
-  MPI_Offset   m_displacement;
-
   real *m_velocityXWriteBuffer;
   real *m_velocityYWriteBuffer;
   real *m_velocityZWriteBuffer;
+
+#ifdef AWP_USE_MPI
+  MPI_Datatype m_filetype;
+  MPI_Offset   m_displacement;
 
   void calcRecordingPoints( int *rec_nbgx, int *rec_nedx,
                             int *rec_nbgy, int *rec_nedy, int *rec_nbgz, int *rec_nedz,
@@ -149,6 +150,7 @@ private:
                             long int nxt, long int nyt, long int nzt, int rec_NX, int rec_NY, int rec_NZ,
                             int NBGX, int NEDX, int NSKPX, int NBGY, int NEDY, int NSKPY,
                             int NBGZ, int NEDZ, int NSKPZ, int *coord );
+#endif
 };
 
 #endif /* OutputWriter_hpp */

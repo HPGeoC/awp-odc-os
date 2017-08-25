@@ -20,6 +20,7 @@
 
 #include "OutputWriter.hpp"
 
+#ifdef AWP_USE_MPI
 void odc::io::OutputWriter::calcRecordingPoints( int *rec_nbgx, int *rec_nedx,
                                                  int *rec_nbgy, int *rec_nedy, int *rec_nbgz, int *rec_nedz,
                                                  int *rec_nxt, int *rec_nyt, int *rec_nzt, MPI_Offset *displacement,
@@ -84,6 +85,7 @@ void odc::io::OutputWriter::calcRecordingPoints( int *rec_nbgx, int *rec_nedx,
   *displacement *= sizeof( float );
   return;
 }
+#endif
 
 // TODO(Josh):  Output writer assumes at least some node from each rank is an
 //              output point;  should remove this requirement
@@ -152,9 +154,11 @@ odc::io::OutputWriter::OutputWriter( odc::io::OptionParser i_options ) {
   int_pt strideY = m_numGlobalXNodesToRecord * strideX;
   int_pt strideZ = m_numGlobalYNodesToRecord * strideY;
 
+#ifdef AWP_USE_MPI
   m_displacement =  ((m_firstXNodeToRecord - globalFirstX) / m_numXNodesToSkip) * strideX;
   m_displacement += ((m_firstYNodeToRecord - globalFirstY) / m_numYNodesToSkip) * strideY;
   m_displacement += ((m_firstZNodeToRecord - globalFirstZ) / m_numZNodesToSkip) * strideZ;
+#endif
 
   //! Switch from 1-based indexing to 0-based indexing
   m_firstXNodeToRecord--;
@@ -170,6 +174,7 @@ odc::io::OutputWriter::OutputWriter( odc::io::OptionParser i_options ) {
   maxNX_NY_NZ_WS        = (maxNX_NY_NZ_WS > m_numZNodesToRecord ? maxNX_NY_NZ_WS : m_numZNodesToRecord);
   maxNX_NY_NZ_WS        = (maxNX_NY_NZ_WS > i_options.m_writeStep ? maxNX_NY_NZ_WS : i_options.m_writeStep);
 
+#ifdef AWP_USE_MPI
   //! "dispArray" will store the block offsets when making the 3D grid to store the file output values
   //! "ones" stores the number of elements in each block (always one element per block)
   int ones[maxNX_NY_NZ_WS];
@@ -208,6 +213,7 @@ odc::io::OutputWriter::OutputWriter( odc::io::OptionParser i_options ) {
   //! Commit "filetype" after making sure it has enough space to hold all of the (x,y,z) nodes
   err = MPI_Type_commit( &m_filetype );
   //MPI_Type_size(m_filetype, &tmpSize);
+#endif
 
   m_numTimestepsToSkip  = i_options.m_nTiSkp;
   m_writeStep           = i_options.m_writeStep;
@@ -251,6 +257,7 @@ void odc::io::OutputWriter::update( int_pt i_timestep, PatchDecomp& i_ptchDec ) 
 
       char datarep[] = "native";
       char filename[AWP_PATH_MAX];
+#ifdef AWP_USE_MPI
       MPI_File file;
 
       MPI_Offset displacement = m_displacement;
@@ -285,6 +292,7 @@ void odc::io::OutputWriter::update( int_pt i_timestep, PatchDecomp& i_ptchDec ) 
       err = MPI_File_set_view( file, displacement, AWP_MPI_REAL, m_filetype, datarep, MPI_INFO_NULL );
       err = MPI_File_write_all( file, m_velocityZWriteBuffer, m_numGridPointsToRecord*m_writeStep, AWP_MPI_REAL, &filestatus );
       err = MPI_File_close( &file );
+#endif
     }
   }
 }
@@ -306,7 +314,7 @@ odc::io::ReceiverWriter::ReceiverWriter( char *inputFileName, char *outputFileNa
   char    *token;                   //! token read from receiver input file
   char    line[1024];               //! line read from receiver input file
 
-  if( inputFileName != NULL && inputFileName[0] == '\0' ) {
+  if( inputFileName[0] == '\0' ) {
     m_numberOfReceivers = 0;
     return;
   }

@@ -23,7 +23,11 @@
 #include <cmath>
 #include <fstream>
 #include <iostream>
+
+#ifdef AWP_USE_MPI
 #include <mpi.h>
+#endif
+
 #include <stdio.h>
 
 #include "constants.hpp"

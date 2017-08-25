@@ -53,12 +53,12 @@ odc::io::Sources::Sources( int           i_iFault,
       correct position of source inside the rank. Previously it was
       falsely reporting source to be on MPI boundary whenever the MPI
       ranks were large in number thereby making m_numXGridPoints and the
-      other variables less than source corrdinates. Hence the need to
+      other variables less than source coordinates. Hence the need to
       subtract the starting grid locations.
     */
-    int_pt idx = m_ptpSrc[j*dim]    - odc::parallel::Mpi::m_startX;
-    int_pt idy = m_ptpSrc[j*dim+1]  - odc::parallel::Mpi::m_startY;
-    int_pt idz = m_ptpSrc[j*dim+2]  - odc::parallel::Mpi::m_startZ;
+    int_pt idx = m_ptpSrc[j*dim]   - odc::parallel::Mpi::m_startX;
+    int_pt idy = m_ptpSrc[j*dim+1] - odc::parallel::Mpi::m_startY;
+    int_pt idz = m_ptpSrc[j*dim+2] - odc::parallel::Mpi::m_startZ;
 
     //! TODO (Raj): BUG in this if loop...fix it!!
     //! check if this source term is on one of the MPI boundaries
@@ -155,12 +155,12 @@ odc::io::Sources::Sources( int           i_iFault,
       (make sure that the YASK TIMESTEP constant is set to 1!)
     */
 
-    m_locStrXX[j] = (real*) p.yask_context.stress_xx->getElemPtr( 0, x, y, z, 0 ); 
-    m_locStrXY[j] = (real*) p.yask_context.stress_xy->getElemPtr( 0, x, y, z, 0 );
-    m_locStrXZ[j] = (real*) p.yask_context.stress_xz->getElemPtr( 0, x, y, z, 0 );
-    m_locStrYY[j] = (real*) p.yask_context.stress_yy->getElemPtr( 0, x, y, z, 0 );
-    m_locStrYZ[j] = (real*) p.yask_context.stress_yz->getElemPtr( 0, x, y, z, 0 );
-    m_locStrZZ[j] = (real*) p.yask_context.stress_zz->getElemPtr( 0, x, y, z, 0 );
+    m_locStrXX[j] = (real*)p.yask_context.stress_xx->getElemPtr( 0, x, y, z, 0 );
+    m_locStrXY[j] = (real*)p.yask_context.stress_xy->getElemPtr( 0, x, y, z, 0 );
+    m_locStrXZ[j] = (real*)p.yask_context.stress_xz->getElemPtr( 0, x, y, z, 0 );
+    m_locStrYY[j] = (real*)p.yask_context.stress_yy->getElemPtr( 0, x, y, z, 0 );
+    m_locStrYZ[j] = (real*)p.yask_context.stress_yz->getElemPtr( 0, x, y, z, 0 );
+    m_locStrZZ[j] = (real*)p.yask_context.stress_zz->getElemPtr( 0, x, y, z, 0 );
 #else
     m_locStrXX[j] = &i_pd.m_patches[patch_id].soa.m_stressXX[x][y][z];
     m_locStrXY[j] = &i_pd.m_patches[patch_id].soa.m_stressXY[x][y][z];
@@ -209,9 +209,7 @@ odc::io::Sources::Sources( int           i_iFault,
  */
 int inisource( int IFAULT, int NSRC, int READ_STEP, int NST, int *SRCPROC, int maxdim, int *NPSRC, int_pt NZ, PosInf *ptpsrc,
                Grid1D *ptaxx, Grid1D *ptayy, Grid1D *ptazz, Grid1D *ptaxz, Grid1D *ptayz, Grid1D *ptaxy, char *INSRC, char *INSRC_I2 ) {
-  int rank = odc::parallel::Mpi::m_rank;
-
-  if( INSRC != NULL && INSRC[0] == '\0' ) {
+  if( INSRC[0] == '\0' ) {
     std::cerr << "Warning: no source file specified in input parameters!\n";
     return -1;
   }
@@ -228,12 +226,13 @@ int inisource( int IFAULT, int NSRC, int READ_STEP, int NST, int *SRCPROC, int m
     In the above diagram, nbx+2 seems misplaced?  Seems like the first real (non-ghost) point in the domain corresponds to index 0, in the fault
     indexing, so that's what I'm going with below.
   */
-  int_pt nbx = odc::parallel::Mpi::m_startX + 1;
-  int_pt nex = nbx + odc::parallel::Mpi::m_rangeX - 1;
-  int_pt nby = odc::parallel::Mpi::m_startY + 1;
-  int_pt ney = nby + odc::parallel::Mpi::m_rangeY - 1;
-  int_pt nbz = odc::parallel::Mpi::m_startZ;
-  int_pt nez = nbz + odc::parallel::Mpi::m_rangeZ - 1;
+  int_pt nbx  = odc::parallel::Mpi::m_startX + 1;
+  int_pt nex  = nbx + odc::parallel::Mpi::m_rangeX - 1;
+  int_pt nby  = odc::parallel::Mpi::m_startY + 1;
+  int_pt ney  = nby + odc::parallel::Mpi::m_rangeY - 1;
+  int_pt nbz  = odc::parallel::Mpi::m_startZ;
+  int_pt nez  = nbz + odc::parallel::Mpi::m_rangeZ - 1;
+  int rank    = odc::parallel::Mpi::m_rank;
 
   int i, j, k, npsrc, srcproc, master = 0;
   PosInf tpsrc  = NULL, tpsrcp = NULL;
