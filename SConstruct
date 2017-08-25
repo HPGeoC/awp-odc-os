@@ -129,7 +129,7 @@ elif env['cpu_arch'] == 'skx':
     env.Append( CPPFLAGS = ['-xCOMMON-AVX512'] )
 elif env['cpu_arch'] == 'knl':
   if compilers == 'gnu':
-    env.Append( CPPFLAGS = ['-march=native'] )
+    env.Append( CPPFLAGS = ['-mavx512f', '-mavx512cd', '-mavx512er', '-mavx512pf'] )
   elif compilers == 'intel':
     env.Append( CPPFLAGS = ['-xMIC-AVX512'] )
 

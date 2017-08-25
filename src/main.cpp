@@ -55,6 +55,7 @@
 int main( int i_argc, char *i_argv[] ) {
   int     currentThreadId, numCompThreads = 0;
   double  mpi_time  = 0.0;
+  std::streamsize ss = std::cout.precision();
 
   //! parse options
   odc::io::OptionParser l_options( i_argc, i_argv );
@@ -202,11 +203,11 @@ int main( int i_argc, char *i_argv[] ) {
       if( amManageThread && l_rank == 0 ) {
         float per = (float)tstep / (float)l_options.m_numTimesteps * 100.0;
         std::cout << "|";
-        for( int p = 0; p < (int)(per) * 0.5; p++ )
+        for( int p = 0; p < (int) floor((per) * 0.5); p++ )
           std::cout << "#";
-        for( int q = 0; q < (int)(100 - per) * 0.5; q++ )
+        for( int q = 0; q < (int) ceil((100.0 - per) * 0.5); q++ )
           std::cout << ".";
-        std::cout << "| Timestep " << tstep << " of total " << l_options.m_numTimesteps << " | " << per << "%    \r";
+        std::cout << "| Timestep " << tstep << " of total " << l_options.m_numTimesteps << " | " << std::fixed << std::setprecision(2) << per << "%\r";
       }
 
       if( amManageThread )
@@ -504,7 +505,7 @@ int main( int i_argc, char *i_argv[] ) {
     if( l_omp.getThreadNumAll() == 0 && l_rank == 0 ) {
       double cur_time = wall_time();
       double avg = (cur_time - start_time) / (l_options.m_numTimesteps - start_ts);
-      std::cout << "\n\nFinal time per timestep: " << avg <<  "; MPI time: " << mpi_time / l_options.m_numTimesteps << std::endl;
+      std::cout << std::setprecision(ss) << "\n\nFinal time per timestep: " << avg <<  "; MPI time: " << mpi_time / l_options.m_numTimesteps << std::endl;
       double mlups = (double) l_rangeX * (double) l_rangeY * (double) l_rangeZ / (avg * 1e6);
       std::cout << "Final MLUPS: " << mlups << std::endl;
     }
