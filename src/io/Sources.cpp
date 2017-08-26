@@ -16,7 +16,17 @@
 
 //! TODO: Provide non-mpi version.
 
-#include "Sources.hpp"
+#ifdef AWP_USE_MPI
+#include <mpi.h>
+#endif
+
+#include <stdio.h>
+#include <iostream>
+#include <fstream>
+#include "constants.hpp"
+#include "io/Sources.hpp"
+#include "parallel/Mpi.hpp"
+#include "data/Grid.hpp"
 
 odc::io::Sources::Sources( int           i_iFault,
                            int           i_nSrc,

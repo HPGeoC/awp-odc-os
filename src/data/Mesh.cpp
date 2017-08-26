@@ -21,6 +21,15 @@
 */
 
 #include "Mesh.hpp"
+#include "data/common.hpp"
+#include "Grid.hpp"
+
+#include <cstdio>
+#include <cmath>
+#include <complex>
+
+#include <time.h>
+#include <sys/time.h>
 
 #ifdef YASK
 using namespace yask;

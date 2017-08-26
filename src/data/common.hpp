@@ -22,7 +22,6 @@
 
 #include <cstdlib>
 #include <iostream>
-
 #include "constants.hpp"
 
 namespace odc {

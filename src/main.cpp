@@ -24,14 +24,17 @@
 // TODO(Josh): handle buffer-term source term insertions
 // TODO: add logging
 
+#include "parallel/Mpi.hpp"
+#include "parallel/OpenMP.h"
+
 #include <algorithm>
-#include <cassert>
-#include <cmath>
-#include <iomanip>
 #include <iostream>
+#include <cassert>
 #include <omp.h>
 
-#include "constants.hpp"
+#include "io/OptionParser.h"
+#include "io/Sources.hpp"
+#include "io/OutputWriter.hpp"
 
 #include "data/SoA.hpp"
 #include "data/common.hpp"
@@ -40,17 +43,14 @@
 #include "data/PatchDecomp.hpp"
 #include "data/Grid.hpp"
 
-#include "io/OptionParser.h"
-#include "io/Sources.hpp"
-#include "io/OutputWriter.hpp"
-
 #include "kernels/cpu_vanilla.h"
-#include "kernels/cpu_scb.h"
+#include "kernels/cpu_scb.h" 
 
-#include "parallel/Mpi.hpp"
-#include "parallel/OpenMP.h"
-
+#include "constants.hpp"
 #include "util.hpp"
+
+#include <cmath>
+#include <iomanip>
 
 int main( int i_argc, char *i_argv[] ) {
   int     currentThreadId, numCompThreads = 0;

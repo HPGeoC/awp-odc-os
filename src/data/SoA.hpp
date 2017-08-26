@@ -22,8 +22,8 @@
 
 #include "constants.hpp"
 #include "common.hpp"
-#include "Grid.hpp"
 #include "io/OptionParser.h"
+#include "Grid.hpp"
 
 namespace odc {
   namespace data {

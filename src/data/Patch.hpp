@@ -19,14 +19,12 @@
 
 #if !defined(PATCH_H)
 
-#include <cmath>
-
 #include "constants.hpp"
+#include "io/OptionParser.h"
 #include "data/Grid.hpp"
 #include "data/SoA.hpp"
 #include "data/Mesh.hpp"
 #include "data/Cerjan.hpp"
-#include "io/OptionParser.h"
 #include "parallel/Mpi.hpp"
 
 #ifdef YASK

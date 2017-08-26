@@ -21,14 +21,16 @@
 #ifndef OutputWriter_hpp
 #define OutputWriter_hpp
 
+#include "parallel/Mpi.hpp"
+
 #include <cstring>
 #include <cstdio>
+
+#include "io/OptionParser.h"
 
 #include "data/common.hpp"
 #include "data/SoA.hpp"
 #include "data/PatchDecomp.hpp"
-#include "OptionParser.h"
-#include "parallel/Mpi.hpp"
 
 namespace odc {
   namespace io {

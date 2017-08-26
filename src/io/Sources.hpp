@@ -21,19 +21,11 @@
 #define SOURCES_H_
 
 #include <cmath>
-#include <fstream>
-#include <iostream>
 
-#ifdef AWP_USE_MPI
-#include <mpi.h>
-#endif
-
-#include <stdio.h>
-
-#include "constants.hpp"
-#include "data/Grid.hpp"
-#include "data/PatchDecomp.hpp"
 #include "parallel/Mpi.hpp"
+
+#include "data/PatchDecomp.hpp"
+#include "constants.hpp"
 
 extern "C" int inisource( int IFAULT, int NSRC, int READ_STEP, int NST, int *SRCPROC, int maxdim, int *NPSRC, int_pt NZ, PosInf *ptpsrc,
                           Grid1D *ptaxx, Grid1D *ptayy, Grid1D *ptazz, Grid1D *ptaxz, Grid1D *ptayz, Grid1D *ptaxy, char *INSRC, char *INSRC_I2 );
