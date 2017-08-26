@@ -17,18 +17,13 @@
 #ifndef Mesh_hpp
 #define Mesh_hpp
 
+#include "parallel/Mpi.hpp"
+
 #include <cstdio>
-#include <cmath>
-#include <complex>
-#include <time.h>
-#include <sys/time.h>
 
 #include "constants.hpp"
-#include "Grid.hpp"
 #include "data/SoA.hpp"
-#include "data/common.hpp"
 #include "io/OptionParser.h"
-#include "parallel/Mpi.hpp"
 
 #ifdef YASK
 #include "yask/stencil.hpp"

@@ -33,6 +33,15 @@ suppression = {
     }
   }
 }
+suppression = {
+  type = {thread_start}
+  stacks = {
+    {
+      !!!;
+      func=__kmp_launch_worker,mod=libiomp5.so,src=z_Linux_util.cpp;
+    }
+  }
+}
 
 ##
 # Suppress posix_memalign memleak
@@ -114,6 +123,15 @@ suppression = {
 }
 suppression = {
   type = {reachable_memory_leak}
+  stacks = {
+    allocation={
+      !!!;
+      func=MPID_nem_impi_create_numa_nodes_map,mod=libmpi.so.12,src=mpid_init.c;
+    }
+  }
+}
+suppression = {
+  type = {unreachable_memory_leak}
   stacks = {
     allocation={
       !!!;

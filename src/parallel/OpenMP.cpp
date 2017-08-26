@@ -19,6 +19,16 @@
 
 #include "OpenMP.h"
 
+#include <omp.h>
+#include <limits>
+#include <iostream>
+#include <iomanip>
+#include <cmath>
+#include <cassert>
+#include <cstdlib>
+#include <vector>
+#include <deque>
+
 static inline void makeAssignment( int x, int y, int z, int m_nWPX, int m_nWPY, int m_nWPZ, int indexVel, int l_nWP_oneKernel, odc::parallel::WorkPackage* m_workPackages,
                                    int_pt startX, int_pt startY, int_pt startZ, int_pt endX, int_pt endY, int_pt endZ,
                                    bool mpiNbrXLeft, bool mpiNbrXRight, bool mpiNbrYLeft, bool mpiNbrYRight, bool mpiNbrZLeft, bool mpiNbrZRight ) {

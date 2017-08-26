@@ -19,6 +19,9 @@
 
 #include "Patch.hpp"
 
+#include <cmath>
+#include <iostream>
+
 Patch::Patch() {
 }
 

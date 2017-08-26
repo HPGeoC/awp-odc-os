@@ -25,16 +25,6 @@
 #define WP_SIZE_Y 16
 #define WP_SIZE_Z 128
 
-#include <iostream>
-#include <iomanip>
-#include <cmath>
-#include <cassert>
-#include <cstdlib>
-#include <deque>
-#include <limits>
-#include <omp.h>
-#include <vector>
-
 #include "data/PatchDecomp.hpp"
 #include "parallel/Mpi.hpp"
 #include "constants.hpp"

@@ -21,7 +21,6 @@
 #define PATCHDECOMP_H
 
 #include "io/OptionParser.h"
-#include "parallel/Mpi.hpp"
 #include "Patch.hpp"
 
 class PatchDecomp {

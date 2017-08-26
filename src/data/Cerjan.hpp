@@ -20,14 +20,9 @@
 #ifndef AWP_ODC_OS_CERJAN_HPP
 #define AWP_ODC_OS_CERJAN_HPP
 
-#include <cmath>
-#include <cstdio>
-
 #include "constants.hpp"
-#include "data/SoA.hpp"
-#include "Grid.hpp"
 #include "io/OptionParser.h"
-#include "parallel/Mpi.hpp"
+#include "data/SoA.hpp"
 
 namespace odc {
   namespace data {

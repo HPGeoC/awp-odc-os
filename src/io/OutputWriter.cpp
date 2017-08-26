@@ -19,6 +19,8 @@
  */
 
 #include "OutputWriter.hpp"
+#include <cstdio>
+#include <cstring>
 
 #ifdef AWP_USE_MPI
 void odc::io::OutputWriter::calcRecordingPoints( int *rec_nbgx, int *rec_nedx,

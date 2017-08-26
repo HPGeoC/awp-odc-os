@@ -20,15 +20,6 @@
 #ifndef GRID_HPP
 #define GRID_HPP
 
-#include <cstdlib>
-#include <cstdio>
-#include <cstdint>
-#include <iostream>
-
-#ifdef YASK
-#include <numa.h>
-#endif
-
 #include "constants.hpp"
 
 namespace odc {
