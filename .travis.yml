@@ -5,7 +5,7 @@
 #         Arjun Srinivasan (a3sriniv AT ucsd.edu)
 #
 # @section LICENSE
-# Copyright (c) 2016, Regents of the University of California
+# Copyright (c) 2016-2017, Regents of the University of California
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -56,7 +56,6 @@ before_install:
 
 install:
   - sudo apt-get install -qq openmpi-bin libopenmpi-dev
-  - sudo apt-get install lcov rubygems
   - pip install --user cpp-coveralls
 
   # update binutils
