@@ -319,18 +319,8 @@ void odc::data::Mesh::inimesh( int       MEDIASTART,
     }
   }
 
-  //! Generates grid from user-provided mesh file (*.bin.*) (Raj)
+  //! (Raj): Generates grid from user-provided mesh file (*.bin.*)
   else if( MEDIASTART == 4 ) {
-    int         leftNeighbor  = odc::parallel::Mpi::m_neighborRanks[0][1][1];
-    int         rightNeighbor = odc::parallel::Mpi::m_neighborRanks[2][1][1];
-    int         botNeighbor   = odc::parallel::Mpi::m_neighborRanks[1][0][1];
-    int         topNeighbor   = odc::parallel::Mpi::m_neighborRanks[1][2][1];
-    int_pt      arrSize1      = 6 * nzt * nyt;
-    int_pt      arrSize2      = 6 * nzt * nxt;
-
-    real        sendBuff1[6][nzt][nyt], recvBuff1[6][nzt][nyt];
-    real        sendBuff2[6][nzt][nxt], recvBuff2[6][nzt][nxt];
-
     for( k = 0; k < nzt; k++ ) {
       for( j = 0; j < nyt; j++ ) {
         for( i = 0; i < nxt; i++ ) {
@@ -381,6 +371,16 @@ void odc::data::Mesh::inimesh( int       MEDIASTART,
     */
 
 #ifdef AWP_USE_MPI
+    int         leftNeighbor  = odc::parallel::Mpi::m_neighborRanks[0][1][1];
+    int         rightNeighbor = odc::parallel::Mpi::m_neighborRanks[2][1][1];
+    int         botNeighbor   = odc::parallel::Mpi::m_neighborRanks[1][0][1];
+    int         topNeighbor   = odc::parallel::Mpi::m_neighborRanks[1][2][1];
+    int_pt      arrSize1      = 6 * nzt * nyt;
+    int_pt      arrSize2      = 6 * nzt * nxt;
+
+    real        sendBuff1[6][nzt][nyt], recvBuff1[6][nzt][nyt];
+    real        sendBuff2[6][nzt][nxt], recvBuff2[6][nzt][nxt];
+
     MPI_Request reqs[2];
     MPI_Status  stats[2];
 
