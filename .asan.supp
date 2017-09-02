@@ -1,2 +1,7 @@
-leak:asan_malloc_linux
-leak:asan_interceptors
+leak:__interceptor_malloc
+leak:mca_base_var_enum_create_flag
+leak:mca_bml_base_btl_array_reserve
+leak:opal_sec_base_validate
+leak:PMIx_Store_internal
+leak:pmix_value_xfer
+leak:_putfn

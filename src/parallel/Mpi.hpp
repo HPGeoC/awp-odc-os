@@ -96,7 +96,7 @@ public:
    * @param i_y the global grid y coordinate.
    * @param i_z the global grid z coordinate.
    **/
-  static bool isInThisRank( int i_x, int i_y, int i_z ) {
+  static bool isInThisRank( int_pt i_x, int_pt i_y, int_pt i_z ) {
     return (m_startX <= i_x && i_x < m_endX && m_startY <= i_y && i_y < m_endY && m_startZ <= i_z && i_z < m_endZ);
   }
 

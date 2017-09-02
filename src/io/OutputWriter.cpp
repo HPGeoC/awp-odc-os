@@ -312,7 +312,7 @@ odc::io::ReceiverWriter::ReceiverWriter( char *inputFileName, char *outputFileNa
   int_pt  i = 0;                    //! receiver counter
   int_pt  k;                        //! loop counter
   real    rcvrX, rcvrY, rcvrZ;      //! receiver coordinates
-  real    gridX, gridY, gridZ;      //! receiver grid points
+  int_pt  gridX, gridY, gridZ;      //! receiver grid points
   char    *token;                   //! token read from receiver input file
   char    line[1024];               //! line read from receiver input file
 
@@ -386,32 +386,27 @@ odc::io::ReceiverWriter::ReceiverWriter( char *inputFileName, char *outputFileNa
     rcvrZ   = atof( token );
 
     //! Convert real coordinates to integral grid points in the mesh
-    gridX   = rcvrX / deltaH;
-    gridY   = rcvrY / deltaH;
+    gridX   = (int_pt)(rcvrX / deltaH + 0.5);
+    gridY   = (int_pt)(rcvrY / deltaH + 0.5);
 
     /** Receiver z-coordinate is specified starting from Earth surface whereas internally,
         front lower left corner is considered origin, thus the following transformation */
-    gridZ   = numZGridPoints - 1 - rcvrZ / deltaH;
+    gridZ   = numZGridPoints - 1 - (int_pt)(rcvrZ / deltaH + 0.5);
 
     //! Determine if the current MPI contains the receiver
     m_ownedByThisRank[i] = odc::parallel::Mpi::isInThisRank( gridX, gridY, gridZ );
 
-    /** Subtract the MPI starting coordinates to get local coordinates in that MPI
-        for example, if x from file was 4000m and there were two MPIs in x-direction,
-        and total grid dimension was 5120m, MPI starting x-coord. for node 2 would be
-        2560m, giving a grid point = 4000-2560+0.5 = 1440m which is correct locally
-        0.5 is added to round the real coordinate to ceiling integer value */
-    m_arrayGridX[i] = (int_pt)(gridX - odc::parallel::Mpi::m_startX + 0.5);
-    m_arrayGridY[i] = (int_pt)(gridY - odc::parallel::Mpi::m_startY + 0.5);
-    m_arrayGridZ[i] = (int_pt)(gridZ - odc::parallel::Mpi::m_startZ + 0.5);
+    //! Subtracting the MPI starting coordinates to get local coordinates in that MPI
+    m_arrayGridX[i] = gridX - odc::parallel::Mpi::m_startX;
+    m_arrayGridY[i] = gridY - odc::parallel::Mpi::m_startY;
+    m_arrayGridZ[i] = gridZ - odc::parallel::Mpi::m_startZ;
 
     //! Construct name of receiver output log based on receiver, for ex: receiverOutput_13.log and store in an array
     std::strncpy( m_receiverOutputFileName, outputFileName, sizeof( m_receiverOutputFileName ) );
-    sprintf( m_receiverOutputLogs[i], "%s_%lld.csv", m_receiverOutputFileName, i + 1 );
+    sprintf( m_receiverOutputLogs[i], "%s_%" AWP_PT_FORMAT_STRING ".csv", m_receiverOutputFileName, i + 1 );
 
     //! If the current MPI owns the grid point, we create a corresponding file
     if( m_ownedByThisRank[i] ) {
-
       //! Open file in truncate mode, i.e. discard previous run values and close file
       m_receiverOutputFilePtr = std::fopen( m_receiverOutputLogs[i], "w" );
       if( !m_receiverOutputFilePtr )

@@ -38,13 +38,13 @@ static inline void makeAssignment( int x, int y, int z, int m_nWPX, int m_nWPY, 
   m_workPackages[indexVel].type     = odc::parallel::WorkPackageType::WP_VelUpdate;
   m_workPackages[indexStress].type  = odc::parallel::WorkPackageType::WP_StressUpdate;
 
-  m_workPackages[indexVel].start[0] = m_workPackages[indexStress].start[0] = startX;
-  m_workPackages[indexVel].start[1] = m_workPackages[indexStress].start[1] = startY;
-  m_workPackages[indexVel].start[2] = m_workPackages[indexStress].start[2] = startZ;
+  m_workPackages[indexVel].start[0] = m_workPackages[indexStress].start[0]  = startX;
+  m_workPackages[indexVel].start[1] = m_workPackages[indexStress].start[1]  = startY;
+  m_workPackages[indexVel].start[2] = m_workPackages[indexStress].start[2]  = startZ;
 
-  m_workPackages[indexVel].end[0]   = m_workPackages[indexStress].end[0] = endX;
-  m_workPackages[indexVel].end[1]   = m_workPackages[indexStress].end[1] = endY;
-  m_workPackages[indexVel].end[2]   = m_workPackages[indexStress].end[2] = endZ;
+  m_workPackages[indexVel].end[0]   = m_workPackages[indexStress].end[0]    = endX;
+  m_workPackages[indexVel].end[1]   = m_workPackages[indexStress].end[1]    = endY;
+  m_workPackages[indexVel].end[2]   = m_workPackages[indexStress].end[2]    = endZ;
 
   //! initially assume that every WorkPackage is innocent of being on free surface / x,y boundaries
   m_workPackages[indexVel].freeSurface  = false;
@@ -61,7 +61,7 @@ static inline void makeAssignment( int x, int y, int z, int m_nWPX, int m_nWPY, 
     onMpiBdry = true;
     m_workPackages[indexVel].mpiDir[0][1][1] = m_workPackages[indexStress].mpiDir[0][1][1] = true;
   }
-  if( x == m_nWPX-1 && mpiNbrXRight ) {
+  if( x == m_nWPX - 1 && mpiNbrXRight ) {
     onMpiBdry = true;
     m_workPackages[indexVel].mpiDir[2][1][1] = m_workPackages[indexStress].mpiDir[2][1][1] = true;
   }
@@ -82,17 +82,14 @@ static inline void makeAssignment( int x, int y, int z, int m_nWPX, int m_nWPY, 
     m_workPackages[indexVel].mpiDir[1][1][2] = m_workPackages[indexStress].mpiDir[1][1][2] = true;
   }
 
-  if( z == m_nWPZ-1 && !mpiNbrZRight ) {
+  if( z == m_nWPZ - 1 && !mpiNbrZRight )
     m_workPackages[indexStress].freeSurface = true;
-  }
 
-  if( y == 0 && !mpiNbrYLeft ) {
+  if( y == 0 && !mpiNbrYLeft )
     m_workPackages[indexStress].yMinBdry    = true;
-  }
 
-  if( x == m_nWPX-1 && !mpiNbrXRight ) {
+  if( x == m_nWPX - 1 && !mpiNbrXRight )
     m_workPackages[indexStress].xMaxBdry    = true;
-  }
 
   m_workPackages[indexVel].copyFromBuffer = m_workPackages[indexStress].copyFromBuffer  = onMpiBdry;
   m_workPackages[indexVel].copyToBuffer   = m_workPackages[indexStress].copyToBuffer    = onMpiBdry;
@@ -127,6 +124,13 @@ odc::parallel::OpenMP::OpenMP( int_pt       i_nPtsX,
 
   m_workPackages    = (odc::parallel::WorkPackage*) malloc( m_nWP * sizeof( odc::parallel::WorkPackage ) );
 
+  //! Raj: Initializing WorkPackage variables
+  for( int s = 0; s < m_nWP; s++ ) {
+    m_workPackages[s].freeSurface = false;
+    m_workPackages[s].xMaxBdry    = false;
+    m_workPackages[s].yMinBdry    = false;
+  }
+
   //! left means in the negative direction, right means positive dir
   bool mpiNbrXLeft  = (odc::parallel::Mpi::m_neighborRanks[0][1][1] != -1);
   bool mpiNbrXRight = (odc::parallel::Mpi::m_neighborRanks[2][1][1] != -1);
@@ -135,9 +139,9 @@ odc::parallel::OpenMP::OpenMP( int_pt       i_nPtsX,
   bool mpiNbrZLeft  = (odc::parallel::Mpi::m_neighborRanks[1][1][0] != -1);
   bool mpiNbrZRight = (odc::parallel::Mpi::m_neighborRanks[1][1][2] != -1);
 
-  int indexVel = 0;
+  int indexVel      = 0;
 
-  for( int y = 0; y < m_nWPY; y++ )
+  for( int y = 0; y < m_nWPY; y++ ) {
     for( int z = 0; z < m_nWPZ; z++ ) {
       int x         = 0;
       int_pt startX = x * m_packageSizeX;
@@ -158,10 +162,11 @@ odc::parallel::OpenMP::OpenMP( int_pt       i_nPtsX,
                       mpiNbrXLeft, mpiNbrXRight, mpiNbrYLeft, mpiNbrYRight, mpiNbrZLeft, mpiNbrZRight );
       indexVel++;
     }
+  }
 
   m_endOfStressBdryXZero = indexVel + l_nWP_oneKernel + 1 - 1;
 
-  for( int y = 0; y < m_nWPY; y++ )
+  for( int y = 0; y < m_nWPY; y++ ) {
     for( int z = 0; z < m_nWPZ; z++ ) {
       int x         = m_nWPX-1;
       int_pt startX = x * m_packageSizeX;
@@ -182,8 +187,9 @@ odc::parallel::OpenMP::OpenMP( int_pt       i_nPtsX,
                       mpiNbrXLeft, mpiNbrXRight, mpiNbrYLeft, mpiNbrYRight, mpiNbrZLeft, mpiNbrZRight );
       indexVel++;
     }
+  }
 
-  for( int x = 1; x < m_nWPX - 1; x++ )
+  for( int x = 1; x < m_nWPX - 1; x++ ) {
     for( int z = 0; z < m_nWPZ; z++ ) {
       int y         = 0;
       int_pt startX = x * m_packageSizeX;
@@ -204,8 +210,9 @@ odc::parallel::OpenMP::OpenMP( int_pt       i_nPtsX,
                       mpiNbrXLeft, mpiNbrXRight, mpiNbrYLeft, mpiNbrYRight, mpiNbrZLeft, mpiNbrZRight );
       indexVel++;
     }
+  }
 
-  for( int x = 1; x < m_nWPX - 1; x++ )
+  for( int x = 1; x < m_nWPX - 1; x++ ) {
     for( int z = 0; z < m_nWPZ; z++ ) {
       int y         = m_nWPY - 1;
       int_pt startX = x * m_packageSizeX;
@@ -226,6 +233,7 @@ odc::parallel::OpenMP::OpenMP( int_pt       i_nPtsX,
                       mpiNbrXLeft, mpiNbrXRight, mpiNbrYLeft, mpiNbrYRight, mpiNbrZLeft, mpiNbrZRight );
       indexVel++;
     }
+  }
 
   m_nBdry           = indexVel;
   m_endOfVelBdry    = indexVel - 1;
@@ -233,7 +241,7 @@ odc::parallel::OpenMP::OpenMP( int_pt       i_nPtsX,
 
   int total_since_bdry = 0;
 
-  for( int y = 1; y < m_nWPY - 1; y++ )
+  for( int y = 1; y < m_nWPY - 1; y++ ) {
     for( int z = 0; z < m_nWPZ; z++ ) {
       int x         = 1;
       int_pt startX = x * m_packageSizeX;
@@ -254,6 +262,7 @@ odc::parallel::OpenMP::OpenMP( int_pt       i_nPtsX,
                       mpiNbrXLeft, mpiNbrXRight, mpiNbrYLeft, mpiNbrYRight, mpiNbrZLeft, mpiNbrZRight );
       indexVel++;
     }
+  }
 
   m_velMpiWP    = indexVel;
   m_stressMpiWP = indexVel + l_nWP_oneKernel + 1;

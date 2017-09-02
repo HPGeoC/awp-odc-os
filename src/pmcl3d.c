@@ -271,14 +271,14 @@ int main(int argc,char **argv)
 
     //TODO: (gwilkins) use cudaGetDeviceCount to find out how many devices there are
     // probably switch to:
-    // int count = 0;
-    // cudaGetDeviceCount(&count);
-    // rank_gpu = rank % count;
+    int count = 0;
+    cudaGetDeviceCount(&count);
+    rank_gpu = rank % count;
 
     // Below line is only for HPGPU4 machine!
     //    rank_gpu = rank%4;
     // Below line is for 1 GPU/node systems
-    rank_gpu = 0;
+    //    rank_gpu = 0;
     cudaSetDevice(rank_gpu);
 
     /* printf("\n\nrank=%d) RS=%d, RSG=%d, NST=%d, IF=%d\n\n\n",

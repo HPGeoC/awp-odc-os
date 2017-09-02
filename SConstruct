@@ -82,6 +82,8 @@ if 'CXX' in env['ENV'].keys():
 # forward flags
 if 'CFLAGS' in env['ENV'].keys():
   env['CFLAGS']     = env['ENV']['CFLAGS']
+if 'CCFLAGS' in env['ENV'].keys():
+  env['CCFLAGS']   = env['ENV']['CCFLAGS']
 if 'CXXFLAGS' in env['ENV'].keys():
   env['CXXFLAGS']   = env['ENV']['CXXFLAGS']
 if 'LINKFLAGS' in env['ENV'].keys():
@@ -189,18 +191,18 @@ env.Append( CXXFLAGS="-std=c++11" )
 
 # set optimization mode
 if 'debug' in env['mode']:
-  env.Append( CXXFLAGS = ['-g', '-O0'] )
+  env.Append( CCFLAGS = ['-g', '-O0'] )
 else:
-  env.Append( CXXFLAGS = ['-O3'] )
+  env.Append( CCFLAGS = ['-O3'] )
 
 # add sanitizers
 if 'san' in  env['mode']:
-  env.Append( CXXFLAGS  = ['-fsanitize=address', '-fsanitize=undefined', '-fno-omit-frame-pointer'] )
+  env.Append( CCFLAGS   = ['-fsanitize=address', '-fsanitize=undefined', '-fno-omit-frame-pointer'] )
   env.Append( LINKFLAGS = ['-fsanitize=address', '-fsanitize=undefined'] )
 
 # enable code coverage, if requested
 if env['cov'] == True:
-  env.Append( CXXFLAGS  = ['-coverage', '-fno-inline', '-fno-inline-small-functions', '-fno-default-inline'] )
+  env.Append( CCFLAGS   = ['-coverage', '-fno-inline', '-fno-inline-small-functions', '-fno-default-inline'] )
   env.Append( LINKFLAGS = ['-coverage'] )
 
 # add math library for gcc
