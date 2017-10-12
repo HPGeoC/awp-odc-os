@@ -287,12 +287,9 @@ void odc::data::Mesh::inimesh( int       MEDIASTART,
       dd  = 2500.0;
     }
 
-    m_vse[0] = vs;
-    m_vse[1] = vs;
-    m_vpe[0] = vp;
-    m_vpe[1] = vp;
-    m_dde[0] = dd;
-    m_dde[1] = dd;
+    max_vpe = min_vpe = vp;
+    max_vse = min_vse = vs;
+    max_dde = min_dde = dd;
 
     for( i = -1; i < nxt + 1; i++ ) {
       for( j = -1; j < nyt + 1; j++ ) {
