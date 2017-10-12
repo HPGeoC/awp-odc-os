@@ -287,10 +287,6 @@ void odc::data::Mesh::inimesh( int       MEDIASTART,
       dd  = 2500.0;
     }
 
-    /** (Raj) bug-fix: mpi all-reduced values (m_vse, m_vpe, m_dde)
-     *  were getting overwritten with default values of max_vpe,
-     *  vse & dde as these were not updated for case MEDIASTART=0
-     */
     max_vpe = min_vpe = vp;
     max_vse = min_vse = vs;
     max_dde = min_dde = dd;
