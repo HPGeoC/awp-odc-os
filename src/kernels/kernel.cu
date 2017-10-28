@@ -1377,7 +1377,7 @@ __global__ void dvelcy( float *u1,    float *v1,    float *w1,    float *xx,  fl
   f_dcrjz = dcrjz[k];
   f_dcrjx = dcrjx[i];
 
-  for( j = e_j; j>=s_j; j-- ) {
+  for( j = e_j; j >= s_j; j-- ) {
     pos_km2  = pos - 2;
     pos_km1  = pos - 1;
     pos_kp1  = pos + 1;
@@ -2443,7 +2443,7 @@ __global__ void update_yldfac_buffer_x( float *yldfac, float *buf, int rank, int
 extern "C"
 void update_yldfac_data_x_H( float *yldfac, float *buf_L, float *buf_R, int nyt, int nzt, cudaStream_t St1, cudaStream_t St2,
                              int rank_L,    int rank_R,   int meshtp ) {
-  if( rank_L == -1 && rank_R == -1)
+  if( rank_L == -1 && rank_R == -1 )
     return;
 
   dim3 block( 1, BLOCK_SIZE_Y, BLOCK_SIZE_Z );

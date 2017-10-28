@@ -633,73 +633,76 @@ void inimesh( int rank,   int MEDIASTART, Grid3D d1,    Grid3D mu,  Grid3D lam, 
   return;
 } //! end function inimesh
 
-float* matmul3( float *a, float *b ) {
-  int i, j, k;
-  float *c;
+/** (Raj): Commented below three functions as they are not being used and
+ *  are causing memory leak due to the function rotate_principal's return
+ */
+/*float* matmul3( float *a, float *b ) {*/
+/*  int i, j, k;*/
+/*  float *c;*/
 
-  c = (float*) calloc( 9, sizeof( float ) );
-  for( i = 0; i < 3; i++ ) {
-    for( j = 0; j < 3; j++ ) {
-      for( k = 0; k < 3; k++ ) {
-        c[i*3+j] += a[i*3+k] * b[k*3+j];
-      }
-    }
-  }
+/*  c = (float*) calloc( 9, sizeof( float ) );*/
+/*  for( i = 0; i < 3; i++ ) {*/
+/*    for( j = 0; j < 3; j++ ) {*/
+/*      for( k = 0; k < 3; k++ ) {*/
+/*        c[i*3+j] += a[i*3+k] * b[k*3+j];*/
+/*      }*/
+/*    }*/
+/*  }*/
 
-  return c;
-}
+/*  return c;*/
+/*}*/
 
-float* transpose( float *a ) {
-  float *b;
-  int k, l;
+/*float* transpose( float *a ) {*/
+/*  float *b;*/
+/*  int k, l;*/
 
-  b = (float*) calloc( 9, sizeof( float ) );
-  for( l = 0; l < 3; l++ ) {
-    for( k = 0; k < 3; k++) {
-      b[l*3+k] = a[k*3+l];
-    }
-  }
+/*  b = (float*) calloc( 9, sizeof( float ) );*/
+/*  for( l = 0; l < 3; l++ ) {*/
+/*    for( k = 0; k < 3; k++) {*/
+/*      b[l*3+k] = a[k*3+l];*/
+/*    }*/
+/*  }*/
 
-  return b;
-}
+/*  return b;*/
+/*}*/
 
-float* rotate_principal( float sigma1, float sigma2, float sigma3, float *strike, float *dip ) {
-  float alpha[3], beta[3];
-  float *ss, *Rz, *ssp;
-  int k;
+/*float* rotate_principal( float sigma1, float sigma2, float sigma3, float *strike, float *dip ) {*/
+/*  float alpha[3], beta[3];*/
+/*  float *ss, *Rz, *ssp;*/
+/*  int k;*/
 
-  ssp = (float*) calloc( 9, sizeof( float ) );
-  ss  = (float*) calloc( 9, sizeof( float ) );
-  Rz  = (float*) calloc( 9, sizeof( float ) );
+/*  ssp = (float*) calloc( 9, sizeof( float ) );*/
+/*  ss  = (float*) calloc( 9, sizeof( float ) );*/
+/*  Rz  = (float*) calloc( 9, sizeof( float ) );*/
 
-  ss[0] = sigma1;
-  ss[4] = sigma2;
-  ss[8] = sigma3;
+/*  ss[0] = sigma1;*/
+/*  ss[4] = sigma2;*/
+/*  ss[8] = sigma3;*/
 
-  for( k = 0; k < 3; k++ ) {
-    alpha[k]  = strike[k] / 180. * M_PI;
-    beta[k]   = dip[k] / 180. * M_PI;
-  }
+/*  for( k = 0; k < 3; k++ ) {*/
+/*    alpha[k]  = strike[k] / 180. * M_PI;*/
+/*    beta[k]   = dip[k] / 180. * M_PI;*/
+/*  }*/
 
-  Rz[0] = cosf( alpha[0] ) * cosf( beta[0] );
-  Rz[1] = sinf( alpha[0] ) * cosf( beta[0] );
-  Rz[2] = sinf( beta[0] );
+/*  Rz[0] = cosf( alpha[0] ) * cosf( beta[0] );*/
+/*  Rz[1] = sinf( alpha[0] ) * cosf( beta[0] );*/
+/*  Rz[2] = sinf( beta[0] );*/
 
-  Rz[3] = cosf( alpha[1] ) * cosf( beta[1] );
-  Rz[4] = sinf( alpha[1] ) * cosf( beta[1] );
-  Rz[5] = sinf( beta[1] );
+/*  Rz[3] = cosf( alpha[1] ) * cosf( beta[1] );*/
+/*  Rz[4] = sinf( alpha[1] ) * cosf( beta[1] );*/
+/*  Rz[5] = sinf( beta[1] );*/
 
-  Rz[6] = cosf( alpha[2] ) * cosf( beta[2] );
-  Rz[7] = sinf( alpha[2] ) * cosf( beta[2] );
-  Rz[8] = sinf( beta[2] );
+/*  Rz[6] = cosf( alpha[2] ) * cosf( beta[2] );*/
+/*  Rz[7] = sinf( alpha[2] ) * cosf( beta[2] );*/
+/*  Rz[8] = sinf( beta[2] );*/
 
-  ssp = matmul3( matmul3( transpose( Rz ), ss ), Rz );
+/*  ssp = matmul3( matmul3( transpose( Rz ), ss ), Rz );*/
 
-  free( Rz );
-  free( ss );
+/*  free( Rz );*/
+/*  free( ss );*/
 
-  return ssp;
-}
+/*  return ssp;*/
+/*}*/
 /**
  
   @param taumin  -
@@ -1216,9 +1219,9 @@ void inidrpr_hoekbrown_light( int nxt,        int nyt,        int nzt,        in
   //float strike[3], dip[3], *ssp;
 
   float   sigma_ci, GSI, mi, D = 0;
-  int     sigma_ci_type, tunnel = 1;
+  int     sigma_ci_type = -1, tunnel = 1;
   float   gsi100, GSI_d;
-  int     fltpos;
+  int     fltpos = 0;
   /*float gwt;*/
   int     ypos;
   float   fltdist;
