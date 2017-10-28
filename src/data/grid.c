@@ -32,32 +32,31 @@
  
     @warning Terminates with exit code -1 if unable to allocate requested memory.
  */
-Grid3D Alloc3D(int_pt nx, int_pt ny, int_pt nz)
-{
-   int_pt i, j, k;
-   Grid3D U = (Grid3D)malloc(sizeof(float**)*nx + sizeof(float *)*nx*ny +sizeof(float)*nx*ny*nz);
+Grid3D Alloc3D( int_pt nx, int_pt ny, int_pt nz ) {
+  int_pt i, j, k;
+  Grid3D U = (Grid3D) malloc( sizeof( float** ) * nx + sizeof( float * ) * nx * ny + sizeof( float ) * nx * ny * nz );
 
-   if (!U){
-       printf("Cannot allocate 3D float array\n");
-       exit(-1);
-   }
-   for(i=0;i<nx;i++){
-       U[i] = ((float**) U) + nx + i*ny;
-    }
+  if( !U ) {
+    printf( "Cannot allocate 3D float array\n" );
+    exit( -1 );
+  }
 
-   float *Ustart = (float *) (U[nx-1] + ny);
-   for(i=0;i<nx;i++)
-       for(j=0;j<ny;j++)
-           U[i][j] = Ustart + i*ny*nz + j*nz;
+  for( i = 0; i < nx; i++ ) {
+    U[i] = ((float**) U) + nx + i * ny;
+  }
 
-   for(i=0;i<nx;i++)
-       for(j=0;j<ny;j++)
-           for(k=0;k<nz;k++)
-              U[i][j][k] = 0.0f;
+  float *Ustart = (float *) (U[nx-1] + ny);
+  for( i = 0; i < nx; i++ )
+    for( j = 0; j < ny; j++ )
+      U[i][j] = Ustart + i * ny * nz + j * nz;
 
-   return U;
+  for( i = 0; i < nx; i++ )
+    for( j = 0; j < ny; j++ )
+      for( k = 0; k < nz; k++ )
+        U[i][j][k] = 0.0f;
+
+  return U;
 }
-
 
 /**
  Allocates and returns pointer to three dimensional grid structure of @c int 's. All of the values are initialized to @c 0.
@@ -72,32 +71,31 @@ Grid3D Alloc3D(int_pt nx, int_pt ny, int_pt nz)
  
  @warning Terminates with exit code -1 if unable to allocate requested memory.
  */
-Grid3Dww Alloc3Dww(int_pt nx, int_pt ny, int_pt nz)
-{
+Grid3Dww Alloc3Dww( int_pt nx, int_pt ny, int_pt nz ) {
   int_pt i, j, k;
-  Grid3Dww U = (Grid3Dww)malloc(sizeof(int**)*nx + sizeof(int *)*nx*ny +sizeof(int)*nx*ny*nz);
+  Grid3Dww U = (Grid3Dww) malloc( sizeof( int** ) * nx + sizeof( int * ) * nx * ny + sizeof( int ) * nx * ny * nz );
 
-  if (!U){
-    printf("Cannot allocate 3D int array\n");
-    exit(-1);
+  if( !U ) {
+    printf( "Cannot allocate 3D int array\n" );
+    exit( -1 );
   }
-  for(i=0;i<nx;i++){
-    U[i] = ((int**) U) + nx + i*ny;
+
+  for( i = 0; i < nx; i++ ) {
+    U[i] = ((int**) U) + nx + i * ny;
   }
 
   int *Ustart = (int *) (U[nx-1] + ny);
-  for(i=0;i<nx;i++)
-    for(j=0;j<ny;j++)
-      U[i][j] = Ustart + i*ny*nz + j*nz;
+  for( i = 0; i < nx; i++ )
+    for( j = 0; j < ny; j++ )
+      U[i][j] = Ustart + i * ny * nz + j * nz;
 
-  for(i=0;i<nx;i++)
-    for(j=0;j<ny;j++)
-      for(k=0;k<nz;k++)
-	U[i][j][k] = 0;
+  for( i = 0; i < nx; i++ )
+    for( j = 0; j < ny; j++ )
+      for( k = 0; k < nz; k++ )
+        U[i][j][k] = 0;
 
   return U;
 }
-
 
 /**
  Allocates and returns pointer to one dimensional grid structure of @c float 's. All of the values are initialized to 0.0f.
@@ -110,20 +108,19 @@ Grid3Dww Alloc3Dww(int_pt nx, int_pt ny, int_pt nz)
  
  @warning Terminates with exit code -1 if unable to allocate requested memory.
  */
-Grid1D Alloc1D(int_pt nx)
-{
-   int_pt i;
-   Grid1D U = (Grid1D)malloc(sizeof(float)*nx);
+Grid1D Alloc1D( int_pt nx ) {
+  int_pt i;
+  Grid1D U = (Grid1D) malloc( sizeof( float ) * nx );
 
-   if (!U){
-       printf("Cannot allocate 1D float array\n");
-       exit(-1);
-   }
+  if( !U ) {
+    printf( "Cannot allocate 1D float array\n" );
+    exit( -1 );
+  }
 
-   for(i=0;i<nx;i++)
-       U[i] = 0.0f;
+  for( i = 0; i < nx; i++ )
+    U[i] = 0.0f;
 
-   return U;
+  return U;
 }
 
 /**
@@ -137,20 +134,19 @@ Grid1D Alloc1D(int_pt nx)
  
  @warning Terminates with exit code -1 if unable to allocate requested memory.
  */
-PosInf Alloc1P(int_pt nx)
-{
-   int_pt i;
-   PosInf U = (PosInf)malloc(sizeof(int)*nx);
+PosInf Alloc1P( int_pt nx ) {
+  int_pt i;
+  PosInf U = (PosInf) malloc( sizeof( int ) * nx );
 
-   if (!U){
-       printf("Cannot allocate 1D integer array\n");
-       exit(-1);
-   }
+  if( !U ) {
+    printf( "Cannot allocate 1D integer array\n" );
+    exit( -1 );
+  }
 
-   for(i=0;i<nx;i++)
-       U[i] = 0;
+  for( i = 0; i < nx; i++ )
+    U[i] = 0;
 
-   return U;
+  return U;
 }
 
 /**
@@ -160,15 +156,13 @@ PosInf Alloc1P(int_pt nx)
  
  @warning If @c U is not either @c NULL or a pointer that was allocated from a call to @c Alloc3D then this will cause a memory leak.
  */
-void Delloc3D(Grid3D U)
-{
-   if (U) 
-   {
-      free(U);
-      U = NULL;
-   }
+void Delloc3D( Grid3D U ) {
+  if( U ) {
+    free( U );
+    U = NULL;
+  }
 
-   return;
+  return;
 }
 
 /**
@@ -178,13 +172,11 @@ void Delloc3D(Grid3D U)
  
  @warning If @c U is not either @c NULL or a pointer that was allocated from a call to @c Alloc3Dww then this will cause a memory leak.
  */
-void Delloc3Dww(Grid3Dww U)
-{
-  if (U)
-    {
-      free(U);
-      U = NULL;
-    }
+void Delloc3Dww( Grid3Dww U ) {
+  if( U ) {
+    free( U );
+    U = NULL;
+  }
 
   return;
 }
@@ -196,15 +188,13 @@ void Delloc3Dww(Grid3Dww U)
  
  @warning If @c U is not either @c NULL or a pointer that was allocated from a call to @c Alloc1D then this will cause a memory leak.
  */
-void Delloc1D(Grid1D U)
-{
-   if (U)
-   {
-      free(U);
-      U = NULL;
-   }
+void Delloc1D( Grid1D U ) {
+  if( U ) {
+    free( U );
+    U = NULL;
+  }
 
-   return;
+  return;
 }
 
 /**
@@ -214,13 +204,11 @@ void Delloc1D(Grid1D U)
  
  @warning If @c U is not either @c NULL or a pointer that was allocated from a call to @c Alloc1P then this will cause a memory leak.
  */
-void Delloc1P(PosInf U)
-{
-   if (U)
-   {
-      free(U);
-      U = NULL;
-   }
+void Delloc1P( PosInf U ) {
+  if( U ) {
+    free( U );
+    U = NULL;
+  }
 
-   return;
+  return;
 }

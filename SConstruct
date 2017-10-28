@@ -83,7 +83,7 @@ if 'CXX' in env['ENV'].keys():
 if 'CFLAGS' in env['ENV'].keys():
   env['CFLAGS']     = env['ENV']['CFLAGS']
 if 'CCFLAGS' in env['ENV'].keys():
-  env['CCFLAGS']   = env['ENV']['CCFLAGS']
+  env['CCFLAGS']    = env['ENV']['CCFLAGS']
 if 'CXXFLAGS' in env['ENV'].keys():
   env['CXXFLAGS']   = env['ENV']['CXXFLAGS']
 if 'LINKFLAGS' in env['ENV'].keys():
@@ -163,7 +163,6 @@ if 'cuda' in env['kernel']:
   env.Append( CPPPATH = [ env['cudaToolkitDir'] + '/include' ] )
   env.Append( LIBPATH = [ env['cudaToolkitDir'] + '/lib64' ] )
   env.Append( LIBS    = ['cudart'] )
-  env.Append( CPPDEFINES = ['AWP_USE_CUDA'] )
 elif 'yask' in env['kernel']:
   env.Append( CPPDEFINES = ['YASK',
                             'REAL_BYTES=4',
