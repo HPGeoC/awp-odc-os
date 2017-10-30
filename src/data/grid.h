@@ -17,47 +17,46 @@
 
 #ifdef __cplusplus
 extern "C" {
-Grid3D Alloc3D(int_pt nx, int_pt ny, int_pt nz);
+  Grid3D Alloc3D( int_pt nx, int_pt ny, int_pt nz );
 }
 
 extern "C" {
-Grid3Dww Alloc3Dww(int_pt nx, int_pt ny, int_pt nz);
+  Grid3Dww Alloc3Dww( int_pt nx, int_pt ny, int_pt nz );
 }
 
 extern "C" {
-Grid1D Alloc1D(int_pt nx);
+  Grid1D Alloc1D( int_pt nx );
 }
 
 extern "C" {
-PosInf Alloc1P(int_pt nx);
+  PosInf Alloc1P( int_pt nx );
 }
 
 extern "C" {
-void Delloc3D(Grid3D U);
+  void Delloc3D( Grid3D U );
 }
 
 extern "C" {
-void Delloc3Dww(Grid3Dww U);
+  void Delloc3Dww( Grid3Dww U );
 }
 
 extern "C" {
-void Delloc1D(Grid1D U);
+  void Delloc1D( Grid1D U );
 }
 
 extern "C" {
-void Delloc1P(PosInf U);
+  void Delloc1P( PosInf U );
 }
 
 #else
-Grid3D Alloc3D(int_pt nx, int_pt ny, int_pt nz);
-Grid3Dww Alloc3Dww(int_pt nx, int_pt ny, int_pt nz);
-Grid1D Alloc1D(int_pt nx);
-PosInf Alloc1P(int_pt nx);
+Grid3D Alloc3D( int_pt nx, int_pt ny, int_pt nz );
+Grid3Dww Alloc3Dww( int_pt nx, int_pt ny, int_pt nz );
+Grid1D Alloc1D( int_pt nx );
+PosInf Alloc1P( int_pt nx );
 
-void Delloc3D(Grid3D U);
-void Delloc3Dww(Grid3Dww U);
-void Delloc1D(Grid1D U);
-void Delloc1P(PosInf U);
-
+void Delloc3D( Grid3D U );
+void Delloc3Dww( Grid3Dww U );
+void Delloc1D( Grid1D U );
+void Delloc1P( PosInf U );
 
 #endif

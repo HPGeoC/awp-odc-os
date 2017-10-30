@@ -34,72 +34,64 @@
  has a multiplicative damping coefficient applied to the velocity and stress updates.
  
  
-    @param ARBC             Coefficient for sponge layers (0.90-0.96)
-    @param coords           @c int array (length 2) that stores the x and y coordinates of calling process in the Cartesian MPI topology
-    @param nxt              Number of x nodes that calling process owns
-    @param nyt              Number of y nodes that calling process owns
-    @param nzt              Number of z nodes that calling process owns
-    @param NX               Total number of nodes in x dimension
-    @param NY               Total number of nodes in y dimension
-    @param ND               Number of sponge layer nodes
-    @param[out] dcrjx       Damping coefficients in x dimension (only set if calling process owns a block on the x boundary of the domain)
-    @param[out] dxrjy       Damping coefficients in y dimension (only set if calling process owns a block on the y boundary of the domain)
-    @param[out] dcrjz       Damping coefficients in z dimension (only set if calling process owns a block on the z boundary of the domain)
+  @param ARBC             Coefficient for sponge layers (0.90-0.96)
+  @param coords           @c int array (length 2) that stores the x and y coordinates of calling process in the Cartesian MPI topology
+  @param nxt              Number of x nodes that calling process owns
+  @param nyt              Number of y nodes that calling process owns
+  @param nzt              Number of z nodes that calling process owns
+  @param NX               Total number of nodes in x dimension
+  @param NY               Total number of nodes in y dimension
+  @param ND               Number of sponge layer nodes
+  @param[out] dcrjx       Damping coefficients in x dimension (only set if calling process owns a block on the x boundary of the domain)
+  @param[out] dxrjy       Damping coefficients in y dimension (only set if calling process owns a block on the y boundary of the domain)
+  @param[out] dcrjz       Damping coefficients in z dimension (only set if calling process owns a block on the z boundary of the domain)
  
  */
-void inicrj(float ARBC, int *coords, int nxt, int nyt, int nzt, int NX, int NY, int ND, Grid1D dcrjx, Grid1D dcrjy, Grid1D dcrjz)
-{
+void inicrj( float ARBC, int *coords, int nxt, int nyt, int nzt, int NX, int NY, int ND, Grid1D dcrjx, Grid1D dcrjy, Grid1D dcrjz ) {
   int nxp, nyp, nzp;
   int i,   j,   k;
   float alpha;
-  alpha = sqrt(-log(ARBC))/ND;
+  alpha = sqrt( -log( ARBC ) ) / ND;
 
-  nxp   = nxt*coords[0] + 1;
-  if(nxp <= ND)
-  {
-     for(i=0;i<ND;i++)
-     {
-        nxp        = i + 1;
-        dcrjx[i+2+4*LOOP] = dcrjx[i+2+4*LOOP]*(exp(-((alpha*(ND-nxp+1))*(alpha*(ND-nxp+1)))));
-     } 
-  }
-  nxp   = nxt*coords[0] + 1;
-  if( (nxp+nxt-1) >= (NX-ND+1))
-  {
-     for(i=nxt-ND;i<nxt;i++)
-     {
-        nxp        = i + NX - nxt + 1;
-        dcrjx[i+2+4*LOOP] = dcrjx[i+2+4*LOOP]*(exp(-((alpha*(ND-(NX-nxp)))*(alpha*(ND-(NX-nxp))))));
-     }
+  nxp   = nxt * coords[0] + 1;
+  if( nxp <= ND ) {
+    for( i = 0; i < ND; i++ ) {
+      nxp               = i + 1;
+      dcrjx[i+2+4*LOOP] = dcrjx[i+2+4*LOOP] * (exp( -((alpha * (ND - nxp + 1)) * (alpha * (ND - nxp + 1))) ));
+    }
   }
 
-  nyp   = nyt*coords[1] + 1;
-  if(nyp <= ND)
-  {
-     for(j=0;j<ND;j++)
-     {
-        nyp        = j + 1;
-        dcrjy[j+2+4*LOOP] = dcrjy[j+2+4*LOOP]*(exp(-((alpha*(ND-nyp+1))*(alpha*(ND-nyp+1)))));
-     }
-  }
-  nyp   = nyt*coords[1] + 1;
-  if((nyp+nyt-1) >= (NY-ND+1))
-  {
-     for(j=nyt-ND;j<nyt;j++)
-     {
-        nyp        = j + NY - nyt + 1;
-        dcrjy[j+2+4*LOOP] = dcrjy[j+2+4*LOOP]*(exp(-((alpha*(ND-(NY-nyp)))*((alpha*(ND-(NY-nyp)))))));
-     }
+  nxp   = nxt * coords[0] + 1;
+  if( (nxp + nxt - 1) >= (NX - ND + 1) ) {
+    for( i = nxt - ND; i < nxt; i++ ) {
+      nxp               = i + NX - nxt + 1;
+      dcrjx[i+2+4*LOOP] = dcrjx[i+2+4*LOOP] * (exp( -((alpha * (ND - (NX - nxp))) * (alpha * (ND - (NX - nxp)))) ));
+    }
   }
 
-  nzp = 1;
-  if(nzp <= ND)
-  {
-     for(k=0;k<ND;k++)
-     {
-        nzp            = k + 1;
-        dcrjz[k+ALIGN] = dcrjz[k+ALIGN]*(exp(-((alpha*(ND-nzp+1))*((alpha*(ND-nzp+1))))));
-     }
+  nyp   = nyt * coords[1] + 1;
+  if( nyp <= ND ) {
+    for( j = 0; j < ND; j++ ) {
+      nyp               = j + 1;
+      dcrjy[j+2+4*LOOP] = dcrjy[j+2+4*LOOP] * (exp( -((alpha * (ND - nyp + 1)) * (alpha * (ND - nyp + 1))) ));
+    }
   }
+
+  nyp   = nyt * coords[1] + 1;
+  if( (nyp + nyt - 1) >= (NY - ND + 1) ) {
+    for( j = nyt - ND; j < nyt; j++ ) {
+      nyp               = j + NY - nyt + 1;
+      dcrjy[j+2+4*LOOP] = dcrjy[j+2+4*LOOP] * (exp( -((alpha * (ND - (NY - nyp))) * ((alpha * (ND - (NY - nyp))))) ));
+    }
+  }
+
+  nzp   = 1;
+  if( nzp <= ND ) {
+    for( k = 0; k < ND; k++ ) {
+      nzp            = k + 1;
+      dcrjz[k+ALIGN] = dcrjz[k+ALIGN] * (exp( -((alpha * (ND - nzp + 1)) * ((alpha * (ND - nzp + 1)))) ));
+    }
+  }
+
   return;
-}  
+}

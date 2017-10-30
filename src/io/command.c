@@ -1,14 +1,19 @@
 /**
+ @author Daniel Roten
+ @author Kyle Withers
+ @author Rajdeep Konwar
+ 
  @section DESCRIPTION
  Process Command Line.
-
+ 
  @brief Reads command line arguments.
  
- @bug If any file name is longer than 50 characters then the @c command function will copy past the end of
+ @bug If any file name is longer than 4096 characters then the @c command function will copy past the end of
  the corresponding @c char array.
  
  @section LICENSE
  Copyright (c) 2013-2017, Regents of the University of California
+ Copyright (c) 2015-2017, San Diego State University Research Foundation
  All rights reserved.
  
  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -101,11 +106,11 @@ const int   def_IFAULT                    = 1;
 const int   def_READ_STEP                 = 91;
 const int   def_READ_STEP_GPU             = 91;
 
-const int   def_NTISKP                    = 10;
+const int   def_NTISKP                    = 1;
 const int   def_WRITE_STEP                = 10;
 
-const int   def_NX                        = 224;
-const int   def_NY                        = 224; 
+const int   def_NX                        = 256;
+const int   def_NY                        = 256;
 const int   def_NZ                        = 1024;
 
 const int   def_PX                        = 1;
@@ -216,18 +221,18 @@ const char  def_OUTRCVR[AWP_PATH_MAX]     = "";
  
  @warning All file names must be under 50 characters in length!!!
  */
-void command( int argc,    char **argv,
-              float *TMAX, float *DH,       float *DT,   float *ARBC,    float *PHT,
-              int *NPC,    int *ND,         int *NSRC,   int *NST,       int *NVAR,
-              int *NVE,    int *MEDIASTART, int *IFAULT, int *READ_STEP, int *READ_STEP_GPU,
-              int *NTISKP, int *WRITE_STEP,
-              int *NX,     int *NY,         int *NZ,     int *PX,        int *PY,
-              int *NBGX,   int *NEDX,       int *NSKPX, 
-              int *NBGY,   int *NEDY,       int *NSKPY, 
-              int *NBGZ,   int *NEDZ,       int *NSKPZ, 
-              float *FAC,   float *Q0,      float *EX,   float *FP,      int *IDYNA,     int *SoCalQ,
-              char *INSRC, char *INVEL,     char *OUT,   char *INSRC_I2, char *CHKFILE,  char *INRCVR,   char *OUTRCVR ) {
-  // Fill in default values
+void command( int argc,     char **argv,
+              float *TMAX,  float *DH,        float *DT,    float *ARBC,    float *PHT,
+              int *NPC,     int *ND,          int *NSRC,    int *NST,       int *NVAR,
+              int *NVE,     int *MEDIASTART,  int *IFAULT,  int *READ_STEP, int *READ_STEP_GPU,
+              int *NTISKP,  int *WRITE_STEP,
+              int *NX,      int *NY,          int *NZ,      int *PX,        int *PY,
+              int *NBGX,    int *NEDX,        int *NSKPX,
+              int *NBGY,    int *NEDY,        int *NSKPY,
+              int *NBGZ,    int *NEDZ,        int *NSKPZ,
+              float *FAC,   float *Q0,        float *EX,    float *FP,      int *IDYNA,     int *SoCalQ,
+              char *INSRC,  char *INVEL,      char *OUT,    char *INSRC_I2, char *CHKFILE,  char *INRCVR, char *OUTRCVR ) {
+  //! Fill in default values
   *TMAX           = def_TMAX;
   *DH             = def_DH;
   *DT             = def_DT;
@@ -272,61 +277,61 @@ void command( int argc,    char **argv,
   *EX             = def_EX;
   *FP             = def_FP;
 
-  strcpy(INSRC, def_INSRC);
-  strcpy(INVEL, def_INVEL);
-  strcpy(OUT, def_OUT);
-  strcpy(INSRC_I2, def_INSRC_I2);
-  strcpy(CHKFILE, def_CHKFILE);
-  strcpy(INRCVR, def_INRCVR);
-  strcpy(OUTRCVR, def_OUTRCVR);
+  strcpy( INSRC,    def_INSRC );
+  strcpy( INVEL,    def_INVEL );
+  strcpy( OUT,      def_OUT );
+  strcpy( INSRC_I2, def_INSRC_I2 );
+  strcpy( CHKFILE,  def_CHKFILE );
+  strcpy( INRCVR,   def_INRCVR );
+  strcpy( OUTRCVR,  def_OUTRCVR );
 
   extern char *optarg;
   static const char *optstring = "-T:H:t:A:P:M:D:S:N:V:B:n:I:R:Q:X:Y:Z:x:y:z:i:l:h:30:p:s:r:W:1:2:3:11:12:13:21:22:23:100:101:102:o:c:C:O:";
   static struct option long_options[] = {
-    {"TMAX", required_argument, NULL, 'T'},
-    {"DH", required_argument, NULL, 'H'},
-    {"DT", required_argument, NULL, 't'},
-    {"ARBC", required_argument, NULL, 'A'},
-    {"PHT", required_argument, NULL, 'P'},
-    {"NPC", required_argument, NULL, 'M'},
-    {"ND", required_argument, NULL, 'D'},
-    {"NSRC", required_argument, NULL, 'S'},
-    {"NST", required_argument, NULL, 'N'},
-    {"NVE", required_argument, NULL, 'V'},
-    {"MEDIASTART", required_argument, NULL, 'B'},
-    {"NVAR", required_argument, NULL, 'n'},
-    {"IFAULT", required_argument, NULL, 'I'},
-    {"READ_STEP", required_argument, NULL, 'R'},
+    {"TMAX",          required_argument, NULL, 'T'},
+    {"DH",            required_argument, NULL, 'H'},
+    {"DT",            required_argument, NULL, 't'},
+    {"ARBC",          required_argument, NULL, 'A'},
+    {"PHT",           required_argument, NULL, 'P'},
+    {"NPC",           required_argument, NULL, 'M'},
+    {"ND",            required_argument, NULL, 'D'},
+    {"NSRC",          required_argument, NULL, 'S'},
+    {"NST",           required_argument, NULL, 'N'},
+    {"NVE",           required_argument, NULL, 'V'},
+    {"MEDIASTART",    required_argument, NULL, 'B'},
+    {"NVAR",          required_argument, NULL, 'n'},
+    {"IFAULT",        required_argument, NULL, 'I'},
+    {"READ_STEP",     required_argument, NULL, 'R'},
     {"READ_STEP_GPU", required_argument, NULL, 'Q'},
-    {"NX", required_argument, NULL, 'X'},
-    {"NY", required_argument, NULL, 'Y'},
-    {"NZ", required_argument, NULL, 'Z'},
-    {"PX", required_argument, NULL, 'x'},
-    {"PY", required_argument, NULL, 'y'},
-    {"NBGX", required_argument, NULL, 1},
-    {"NEDX", required_argument, NULL, 2},
-    {"NSKPX", required_argument, NULL, 3},
-    {"NBGY", required_argument, NULL, 11},
-    {"NEDY", required_argument, NULL, 12},
-    {"NSKPY", required_argument, NULL, 13},
-    {"NBGZ", required_argument, NULL, 21},
-    {"NEDZ", required_argument, NULL, 22},
-    {"NSKPZ", required_argument, NULL, 23},
-    {"IDYNA", required_argument, NULL, 'i'},
-    {"SoCalQ", required_argument, NULL, 's'},
-    {"FAC", required_argument, NULL, 'l'},
-    {"Q0", required_argument, NULL, 'h'},
-    {"EX", required_argument, NULL, 30},
-    {"FP", required_argument, NULL, 'p'},
-    {"NTISKP", required_argument, NULL, 'r'},
-    {"WRITE_STEP", required_argument, NULL, 'W'},
-    {"INSRC", required_argument, NULL, 100},
-    {"INVEL", required_argument, NULL, 101},
-    {"OUT", required_argument, NULL, 'o'},
-    {"INSRC_I2", required_argument, NULL, 102},
-    {"CHKFILE", required_argument, NULL, 'c'},
-    {"INRCVR", required_argument, NULL, 'C'},
-    {"OUTRCVR", required_argument, NULL, 'O'},
+    {"NX",            required_argument, NULL, 'X'},
+    {"NY",            required_argument, NULL, 'Y'},
+    {"NZ",            required_argument, NULL, 'Z'},
+    {"PX",            required_argument, NULL, 'x'},
+    {"PY",            required_argument, NULL, 'y'},
+    {"NBGX",          required_argument, NULL, 1  },
+    {"NEDX",          required_argument, NULL, 2  },
+    {"NSKPX",         required_argument, NULL, 3  },
+    {"NBGY",          required_argument, NULL, 11 },
+    {"NEDY",          required_argument, NULL, 12 },
+    {"NSKPY",         required_argument, NULL, 13 },
+    {"NBGZ",          required_argument, NULL, 21 },
+    {"NEDZ",          required_argument, NULL, 22 },
+    {"NSKPZ",         required_argument, NULL, 23 },
+    {"IDYNA",         required_argument, NULL, 'i'},
+    {"SoCalQ",        required_argument, NULL, 's'},
+    {"FAC",           required_argument, NULL, 'l'},
+    {"Q0",            required_argument, NULL, 'h'},
+    {"EX",            required_argument, NULL, 30 },
+    {"FP",            required_argument, NULL, 'p'},
+    {"NTISKP",        required_argument, NULL, 'r'},
+    {"WRITE_STEP",    required_argument, NULL, 'W'},
+    {"INSRC",         required_argument, NULL, 100},
+    {"INVEL",         required_argument, NULL, 101},
+    {"OUT",           required_argument, NULL, 'o'},
+    {"INSRC_I2",      required_argument, NULL, 102},
+    {"CHKFILE",       required_argument, NULL, 'c'},
+    {"INRCVR",        required_argument, NULL, 'C'},
+    {"OUTRCVR",       required_argument, NULL, 'O'},
   };
 
   //! If IFAULT=2 and INSRC is not set, then *INSRC = def_INSRC_TPSRC, not def_INSRC
@@ -338,95 +343,139 @@ void command( int argc,    char **argv,
   while( (c = getopt_long( argc, argv, optstring, long_options, NULL )) != -1 ) {
     switch( c ) {
       case 'T':
-        *TMAX       = atof(optarg);     break;
+        *TMAX             = atof( optarg );
+        break;
       case 'H':
-        *DH         = atof(optarg);     break;
+        *DH               = atof( optarg );
+        break;
       case 't':
-        *DT         = atof(optarg);     break;
+        *DT               = atof( optarg );
+        break;
       case 'A':
-        *ARBC       = atof(optarg);     break;
+        *ARBC             = atof( optarg );
+        break;
       case 'P':
-        *PHT        = atof(optarg);     break;
+        *PHT              = atof( optarg );
+        break;
       case 'M':
-        *NPC        = atoi(optarg);     break;
+        *NPC              = atoi( optarg );
+        break;
       case 'D':
-        *ND         = atoi(optarg);     break;
+        *ND               = atoi( optarg );
+        break;
       case 'S':
-        *NSRC       = atoi(optarg);     break;
+        *NSRC             = atoi( optarg );
+        break;
       case 'N':
-        *NST        = atoi(optarg);     break;
+        *NST              = atoi( optarg );
+        break;
       case 'V':
-        *NVE        = atoi(optarg);     break;
+        *NVE              = atoi( optarg );
+        break;
       case 'B':
-        *MEDIASTART = atoi(optarg);     break;
+        *MEDIASTART       = atoi( optarg );
+        break;
       case 'n':
-        *NVAR       = atoi(optarg);     break;
+        *NVAR             = atoi( optarg );
+        break;
       case 'I':
-        *IFAULT     = atoi(optarg);     break;
+        *IFAULT           = atoi( optarg );
+        break;
       case 'R':
-        *READ_STEP  = atoi(optarg);     break;
+        *READ_STEP        = atoi( optarg );
+        break;
       case 'Q':
-        readstepGpuIsSet = 1;
-        *READ_STEP_GPU  = atoi(optarg); break;
+        readstepGpuIsSet  = 1;
+        *READ_STEP_GPU    = atoi( optarg );
+        break;
       case 'X':
-        *NX         = atoi(optarg);     break;
+        *NX               = atoi( optarg );
+        break;
       case 'Y':
-        *NY         = atoi(optarg);     break;
+        *NY               = atoi( optarg );
+        break;
       case 'Z':
-        *NZ         = atoi(optarg);     break;
+        *NZ               = atoi( optarg );
+        break;
       case 'x':
-        *PX         = atoi(optarg);     break;
+        *PX               = atoi( optarg );
+        break;
       case 'y':
-        *PY         = atoi(optarg);     break;
+        *PY               = atoi( optarg );
+        break;
       case 1:
-        *NBGX       = atoi(optarg);     break;
+        *NBGX             = atoi( optarg );
+        break;
       case 2:
-        *NEDX       = atoi(optarg);     break;
+        *NEDX             = atoi( optarg );
+        break;
       case 3:
-        *NSKPX      = atoi(optarg);     break;
+        *NSKPX            = atoi( optarg );
+        break;
       case 11:
-        *NBGY       = atoi(optarg);     break;
+        *NBGY             = atoi( optarg );
+        break;
       case 12:
-        *NEDY       = atoi(optarg);     break;
+        *NEDY             = atoi( optarg );
+        break;
       case 13:
-        *NSKPY      = atoi(optarg);     break;
+        *NSKPY            = atoi( optarg );
+        break;
       case 21:
-        *NBGZ       = atoi(optarg);     break;
+        *NBGZ             = atoi( optarg );
+        break;
       case 22:
-        *NEDZ       = atoi(optarg);     break;
+        *NEDZ             = atoi( optarg );
+        break;
       case 23:
-        *NSKPZ      = atoi(optarg);     break;
+        *NSKPZ            = atoi( optarg );
+        break;
       case 'i':
-        *IDYNA      = atoi(optarg);     break;
+        *IDYNA            = atoi( optarg );
+        break;
       case 's':
-        *SoCalQ     = atoi(optarg);     break;
+        *SoCalQ           = atoi( optarg );
+        break;
       case 'l':
-        *FAC        = atof(optarg);     break;
+        *FAC              = atof( optarg );
+        break;
       case 'h':
-        *Q0         = atof(optarg);     break;
+        *Q0               = atof( optarg );
+        break;
       case 30:
-        *EX         = atof(optarg);     break;
+        *EX               = atof( optarg );
+        break;
       case 'p':
-        *FP         = atof(optarg);     break;
+        *FP               = atof( optarg );
+        break;
       case 'r':
-        *NTISKP     = atoi(optarg);     break;
+        *NTISKP           = atoi( optarg );
+        break;
       case 'W':
-        *WRITE_STEP = atoi(optarg);     break;
+        *WRITE_STEP       = atoi( optarg );
+        break;
       case 100:
-        insrcIsSet  = 1;
-        strcpy(INSRC, optarg);          break;
+        insrcIsSet        = 1;
+        strcpy( INSRC,    optarg );
+        break;
       case 101:
-        strcpy(INVEL, optarg);          break;
+        strcpy( INVEL,    optarg );
+        break;
       case 'o':
-        strcpy(OUT, optarg);            break;
+        strcpy( OUT,      optarg );
+        break;
       case 102:
-        strcpy(INSRC_I2, optarg);       break;
+        strcpy( INSRC_I2, optarg );
+        break;
       case 'c':
-        strcpy(CHKFILE, optarg);        break;
+        strcpy( CHKFILE,  optarg );
+        break;
       case 'C':
-        strcpy(INRCVR, optarg);         break;
+        strcpy( INRCVR,   optarg );
+        break;
       case 'O':
-        strcpy(OUTRCVR, optarg);        break;
+        strcpy( OUTRCVR,  optarg );
+        break;
       default:
         printf( "Usage: %s \nOptions:\n\t[(-T | --TMAX) <TMAX>]\n\t[(-H | --DH) <DH>]\n\t[(-t | --DT) <DT>]\n\t[(-A | --ARBC) <ARBC>]\n\t[(-P | --PHT) <PHT>]\n\t[(-M | --NPC) <NPC>]\n\t[(-D | --ND) <ND>]\n\t[(-S | --NSRC) <NSRC>]\n\t[(-N | --NST) <NST>]\n",argv[0] );
         printf( "\n\t[(-V | --NVE) <NVE>]\n\t[(-B | --MEDIASTART) <MEDIASTART>]\n\t[(-n | --NVAR) <NVAR>]\n\t[(-I | --IFAULT) <IFAULT>]\n\t[(-R | --READ_STEP) <x READ_STEP for CPU>]\n\t[(-Q | --READ_STEP_GPU) <READ_STEP for GPU>]\n" );
@@ -440,7 +489,7 @@ void command( int argc,    char **argv,
 
   //! If IFAULT=2 and INSRC is not set, then *INSRC = def_INSRC_TPSRC, not def_INSRC
   if( *IFAULT == 2 && !insrcIsSet ) {
-    strcpy(INSRC, def_INSRC_TPSRC);
+    strcpy( INSRC, def_INSRC_TPSRC );
   }
 
   if( !readstepGpuIsSet ) {
