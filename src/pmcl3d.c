@@ -37,7 +37,7 @@ double gethrtime() {
 
   if( RC == -1 ) {
     printf( "Bad call to gettimeofday\n" );
-    return (-1);
+    return -1;
   }
 
   return (((double) TV.tv_sec) + micro * ((double) TV.tv_usec));
@@ -72,7 +72,6 @@ void dump_all_stresses( float *d_xx,  float *d_yy,  float *d_zz,  float *d_xz,  
 }
 
 void dump_all_vels( float *d_u1, float *d_v1, float *d_w1, long int nel, char desc, int tstep, int tsub, int rank, int ncpus ) {
-
   dump_variable( d_u1, nel, "u1", desc, tstep, tsub, rank, ncpus );
   dump_variable( d_v1, nel, "v1", desc, tstep, tsub, rank, ncpus );
   dump_variable( d_w1, nel, "w1", desc, tstep, tsub, rank, ncpus );
@@ -98,24 +97,24 @@ int main( int argc, char **argv ) {
   float         FAC, Q0, EX, FP;
   char          INSRC[AWP_PATH_MAX], INVEL[AWP_PATH_MAX], OUT[AWP_PATH_MAX], INSRC_I2[AWP_PATH_MAX],
                 CHKFILE[AWP_PATH_MAX], INRCVR[AWP_PATH_MAX], OUTRCVR[AWP_PATH_MAX];
-  double        GFLOPS = 1.0;
-  double        GFLOPS_SUM = 0.0;
+  double        GFLOPS      = 1.0;
+  double        GFLOPS_SUM  = 0.0;
   MPI_Offset    displacement;
-  Grid3D u1     = NULL, v1 = NULL, w1 = NULL;
-  Grid3D d1     = NULL, mu = NULL, lam = NULL;
-  Grid3D xx     = NULL, yy = NULL, zz = NULL, xy = NULL, yz = NULL, xz = NULL;
-  Grid3D r1     = NULL, r2 = NULL, r3 = NULL, r4 = NULL, r5 = NULL, r6 = NULL;
-  Grid3D qp     = NULL, qs = NULL;
+  Grid3D u1     = NULL, v1      = NULL, w1    = NULL;
+  Grid3D d1     = NULL, mu      = NULL, lam   = NULL;
+  Grid3D xx     = NULL, yy      = NULL, zz    = NULL, xy      = NULL, yz    = NULL, xz    = NULL;
+  Grid3D r1     = NULL, r2      = NULL, r3    = NULL, r4      = NULL, r5    = NULL, r6    = NULL;
+  Grid3D qp     = NULL, qs      = NULL;
   PosInf tpsrc  = NULL;
-  Grid1D taxx   = NULL, tayy  = NULL, tazz = NULL, taxz = NULL, tayz = NULL, taxy = NULL;
-  Grid1D Bufx   = NULL, coeff = NULL;
-  Grid1D Bufy   = NULL, Bufz  = NULL;
+  Grid1D taxx   = NULL, tayy    = NULL, tazz  = NULL, taxz    = NULL, tayz  = NULL, taxy  = NULL;
+  Grid1D Bufx   = NULL, coeff   = NULL;
+  Grid1D Bufy   = NULL, Bufz    = NULL;
 
   //! plasticity output buffers
-  Grid1D    Bufeta  = NULL, Bufeta2 = NULL;
-  Grid3D    vx1     = NULL, vx2     = NULL, wwo   = NULL, lam_mu = NULL;
-  Grid3Dww  ww      = NULL;
-  Grid1D    dcrjx   = NULL, dcrjy   = NULL, dcrjz = NULL;
+  Grid1D Bufeta = NULL, Bufeta2 = NULL;
+  Grid3D vx1    = NULL, vx2     = NULL, wwo   = NULL, lam_mu  = NULL;
+  Grid3Dww ww   = NULL;
+  Grid1D dcrjx  = NULL, dcrjy   = NULL, dcrjz = NULL;
   float     vse[2], vpe[2], dde[2];
   FILE      *fchk;
 
@@ -181,7 +180,7 @@ int main( int argc, char **argv ) {
   long int  tmpInd;
   const int maxdim = 3;
   float     taumax, taumin, tauu;
-  Grid3D    tau = NULL, tau1 = NULL, tau2 = NULL;
+  Grid3D    tau     = NULL, tau1 = NULL, tau2 = NULL;
   Grid3D    weights = NULL;
   int       npsrc;
   long int  nt, source_step, cur_step = 0;
@@ -191,7 +190,7 @@ int main( int argc, char **argv ) {
   double    time_src = 0.0, time_src_tmp = 0.0, time_mesh = 0.0;
   //! time_fileio and time_gpuio measures the time spent
   //! in file system IO and gpu memory copying for IO
-  double    time_fileio = 0.0, time_gpuio = 0.0;
+  double    time_fileio     = 0.0, time_gpuio     = 0.0;
   double    time_fileio_tmp = 0.0, time_gpuio_tmp = 0.0;
 
   //! MPI+CUDA variables
@@ -260,8 +259,8 @@ int main( int argc, char **argv ) {
 
   //! Daniel - Buffers for exchange of yield factors, same naming as with velocity
   long int    num_bytes2;
-  int         yldfac_msg_size_x = 0, yldfac_msg_size_y = 0;
-  int         count_x_yldfac = 0, count_y_yldfac = 0;
+  int         yldfac_msg_size_x = 0, yldfac_msg_size_y  = 0;
+  int         count_x_yldfac    = 0, count_y_yldfac     = 0;
   int         yls2, yre2;
   float       *SL_yldfac, *SR_yldfac, *RL_yldfac, *RR_yldfac;
   float       *SF_yldfac, *SB_yldfac, *RF_yldfac, *RB_yldfac;
@@ -408,6 +407,7 @@ int main( int argc, char **argv ) {
     NEDX = NEDX - (NEDX - NBGX) % NSKPX;
     NEDY = NEDY - (NEDY - NBGY) % NSKPY;
     NEDZ = NEDZ - (NEDZ - NBGZ) % NSKPZ;
+
     //! number of recording points in total
     rec_NX = (NEDX - NBGX) / NSKPX + 1;
     rec_NY = (NEDY - NBGY) / NSKPY + 1;
@@ -654,7 +654,7 @@ int main( int argc, char **argv ) {
       //! initialize
       for( i = 0; i < nxt + 4 + 8 * LOOP; i++ ) {
         for( j = 0; j < nyt + 4 + 8 * LOOP; j++ ) {
-          for( k = 0; k < nzt + 2 * ALIGN; k++ ){
+          for( k = 0; k < nzt + 2 * ALIGN; k++ ) {
             neta[i][j][k]   = 0.;
             yldfac[i][j][k] = 1.;
           }
@@ -662,7 +662,7 @@ int main( int argc, char **argv ) {
       }
     }
 
-    if( rank == 0)
+    if( rank == 0 )
       printf( "Before inimesh\n" );
     inimesh( rank, MEDIASTART, d1, mu, lam, qp, qs, &taumax, &taumin, tau, weights,coeff, NVAR, FP, FAC, Q0, EX,
              nxt, nyt, nzt, PX, PY, NX, NY, NZ, coord, MCW, IDYNA, NVE, SoCalQ, INVEL,
@@ -705,6 +705,7 @@ int main( int argc, char **argv ) {
         idz = tpsrc[j*maxdim+2] + ALIGN - 1;
         int xi, yi, zi;
         int dox, doy, doz;
+
         for( xi = idx - 1; xi < idx + 2; xi++ ) {
           for( yi = idy - 2; yi < idy + 2; yi++ ) { //! because we are adding slip on two sides of the fault
             for( zi = idz - 1; zi < idz + 2; zi++ ) {
@@ -799,7 +800,7 @@ int main( int argc, char **argv ) {
 
       init_texture( nxt, nyt, nzt, tau1, tau2, vx1, vx2, weights, ww,wwo, xls, xre, yls, yre );
 
-      Delloc3D( tau );
+      Delloc3D( tau  );
       Delloc3D( tau1 );
       Delloc3D( tau2 );
     }
@@ -1377,12 +1378,13 @@ int main( int argc, char **argv ) {
                              d_taxx, d_tayy, d_tazz,
                              d_taxz, d_tayz, d_taxy, IFAULT);
           source_step = 0;
-        }/*
+        } /*
           if((cur_step<NST) && (cur_step%25==0) && (rank==srcproc)){
           printf("%d) SOURCE: taxx,xy,xz:%e,%e,%e\n",rank,
           taxx[cur_step],taxy[cur_step],taxz[cur_step]);
           }*/
       }
+
       time_un += gethrtime();
     }
 
@@ -1474,10 +1476,11 @@ int main( int argc, char **argv ) {
       err = MPI_File_close( &fh );
     }
 
-    cudaStreamDestroy( stream_1 );
-    cudaStreamDestroy( stream_2 );
-    cudaStreamDestroy( stream_i );
+    cudaStreamDestroy( stream_1  );
+    cudaStreamDestroy( stream_2  );
+    cudaStreamDestroy( stream_i  );
     cudaStreamDestroy( stream_i2 );
+
     cudaFreeHost( SL_vel );
     cudaFreeHost( SR_vel );
     cudaFreeHost( RL_vel );
@@ -1507,7 +1510,7 @@ int main( int argc, char **argv ) {
       cudaFree( d_RB_yldfac );
     }
 
-    GFLOPS  = 1.0;
+    GFLOPS = 1.0;
 
     if( NVE < 2 )
       GFLOPS  = GFLOPS * 307.0 * (xre - xls) * (yre - yls) * nzt;
@@ -1538,37 +1541,37 @@ int main( int argc, char **argv ) {
 
     //! program ends, free all memories
     UnBindArrayFromTexture();
-    Delloc3D( u1 );
-    Delloc3D( v1 );
-    Delloc3D( w1 );
-    Delloc3D( xx );
-    Delloc3D( yy );
-    Delloc3D( zz );
-    Delloc3D( xy );
-    Delloc3D( yz );
-    Delloc3D( xz );
-    Delloc3D( vx1 );
-    Delloc3D( vx2 );
-    Delloc3Dww( ww );
-    Delloc3D( wwo );
+    Delloc3D(   u1  );
+    Delloc3D(   v1  );
+    Delloc3D(   w1  );
+    Delloc3D(   xx  );
+    Delloc3D(   yy  );
+    Delloc3D(   zz  );
+    Delloc3D(   xy  );
+    Delloc3D(   yz  );
+    Delloc3D(   xz  );
+    Delloc3D(   vx1 );
+    Delloc3D(   vx2 );
+    Delloc3Dww( ww  );
+    Delloc3D(   wwo );
 
-    cudaFree( d_u1 );
-    cudaFree( d_v1 );
-    cudaFree( d_w1 );
+    cudaFree( d_u1   );
+    cudaFree( d_v1   );
+    cudaFree( d_w1   );
     cudaFree( d_f_u1 );
     cudaFree( d_f_v1 );
     cudaFree( d_f_w1 );
     cudaFree( d_b_u1 );
     cudaFree( d_b_v1 );
     cudaFree( d_b_w1 );
-    cudaFree( d_xx );
-    cudaFree( d_yy );
-    cudaFree( d_zz );
-    cudaFree( d_xy );
-    cudaFree( d_yz );
-    cudaFree( d_xz );
-    cudaFree( d_vx1 );
-    cudaFree( d_vx2 );
+    cudaFree( d_xx   );
+    cudaFree( d_yy   );
+    cudaFree( d_zz   );
+    cudaFree( d_xy   );
+    cudaFree( d_yz   );
+    cudaFree( d_xz   );
+    cudaFree( d_vx1  );
+    cudaFree( d_vx2  );
 
     if( NVE == 1 || NVE == 3 ) {
       Delloc3D( r1 );
@@ -1577,6 +1580,7 @@ int main( int argc, char **argv ) {
       Delloc3D( r4 );
       Delloc3D( r5 );
       Delloc3D( r6 );
+
       cudaFree( d_r1 );
       cudaFree( d_r2 );
       cudaFree( d_r3 );
@@ -1584,38 +1588,41 @@ int main( int argc, char **argv ) {
       cudaFree( d_r5 );
       cudaFree( d_r6 );
 
-      Delloc3D( qp );
+      Delloc3D( qp    );
       Delloc1D( coeff );
-      Delloc3D( qs );
-      cudaFree( d_qp );
+      Delloc3D( qs    );
+
+      cudaFree( d_qp    );
       cudaFree( d_coeff );
-      cudaFree( d_qs );
+      cudaFree( d_qs    );
     }
 
     if( NVE == 3 ) {
       Delloc3D( sigma2 );
-      Delloc3D( cohes );
-      Delloc3D( phi );
+      Delloc3D( cohes  );
+      Delloc3D( phi    );
       Delloc3D( yldfac );
-      Delloc3D( neta );
+      Delloc3D( neta   );
     }
 
     if( NPC == 0 ) {
-      Delloc1D( dcrjx );
-      Delloc1D( dcrjy );
-      Delloc1D( dcrjz );
+      Delloc1D( dcrjx   );
+      Delloc1D( dcrjy   );
+      Delloc1D( dcrjz   );
+
       cudaFree( d_dcrjx );
       cudaFree( d_dcrjy );
       cudaFree( d_dcrjz );
     }
 
-    Delloc3D( d1 );
-    Delloc3D( mu );
-    Delloc3D( lam );
+    Delloc3D( d1     );
+    Delloc3D( mu     );
+    Delloc3D( lam    );
     Delloc3D( lam_mu );
-    cudaFree( d_d1 );
-    cudaFree( d_mu );
-    cudaFree( d_lam );
+
+    cudaFree( d_d1     );
+    cudaFree( d_mu     );
+    cudaFree( d_lam    );
     cudaFree( d_lam_mu );
 
     if( rank == srcproc ) {
@@ -1625,13 +1632,15 @@ int main( int argc, char **argv ) {
       Delloc1D( taxz );
       Delloc1D( tayz );
       Delloc1D( taxy );
+
+      Delloc1P( tpsrc );
+
       cudaFree( d_taxx );
       cudaFree( d_tayy );
       cudaFree( d_tazz );
       cudaFree( d_taxz );
       cudaFree( d_tayz );
       cudaFree( d_taxy );
-      Delloc1P( tpsrc );
       cudaFree( d_tpsrc );
     }
 
