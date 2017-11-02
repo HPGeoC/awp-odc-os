@@ -107,17 +107,17 @@ void SetDeviceConstValue( float DH,     float DT,     int nxt,    int nyt, int n
   cudaMemcpyToSymbol( d_dh1,      &h_dh1,   sizeof( float ) );
   cudaMemcpyToSymbol( d_DT,       &DT,      sizeof( float ) );
   cudaMemcpyToSymbol( d_DH,       &DH,      sizeof( float ) );
-  cudaMemcpyToSymbol( d_nxt,      &nxt,     sizeof( int ) );
-  cudaMemcpyToSymbol( d_nyt,      &nyt,     sizeof( int ) );
-  cudaMemcpyToSymbol( d_nzt,      &nzt,     sizeof( int ) );
-  cudaMemcpyToSymbol( d_slice_1,  &slice_1, sizeof( int ) );
-  cudaMemcpyToSymbol( d_slice_2,  &slice_2, sizeof( int ) );
-  cudaMemcpyToSymbol( d_yline_1,  &yline_1, sizeof( int ) );
-  cudaMemcpyToSymbol( d_yline_2,  &yline_2, sizeof( int ) );
+  cudaMemcpyToSymbol( d_nxt,      &nxt,     sizeof( int )   );
+  cudaMemcpyToSymbol( d_nyt,      &nyt,     sizeof( int )   );
+  cudaMemcpyToSymbol( d_nzt,      &nzt,     sizeof( int )   );
+  cudaMemcpyToSymbol( d_slice_1,  &slice_1, sizeof( int )   );
+  cudaMemcpyToSymbol( d_slice_2,  &slice_2, sizeof( int )   );
+  cudaMemcpyToSymbol( d_yline_1,  &yline_1, sizeof( int )   );
+  cudaMemcpyToSymbol( d_yline_2,  &yline_2, sizeof( int )   );
 
   //! Compute initial stress on GPU (Daniel)
-  cudaMemcpyToSymbol( d_fmajor, &fmajor,  sizeof( float ) );
-  cudaMemcpyToSymbol( d_fminor, &fminor,  sizeof( float ) );
+  cudaMemcpyToSymbol( d_fmajor, &fmajor,  sizeof( float )     );
+  cudaMemcpyToSymbol( d_fminor, &fminor,  sizeof( float )     );
   cudaMemcpyToSymbol( d_Rz,     Rz,       9 * sizeof( float ) );
   cudaMemcpyToSymbol( d_RzT,    RzT,      9 * sizeof( float ) );
 
@@ -388,13 +388,13 @@ void dstrqc_H( float *xx,       float *yy,      float *zz,    float *xy,    floa
                float *qs,       float *dcrjx,   float *dcrjy, float *dcrjz, int nyt,    int nzt,
                cudaStream_t St, float *lam_mu,  int NX,       int rankx,    int ranky,  int  s_i,
                int e_i,         int s_j,        int e_j ) {
-    dim3 block( BLOCK_SIZE_Z, BLOCK_SIZE_Y, 1 );
-    dim3 grid( (nzt + BLOCK_SIZE_Z - 1) / BLOCK_SIZE_Z, (e_j - s_j + 1 + BLOCK_SIZE_Y - 1) / BLOCK_SIZE_Y, 1 );
-    cudaFuncSetCacheConfig( dstrqc, cudaFuncCachePreferL1 );
-    dstrqc<<<grid, block, 0, St>>>( xx,     yy,     zz,   xy,   xz, yz, r1,     r2, r3,     r4,     r5,     r6,
-                                    u1,     v1,     w1,   lam,  mu, qp, coeff,  qs, dcrjx,  dcrjy,  dcrjz,  lam_mu, NX,
-                                    rankx,  ranky,  s_i,  e_i,  s_j );
-    return;
+  dim3 block( BLOCK_SIZE_Z, BLOCK_SIZE_Y, 1 );
+  dim3 grid( (nzt + BLOCK_SIZE_Z - 1) / BLOCK_SIZE_Z, (e_j - s_j + 1 + BLOCK_SIZE_Y - 1) / BLOCK_SIZE_Y, 1 );
+  cudaFuncSetCacheConfig( dstrqc, cudaFuncCachePreferL1 );
+  dstrqc<<<grid, block, 0, St>>>( xx,     yy,     zz,   xy,   xz, yz, r1,     r2, r3,     r4,     r5,     r6,
+                                  u1,     v1,     w1,   lam,  mu, qp, coeff,  qs, dcrjx,  dcrjy,  dcrjz,  lam_mu, NX,
+                                  rankx,  ranky,  s_i,  e_i,  s_j );
+  return;
 }
 
 template< int BLOCKX, int BLOCKY >
@@ -419,21 +419,21 @@ dstrqc_new( float *__restrict__ xx, float *__restrict__ yy, float *__restrict__ 
 #define SMEM
 #define REGQ
 
-  register int   i, j, k, g_i;
-  register int   pos, pos_im2, pos_im1;
-  register int   pos_km1, pos_kp1, pos_kp2;
-  register int   pos_jm1, pos_jp1;
-  register int   f_ww;
-  register float vs1, vs2, vs3, a1, tmp, vx1,f_wwo;
-  register float xl, xm, xmu1, xmu2, xmu3;
-  register float qpa, h, h1, h2, h3;
-  register float qpaw, hw, h1w, h2w, h3w;
-  register float f_vx1, f_vx2, f_dcrj, f_r, f_dcrjy, f_dcrjz;
-  register float f_rtmp;
-  register float f_u1, u1_ip1, u1_ip2, u1_im1;
-  register float f_v1, v1_im1, v1_ip1, v1_im2;
-  register float f_w1, w1_im1, w1_im2, w1_ip1;
-  float f_xx, f_yy, f_zz, f_xy, f_xz, f_yz;
+  register int    i, j, k, g_i;
+  register int    pos, pos_im2, pos_im1;
+  register int    pos_km1, pos_kp1, pos_kp2;
+  register int    pos_jm1, pos_jp1;
+  register int    f_ww;
+  register float  vs1, vs2, vs3, a1, tmp, vx1,f_wwo;
+  register float  xl, xm, xmu1, xmu2, xmu3;
+  register float  qpa, h, h1, h2, h3;
+  register float  qpaw, hw, h1w, h2w, h3w;
+  register float  f_vx1, f_vx2, f_dcrj, f_r, f_dcrjy, f_dcrjz;
+  register float  f_rtmp;
+  register float  f_u1, u1_ip1, u1_ip2, u1_im1;
+  register float  f_v1, v1_im1, v1_ip1, v1_im2;
+  register float  f_w1, w1_im1, w1_im2, w1_ip1;
+  float           f_xx, f_yy, f_zz, f_xy, f_xz, f_yz;
 
 #ifdef REGQ
   float mu_i, mu_ip1, lam_i, lam_ip1, qp_i, qp_ip1, qs_i, qs_ip1;
@@ -534,12 +534,14 @@ dstrqc_new( float *__restrict__ xx, float *__restrict__ yy, float *__restrict__ 
       s_qp[tx+1][0]   = qp [pos-d_yline_1];
       s_qs[tx+1][0]   = qs [pos-d_yline_1];
     }
+
     if( tx == 0 ) {
       s_mu[0][ty+1]   = mu [pos-1];
       s_lam[0][ty+1]  = lam[pos-1];
       s_qp[0][ty+1]   = qp [pos-1];
       s_qs[0][ty+1]   = qs [pos-1];
     }
+
     if( tx == 0 && ty == 0 ) {
       s_mu[0][0]      = mu [pos-d_yline_1-1];
       s_lam[0][0]     = lam[pos-d_yline_1-1];
@@ -788,6 +790,7 @@ dstrqc_new( float *__restrict__ xx, float *__restrict__ yy, float *__restrict__ 
       s_w1[1][ty+1]  = w1[pos-1];
       s_w1[BLOCKX+2][ty+1]  = w1[pos+BLOCKX];
     }
+
     if( ty == 0 ) {   //! j halo
       s_u1[tx+1][0]         = u1[pos-d_yline_1];
       s_u1[tx+1][BLOCKY+1]  = u1[pos+BLOCKY*d_yline_1];
@@ -993,9 +996,9 @@ drprecpc_calc_opt( float *xx,     float *yy,    float *zz,
 //  register float  mu_;
 
   //! Compute initial stress on GPU (Daniel)
-  register float ini[9], ini_ip1[9];
-  register float depth, pfluid;
-  register int srfpos;
+  register float  ini[9], ini_ip1[9];
+  register float  depth, pfluid;
+  register int    srfpos;
   __shared__ float s_yz[BLOCKX+1][BLOCKY+1];
   int tx = threadIdx.x, ty = threadIdx.y;
 
@@ -1077,9 +1080,11 @@ drprecpc_calc_opt( float *xx,     float *yy,    float *zz,
     if( ty == 0 ) {
       s_yz[tx+1][0] = yz[pos-d_yline_1];
     }
+
     if( tx == 0 ) {
       s_yz[0][ty+1] = yz[pos-1];
     }
+
     if( tx == 0 && ty == 0 ) {
       s_yz[0][0] = yz[pos-1-d_yline_1];
     }
@@ -1505,20 +1510,20 @@ __global__ void dstrqc( float *xx,  float *yy,    float *zz,    float *xy,    fl
                         float *u1,  float *v1,    float *w1,    float *lam,   float *mu,      float *qp, float *coeff,
                         float *qs,  float *dcrjx, float *dcrjy, float *dcrjz, float *lam_mu,  int NX,
                         int rankx,  int ranky,    int s_i,      int e_i,      int s_j ) {
-  register int   i,  j,  k,  g_i;
-  register int   pos,     pos_ip1, pos_im2, pos_im1;
-  register int   pos_km2, pos_km1, pos_kp1, pos_kp2;
-  register int   pos_jm2, pos_jm1, pos_jp1, pos_jp2;
-  register int   pos_ik1, pos_jk1, pos_ijk, pos_ijk1,f_ww;
-  register float vs1, vs2, vs3, a1, tmp, vx1,f_wwo;
-  register float xl,  xm,  xmu1, xmu2, xmu3;
-  register float qpa, h,   h1,   h2,   h3;
-  register float qpaw,hw,h1w,h2w,h3w;
-  register float f_vx1, f_vx2,  f_dcrj, f_r,  f_dcrjy, f_dcrjz;
-  register float f_rtmp;
-  register float f_u1, u1_ip1, u1_ip2, u1_im1;
-  register float f_v1, v1_im1, v1_ip1, v1_im2;
-  register float f_w1, w1_im1, w1_im2, w1_ip1;
+  register int    i,  j,  k,  g_i;
+  register int    pos,     pos_ip1, pos_im2, pos_im1;
+  register int    pos_km2, pos_km1, pos_kp1, pos_kp2;
+  register int    pos_jm2, pos_jm1, pos_jp1, pos_jp2;
+  register int    pos_ik1, pos_jk1, pos_ijk, pos_ijk1,f_ww;
+  register float  vs1, vs2, vs3, a1, tmp, vx1,f_wwo;
+  register float  xl,  xm,  xmu1, xmu2, xmu3;
+  register float  qpa, h,   h1,   h2,   h3;
+  register float  qpaw,hw,h1w,h2w,h3w;
+  register float  f_vx1, f_vx2,  f_dcrj, f_r,  f_dcrjy, f_dcrjz;
+  register float  f_rtmp;
+  register float  f_u1, u1_ip1, u1_ip2, u1_im1;
+  register float  f_v1, v1_im1, v1_ip1, v1_im2;
+  register float  f_w1, w1_im1, w1_im2, w1_ip1;
   
   k    = blockIdx.x * BLOCK_SIZE_Z + threadIdx.x + ALIGN;
   j    = blockIdx.y * BLOCK_SIZE_Y + threadIdx.y + s_j;
@@ -1589,8 +1594,8 @@ __global__ void dstrqc( float *xx,  float *yy,    float *zz,    float *xy,    fl
 //           printf("qpaw %f\n",qpaw);
 //printf("qpaw1 %g\n",qpaw);  
     qpaw    = qpaw / f_wwo;
-//	printf("qpaw2 %g\n",qpaw);
-	  
+//printf("qpaw2 %g\n",qpaw);
+
     h       = 0.0625 * (qs[pos]     + qs[pos_ip1] + qs[pos_jm1] + qs[pos_ijk]
                       + qs[pos_km1] + qs[pos_ik1] + qs[pos_jk1] + qs[pos_ijk1]);
 
@@ -1794,23 +1799,23 @@ __global__ void drprecpc_calc( float *xx,     float *yy,      float *zz,
                                float *xy,     float *xz,      float *yz,    float *mu,  float *d1,
                                float *sigma2, float *yldfac,  float *cohes, float *phi, float *neta,
                                int s_i,       int e_i,        int s_j ) {
-  register int i,j,k,pos;
-  register int pos_im1,pos_ip1,pos_jm1,pos_km1;
-  register int pos_ip1jm1;
-  register int pos_ip1km1,pos_jm1km1;
-  register float Sxx, Syy, Szz, Sxy, Sxz, Syz;
-  register float Sxxp, Syyp, Szzp, Sxyp, Sxzp, Syzp;
-  register float depxx, depyy, depzz, depxy, depxz, depyz;
-  register float SDxx, SDyy, SDzz;
-  register float iyldfac, Tv, sigma_m, taulim, taulim2, rphi;
-  register float xm, iixx, iiyy, iizz;
-  register float mu_, secinv, sqrtSecinv;
+  register int    i,j,k,pos;
+  register int    pos_im1,pos_ip1,pos_jm1,pos_km1;
+  register int    pos_ip1jm1;
+  register int    pos_ip1km1,pos_jm1km1;
+  register float  Sxx, Syy, Szz, Sxy, Sxz, Syz;
+  register float  Sxxp, Syyp, Szzp, Sxyp, Sxzp, Syzp;
+  register float  depxx, depyy, depzz, depxy, depxz, depyz;
+  register float  SDxx, SDyy, SDzz;
+  register float  iyldfac, Tv, sigma_m, taulim, taulim2, rphi;
+  register float  xm, iixx, iiyy, iizz;
+  register float  mu_, secinv, sqrtSecinv;
 //  register int   jj, kk;
 
   //! Compute initial stress on GPU (Daniel)
-  register float ini[9], ini_ip1[9];
-  register float depth, pfluid;
-  register int srfpos;
+  register float  ini[9], ini_ip1[9];
+  register float  depth, pfluid;
+  register int    srfpos;
 
   k    = blockIdx.x * BLOCK_SIZE_Z + threadIdx.x + ALIGN;
   j    = blockIdx.y * BLOCK_SIZE_Y + threadIdx.y + s_j;
@@ -1938,21 +1943,21 @@ __global__ void drprecpc_app( float *xx,      float *yy,  float *zz,
                               float *xy,      float *xz,  float *yz,
                               float *mu,      float *sigma2,
                               float *yldfac,  int s_i,    int e_i, int s_j ) {
-  register int i,j,k,pos;
-  register int pos_im1,pos_ip1,pos_jp1,pos_kp1;
-  register int pos_im1jp1,pos_im1kp1,pos_ip1jp1;
-  register int pos_ip1kp1,pos_jp1kp1,pos_ip1jp1kp1;
-  register float iyldfac;
-  register float iist;
+  register int    i,j,k,pos;
+  register int    pos_im1,pos_ip1,pos_jp1,pos_kp1;
+  register int    pos_im1jp1,pos_im1kp1,pos_ip1jp1;
+  register int    pos_ip1kp1,pos_jp1kp1,pos_ip1jp1kp1;
+  register float  iyldfac;
+  register float  iist;
 //  register float xm, tst;
 //  register float mu_;
-  register float Sxx, Syy, Szz;
-  register float iixx, iiyy, iizz, SDxx, SDyy, SDzz, sigma_m;
+  register float  Sxx, Syy, Szz;
+  register float  iixx, iiyy, iizz, SDxx, SDyy, SDzz, sigma_m;
 
-  register float ini[9], ini_ip1[9], ini_kp1[9], ini_ip1kp1[9];
-  register float ini_jp1[9], ini_ip1jp1[9], ini_jp1kp1[9], ini_ip1jp1kp1[9];
-  register int srfpos;
-  register float depth, pfluid, depth_kp1, pfluid_kp1;
+  register float  ini[9], ini_ip1[9], ini_kp1[9], ini_ip1kp1[9];
+  register float  ini_jp1[9], ini_ip1jp1[9], ini_jp1kp1[9], ini_ip1jp1kp1[9];
+  register int    srfpos;
+  register float  depth, pfluid, depth_kp1, pfluid_kp1;
 
   k    = blockIdx.x * BLOCK_SIZE_Z + threadIdx.x + ALIGN;
   j    = blockIdx.y * BLOCK_SIZE_Y + threadIdx.y + s_j;
@@ -2074,8 +2079,8 @@ __global__ void drprecpc_app( float *xx,      float *yy,  float *zz,
 __global__ void update_yldfac( float *yldfac,
                                float *buf_L,  float *buf_R,   float *buf_F,   float *buf_B,
                                float *buf_FL, float *buf_FR,  float *buf_BL,  float *buf_BR ) {
-  register int  k,ind,tind;
-  register int  xs, xe, ys, ye;
+  register int k,ind,tind;
+  register int xs, xe, ys, ye;
 
   k    = blockIdx.x * BLOCK_SIZE_Z + threadIdx.x + ALIGN;
   ind  = blockIdx.y * BLOCK_SIZE_Y + threadIdx.y;
@@ -2174,12 +2179,12 @@ void frcvel_H( int i,       int READ_STEP,  int dim,    int *psrc,  int npsrc,  
 __global__ void frcvel_cu( int i,       int READ_STEP,  int dim,    int *psrc,  int npsrc,  int tskp,
                            float *axx,  float *ayy,     float *azz, float *axz, float *ayz, float *axy,
                            float *u1,   float *v1,      float *w1,  int xmin,   int xmax ) {
-  register int idx, idy, idz, j, pos;
-  register int i0, i1;
-  register float u1_p, u1_n, v1_p, v1_n, w1_p, w1_n;
-  register float u1_i, v1_i, w1_i, pfact;
+  register int    idx, idy, idz, j, pos;
+  register int    i0, i1;
+  register float  u1_p, u1_n, v1_p, v1_n, w1_p, w1_n;
+  register float  u1_i, v1_i, w1_i, pfact;
   /*register int pos_jm1, pos_jp1, pos_jm2;*/
-  bool abvmin, blwmax;
+  bool            abvmin, blwmax;
 
   j     = blockIdx.x * blockDim.x + threadIdx.x;
   if( j >= npsrc )

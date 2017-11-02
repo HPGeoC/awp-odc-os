@@ -104,6 +104,15 @@ suppression = {
   }
 }
 suppression = {
+  type = {invalid_memory_unmap_notmapped}
+  stacks = {
+    {
+      !!!;
+      func=munmap,mod=libmpi.so.12,src=i_rtc_hook.c;
+    }
+  }
+}
+suppression = {
   type = {invalid_memory_access_partial}
   stacks = {
     allocation={
