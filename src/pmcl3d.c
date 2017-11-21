@@ -382,11 +382,6 @@ int main( int argc, char **argv ) {
     int count = 0;
     cudaGetDeviceCount( &count );
     rank_gpu  = rank % count;
-
-    // Below line is only for HPGPU4 machine!
-/*    rank_gpu = rank % 4;*/
-    // Below line is for 1 GPU/node systems
-/*    rank_gpu = 0;*/
     cudaSetDevice( rank_gpu );
 
     printf( "Rank=%d) RS = %d, RSG = %d, NST = %d, IF = %d\n",
