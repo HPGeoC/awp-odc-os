@@ -142,7 +142,7 @@ const char  def_OUT[AWP_PATH_MAX]         = "output_sfc";
 const char  def_INSRC_TPSRC[AWP_PATH_MAX] = "input_rst/srcpart/tpsrc/tpsrc";
 const char  def_INSRC_I2[AWP_PATH_MAX]    = "input_rst/srcpart/split_faults/fault";
 
-const char  def_CHKFILE[AWP_PATH_MAX]     = "output_sfc/CHKP";
+const char  def_CHKFILE[AWP_PATH_MAX]     = "output_ckp/CHKP";
 
 const char  def_INRCVR[AWP_PATH_MAX]      = "";
 const char  def_OUTRCVR[AWP_PATH_MAX]     = "";
