@@ -37,14 +37,17 @@ public:
   Grid1D m_spongeCoeffZ;
 
   Cerjan() {};
-  Cerjan( io::OptionParser i_options, SoA i_data );
+  Cerjan( odc::io::OptionParser& i_options, SoA& i_data );
 
-  void initialize( io::OptionParser i_options, int_pt nx, int_pt ny, int_pt nz, int_pt bdry_width, int_pt *coords );
+  void initialize( odc::io::OptionParser& i_options,
+                   int_pt nx,         int_pt ny, int_pt nz,
+                   int_pt bdry_width, int_pt* coords );
   void finalize();
 
 private:
-  void inicrj( float ARBC, int_pt *coords, int_pt nxt, int_pt nyt, int_pt nzt, int_pt NX, int_pt NY, int_pt ND,
-               Grid1D dcrjx, Grid1D dcrjy, Grid1D dcrjz );
+  void inicrj( float ARBC,    int_pt* coords, int_pt nxt, int_pt nyt, int_pt nzt,
+               int_pt NX,     int_pt NY,      int_pt ND,
+               Grid1D dcrjx,  Grid1D dcrjy,   Grid1D dcrjz );
 };
 
 #endif /* Cerjan_hpp */

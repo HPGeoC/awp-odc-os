@@ -53,9 +53,10 @@ public:
 
   Mesh() {};
 
-  void initialize( odc::io::OptionParser i_options, int_pt nx, int_pt ny, int_pt nz,
-                   int_pt bdry_size, bool anelastic, Grid1D i_inputBuffer,
-                   int_pt globalX, int_pt globalY, int_pt globalZ
+  void initialize( odc::io::OptionParser& i_options,
+                   int_pt nx,         int_pt ny,      int_pt nz,
+                   int_pt bdry_size,  bool anelastic, Grid1D i_inputBuffer,
+                   int_pt globalX,    int_pt globalY, int_pt globalZ
 #ifdef YASK
                    , yask::Grid_XYZ* density_grid, yask::Grid_XYZ* mu_grid, yask::Grid_XYZ* lam_grid,
                    yask::Grid_XYZ* weights_grid, yask::Grid_XYZ* tau2_grid, yask::Grid_XYZ* an_ap_grid,

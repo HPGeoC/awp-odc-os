@@ -40,8 +40,10 @@ Patch::Patch( int_pt _nx, int_pt _ny, int_pt _nz, int_pt _bw )
         neighbors[i][j][k] = 0;
 }
 
-void Patch::initialize( odc::io::OptionParser i_options, int_pt _nx, int_pt _ny, int_pt _nz, int_pt _bw,
-                        int_pt i_globalX, int_pt i_globalY, int_pt i_globalZ, Grid1D i_inputBuffer ) {
+void Patch::initialize( odc::io::OptionParser& i_options,
+                        int_pt _nx,       int_pt _ny,       int_pt _nz, int_pt _bw,
+                        int_pt i_globalX, int_pt i_globalY, int_pt i_globalZ,
+                        Grid1D i_inputBuffer ) {
   nx              = _nx;
   ny              = _ny;
   nz              = _nz;
@@ -88,6 +90,7 @@ void Patch::initialize( odc::io::OptionParser i_options, int_pt _nx, int_pt _ny,
   if( odc::parallel::Mpi::m_rank == 0 )
     std::cout << "  setting up patch soa" << std::endl;
   soa.initialize( size_x, size_y, size_z );
+
   if( odc::parallel::Mpi::m_rank == 0 )
     std::cout << "  size is " << soa.getSize() << std::endl;
   soa.allocate();
@@ -104,6 +107,7 @@ void Patch::initialize( odc::io::OptionParser i_options, int_pt _nx, int_pt _ny,
 
   if( odc::parallel::Mpi::m_rank == 0 )
     std::cout << "Initializing mesh...";
+
 #ifdef YASK
   mesh.initialize( i_options, nx, ny, nz, bdry_width, true, i_inputBuffer, i_globalX, i_globalY, i_globalZ,
                    (Grid_XYZ*) yask_context.rho, (Grid_XYZ*) yask_context.mu, (Grid_XYZ*) yask_context.lambda,
@@ -113,6 +117,7 @@ void Patch::initialize( odc::io::OptionParser i_options, int_pt _nx, int_pt _ny,
 #else
   mesh.initialize( i_options, nx, ny, nz, bdry_width, true, i_inputBuffer, i_globalX, i_globalY, i_globalZ );
 #endif
+
   if( odc::parallel::Mpi::m_rank == 0 )
     std::cout << " done\n";
 
@@ -166,6 +171,7 @@ bool Patch::checkStressNaN() {
       }
     }
   }
+
   return false;
 }
 
@@ -277,6 +283,7 @@ void Patch::synchronize( int dir_x, int dir_y, int dir_z, bool allGrids ) {
         mesh.m_lam_mu[x][y][0] = source_patch->mesh.m_lam_mu[x+mx][y+my][0];
     }
   }
+
   return;
 }
 
@@ -284,6 +291,7 @@ Patch::~Patch() {
 #ifndef YASK
   soa.finalize();
 #endif
+
   mesh.finalize();
   cerjan.finalize();
 }

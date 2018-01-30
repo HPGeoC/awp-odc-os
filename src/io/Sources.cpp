@@ -306,6 +306,8 @@ int inisource( int IFAULT, int NSRC, int READ_STEP, int NST, int *SRCPROC, int m
         if( !file ) {
           std::cerr << "Cannot open file " << INSRC << std::endl;
           file = nullptr;
+          odc::data::Delloc1D( tmpta );
+
           return 0;
         }
         
@@ -327,6 +329,7 @@ int inisource( int IFAULT, int NSRC, int READ_STEP, int NST, int *SRCPROC, int m
               }
             }
           }
+
           odc::data::Delloc1D( tmpta );
         } else if( IFAULT == 0 ) {
           for( i = 0; i < NSRC; i++ ) {
@@ -334,6 +337,15 @@ int inisource( int IFAULT, int NSRC, int READ_STEP, int NST, int *SRCPROC, int m
               std::cerr << "Cannot read file " << INSRC << std::endl;
               fclose( file );
               file = nullptr;
+
+              odc::data::Delloc1D( taxx );
+              odc::data::Delloc1D( tayy );
+              odc::data::Delloc1D( tazz );
+              odc::data::Delloc1D( taxz );
+              odc::data::Delloc1D( tayz );
+              odc::data::Delloc1D( taxy );
+              odc::data::Delloc1P( tpsrc );
+
               return 0;
             }
             tpsrc[i*maxdim]   = tmpsrc[0];
@@ -348,6 +360,15 @@ int inisource( int IFAULT, int NSRC, int READ_STEP, int NST, int *SRCPROC, int m
                 std::cerr << "Cannot read file " << INSRC << std::endl;
                 fclose( file );
                 file = nullptr;
+
+                odc::data::Delloc1D( taxx );
+                odc::data::Delloc1D( tayy );
+                odc::data::Delloc1D( tazz );
+                odc::data::Delloc1D( taxz );
+                odc::data::Delloc1D( tayz );
+                odc::data::Delloc1D( taxy );
+                odc::data::Delloc1P( tpsrc );
+
                 return 0;
               }
             }

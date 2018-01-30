@@ -23,10 +23,10 @@
 #include <cmath>
 #include <cstdio>
 
-odc::data::Cerjan::Cerjan( odc::io::OptionParser i_options, SoA i_data ) {
-  m_spongeCoeffX = Alloc1D(i_data.m_numXGridPoints, odc::constants::boundary);
-  m_spongeCoeffY = Alloc1D(i_data.m_numYGridPoints, odc::constants::boundary);
-  m_spongeCoeffZ = Alloc1D(i_data.m_numZGridPoints, odc::constants::boundary);
+odc::data::Cerjan::Cerjan( odc::io::OptionParser& i_options, SoA& i_data ) {
+  m_spongeCoeffX = Alloc1D( i_data.m_numXGridPoints, odc::constants::boundary );
+  m_spongeCoeffY = Alloc1D( i_data.m_numYGridPoints, odc::constants::boundary );
+  m_spongeCoeffZ = Alloc1D( i_data.m_numZGridPoints, odc::constants::boundary );
 
   for( int i = -odc::constants::boundary; i < i_data.m_numXGridPoints + odc::constants::boundary; i++ )
     m_spongeCoeffX[i]  = 1.0;
@@ -45,8 +45,9 @@ odc::data::Cerjan::Cerjan( odc::io::OptionParser i_options, SoA i_data ) {
           m_spongeCoeffY, m_spongeCoeffZ );
 }
 
-void odc::data::Cerjan::initialize( odc::io::OptionParser i_options, int_pt nx, int_pt ny, int_pt nz,
-                                    int_pt bdry_width, int_pt *coords ) {
+void odc::data::Cerjan::initialize( odc::io::OptionParser& i_options,
+                                    int_pt nx,          int_pt ny, int_pt nz,
+                                    int_pt bdry_width,  int_pt* coords ) {
   m_spongeCoeffX = Alloc1D( nx + 2 * bdry_width, odc::constants::boundary );
   m_spongeCoeffY = Alloc1D( ny + 2 * bdry_width, odc::constants::boundary );
   m_spongeCoeffZ = Alloc1D( nz + 2 * bdry_width, odc::constants::boundary );
@@ -65,7 +66,7 @@ void odc::data::Cerjan::initialize( odc::io::OptionParser i_options, int_pt nx, 
 }
 
 void odc::data::Cerjan::inicrj( float ARBC,                                //! command line option .m_arbc
-                                int_pt *coords,                            //! coordinates of first element in _this_ Cerjan
+                                int_pt* coords,                            //! coordinates of first element in _this_ Cerjan
                                 int_pt nxt, int_pt nyt, int_pt nzt,        //! dimensions of _this_ Cerjan object 
                                 int_pt NX, int_pt NY,                      //! x,y dimension of whole computational domain
                                 int_pt ND,                                 //! width for Cerjan (default is 20)
@@ -75,35 +76,35 @@ void odc::data::Cerjan::inicrj( float ARBC,                                //! c
   float alpha;
   alpha = sqrt( -log( ARBC ) ) / ND;
 
-  nxp   = coords[0] + 1;
+  nxp = coords[0] + 1;
   if( nxp <= ND ) {
     for( i = 0; i < ND; i++ ) {
       nxp       = i + 1;
-      dcrjx[i]  = dcrjx[i] * (exp(-((alpha * (ND - nxp + 1)) * (alpha * (ND - nxp + 1)))));
+      dcrjx[i]  = dcrjx[i] * (exp( -((alpha * (ND - nxp + 1)) * (alpha * (ND - nxp + 1))) ));
     }
   }
 
-  nxp   = coords[0] + 1;
+  nxp = coords[0] + 1;
   if( (nxp + nxt - 1) >= (NX - ND + 1) ) {
     for( i = nxt - ND; i < nxt; i++ ) {
       nxp       = i + NX - nxt + 1;
-      dcrjx[i]  = dcrjx[i] * (exp(-((alpha * (ND - (NX - nxp))) * (alpha * (ND - (NX - nxp))))));
+      dcrjx[i]  = dcrjx[i] * (exp( -((alpha * (ND - (NX - nxp))) * (alpha * (ND - (NX - nxp)))) ));
     }
   }
 
-  nyp   = coords[1] + 1;
+  nyp = coords[1] + 1;
   if( nyp <= ND ) {
     for( j = 0; j < ND; j++ ) {
       nyp       = j + 1;
-      dcrjy[j]  = dcrjy[j] * (exp(-((alpha * (ND - nyp + 1)) * (alpha * (ND - nyp + 1)))));
+      dcrjy[j]  = dcrjy[j] * (exp( -((alpha * (ND - nyp + 1)) * (alpha * (ND - nyp + 1))) ));
     }
   }
 
-  nyp   = coords[1] + 1;
+  nyp = coords[1] + 1;
   if( (nyp + nyt - 1) >= (NY - ND + 1) ) {
     for( j = nyt - ND; j < nyt; j++ ) {
       nyp       = j + NY - nyt + 1;
-      dcrjy[j]  = dcrjy[j] * (exp(-((alpha * (ND - (NY - nyp))) * ((alpha * (ND - (NY - nyp)))))));
+      dcrjy[j]  = dcrjy[j] * (exp( -((alpha * (ND - (NY - nyp))) * ((alpha * (ND - (NY - nyp))))) ));
     }
   }
 
@@ -111,7 +112,7 @@ void odc::data::Cerjan::inicrj( float ARBC,                                //! c
   if( nzp <= ND ) {
     for( k = 0; k < ND; k++ ) {
       nzp       = k + 1;
-      dcrjz[k]  = dcrjz[k] * (exp(-((alpha * (ND - nzp + 1)) * ((alpha * (ND - nzp + 1))))));
+      dcrjz[k]  = dcrjz[k] * (exp( -((alpha * (ND - nzp + 1)) * ((alpha * (ND - nzp + 1)))) ));
     }
   }
 

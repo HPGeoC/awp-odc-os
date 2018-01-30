@@ -91,7 +91,7 @@ void odc::io::OutputWriter::calcRecordingPoints( int *rec_nbgx, int *rec_nedx,
 
 // TODO(Josh):  Output writer assumes at least some node from each rank is an
 //              output point;  should remove this requirement
-odc::io::OutputWriter::OutputWriter( odc::io::OptionParser i_options ) {
+odc::io::OutputWriter::OutputWriter( odc::io::OptionParser& i_options ) {
   m_firstXNodeToRecord  = i_options.m_nBgX;
   m_firstYNodeToRecord  = i_options.m_nBgY;
   m_firstZNodeToRecord  = i_options.m_nBgZ;
@@ -323,6 +323,7 @@ odc::io::ReceiverWriter::ReceiverWriter( char *inputFileName, char *outputFileNa
 
   //! Copy the receiver input file name set in launch script
   std::strncpy( m_receiverInputFileName, inputFileName, sizeof( m_receiverInputFileName ) );
+  m_receiverInputFileName[sizeof(m_receiverInputFileName)] = '\0';
 
   if( !m_receiverInputFilePtr ) {
     //! Open the receiver input-file in read-mode
@@ -342,6 +343,14 @@ odc::io::ReceiverWriter::ReceiverWriter( char *inputFileName, char *outputFileNa
     return;
   }
   m_numberOfReceivers = atoi( line );
+
+  //! Check for TAINTED_SCALAR (Coverity Scan)
+  if( m_numberOfReceivers < 0 || m_numberOfReceivers >= 1.8e+19 ) {
+    std::cerr << "Unhandled receiver-list length passed in file!" << std::endl;
+    fclose( m_receiverInputFilePtr );
+    m_receiverInputFilePtr = nullptr;
+    return;
+  }
 
   //! Dynamic memory allocation
   m_ownedByThisRank   = new bool [m_numberOfReceivers];
@@ -403,6 +412,7 @@ odc::io::ReceiverWriter::ReceiverWriter( char *inputFileName, char *outputFileNa
 
     //! Construct name of receiver output log based on receiver, for ex: receiverOutput_13.log and store in an array
     std::strncpy( m_receiverOutputFileName, outputFileName, sizeof( m_receiverOutputFileName ) );
+    m_receiverOutputFileName[sizeof(m_receiverOutputFileName)] = '\0';
     sprintf( m_receiverOutputLogs[i], "%s_%" AWP_PT_FORMAT_STRING ".csv", m_receiverOutputFileName, i + 1 );
 
     //! If the current MPI owns the grid point, we create a corresponding file
@@ -513,7 +523,7 @@ void odc::io::ReceiverWriter::finalize() {
 }
 
 odc::io::CheckpointWriter::CheckpointWriter( char *chkfile, int_pt nd, int_pt timestepsToSkip, int_pt numZGridPoints ) {
-  if( chkfile != NULL && chkfile[0] == '\0' ) {
+  if( (chkfile != NULL && chkfile[0] == '\0') || chkfile == nullptr ) {
     std::cerr << "\nWarning: no checkfile specified in input parameters!\n";
     m_ownedByThisRank = false;
     return;
@@ -523,6 +533,7 @@ odc::io::CheckpointWriter::CheckpointWriter( char *chkfile, int_pt nd, int_pt ti
   m_numTimestepsToSkip = timestepsToSkip;
   m_numZGridPoints = numZGridPoints;
   std::strncpy( m_checkPointFileName, chkfile, sizeof( m_checkPointFileName ) );
+  m_checkPointFileName[sizeof(m_checkPointFileName)] = '\0';
 
   m_rcdX = m_nd;
   m_rcdY = m_nd;
@@ -542,7 +553,7 @@ void odc::io::CheckpointWriter::writeUpdatedStats( int_pt currentTimeStep, Patch
 #endif
     fprintf( m_checkPointFile,"%" AWP_PT_FORMAT_STRING " :\t%e\t%e\t%e\n",
 #ifdef YASK
-             currentTimeStep-1,
+             currentTimeStep - 1,
 #else
              currentTimeStep,
 #endif

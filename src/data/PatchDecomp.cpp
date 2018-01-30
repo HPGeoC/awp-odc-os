@@ -21,9 +21,10 @@
 #include "parallel/Mpi.hpp"
 #include "PatchDecomp.hpp"
 
-void PatchDecomp::initialize( odc::io::OptionParser i_options, int_pt xSize, int_pt ySize, int_pt zSize,
-                              int_pt xPatchSize, int_pt yPatchSize, int_pt zPatchSize,
-                              int_pt overlapSize ) {
+void PatchDecomp::initialize( odc::io::OptionParser& i_options,
+                              int_pt xSize,       int_pt ySize, int_pt zSize,
+                              int_pt xPatchSize,  int_pt yPatchSize,
+                              int_pt zPatchSize,  int_pt overlapSize ) {
   int curId           = 0;
   int nvar            = i_options.m_nVar;
 
@@ -70,8 +71,6 @@ void PatchDecomp::initialize( odc::io::OptionParser i_options, int_pt xSize, int
     }
   }
 
-  Grid1D inputBuffer  = odc::data::Alloc1D( nvar * m_numGridPoints );
-
   //! If only one MPI task deployed
   if( odc::parallel::Mpi::m_size == 1 )
     sprintf( meshFile, "%s", i_options.m_inVel );
@@ -80,6 +79,7 @@ void PatchDecomp::initialize( odc::io::OptionParser i_options, int_pt xSize, int
 
   if( meshFile[0] == '\0' ) {
     std::cerr << "Warning: no mesh file specified in parameters!\n";
+
     return;
   }
 
@@ -87,12 +87,17 @@ void PatchDecomp::initialize( odc::io::OptionParser i_options, int_pt xSize, int
   file = fopen( meshFile, "rb" );
   if( !file ) {
     std::cerr << "Cannot open mesh file " << i_options.m_inVel << std::endl;
+
     return;
   }
+
+  Grid1D inputBuffer  = odc::data::Alloc1D( nvar * m_numGridPoints );
 
   if( !fread( inputBuffer, sizeof( float ), nvar * m_numGridPoints, file ) ) {
     std::cerr << "Cannot read mesh file " << i_options.m_inVel << std::endl;
     fclose( file );
+    odc::data::Delloc1D( inputBuffer );
+
     return;
   }
 

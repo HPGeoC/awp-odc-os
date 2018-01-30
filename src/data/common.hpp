@@ -20,8 +20,8 @@
 #ifndef COMMON_HPP
 #define COMMON_HPP
 
-#include <cstdlib>
 #include <iostream>
+#include <cstdlib>
 #include "constants.hpp"
 
 namespace odc {
@@ -51,7 +51,7 @@ public:
 
     return l_ptrBuffer;
   }
-  
+
   /**
    Initalizes memory block of @c real's to a set value
    
@@ -63,9 +63,9 @@ public:
     for( int_pt i = 0; i < length; i++ )
       location[i] = toValue;
   }
-  
+
   static void release( void *io_memory ) {
-    free(io_memory);
+    free( io_memory );
   }
 };
 

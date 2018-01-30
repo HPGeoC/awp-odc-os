@@ -45,8 +45,9 @@ static real anelastic_coeff( real q, int_pt weight_index, real weight, real *coe
   return q;
 }
 
-void odc::data::Mesh::initialize( odc::io::OptionParser i_options, int_pt x, int_pt y, int_pt z,
-                                  int_pt bdry_size, bool anelastic, Grid1D i_inputBuffer,
+void odc::data::Mesh::initialize( odc::io::OptionParser& i_options,
+                                  int_pt x,         int_pt y,         int_pt z,
+                                  int_pt bdry_size, bool anelastic,   Grid1D i_inputBuffer,
                                   int_pt i_globalX, int_pt i_globalY, int_pt i_globalZ
 #ifdef YASK
                                   , Grid_XYZ* density_grid, Grid_XYZ* mu_grid, Grid_XYZ* lam_grid,
@@ -55,7 +56,7 @@ void odc::data::Mesh::initialize( odc::io::OptionParser i_options, int_pt x, int
                                   Grid_XYZ* an_yz_grid
 #endif
                                 ) {
-  real taumax, taumin;
+  real taumax = 0.0, taumin = 0.0;
 
   Grid3D tau        = Alloc3D( 2, 2, 2 );
   Grid3D tau1       = Alloc3D( 2, 2, 2 );
@@ -372,8 +373,8 @@ void odc::data::Mesh::inimesh( int       MEDIASTART,
     int         rightNeighbor = odc::parallel::Mpi::m_neighborRanks[2][1][1];
     int         botNeighbor   = odc::parallel::Mpi::m_neighborRanks[1][0][1];
     int         topNeighbor   = odc::parallel::Mpi::m_neighborRanks[1][2][1];
-    int_pt      arrSize1      = 6 * nzt * nyt;
-    int_pt      arrSize2      = 6 * nzt * nxt;
+    int_pt      arrSize1      = 6 * (int_pt) nzt * (int_pt) nyt;
+    int_pt      arrSize2      = 6 * (int_pt) nzt * (int_pt) nxt;
 
     real        sendBuff1[6][nzt][nyt], recvBuff1[6][nzt][nyt];
     real        sendBuff2[6][nzt][nxt], recvBuff2[6][nzt][nxt];
@@ -667,14 +668,14 @@ void odc::data::Mesh::inimesh( int       MEDIASTART,
       }
     }
 
-    if( NVE == 1 ) {
-      tmppq = Alloc3D( nxt, nyt, nzt );
-      tmpsq = Alloc3D( nxt, nyt, nzt );
+    tmppq = Alloc3D( nxt, nyt, nzt );
+    tmpsq = Alloc3D( nxt, nyt, nzt );
 
+    if( NVE == 1 ) {
 #pragma omp parallel for collapse( 3 )
       for( i = 0; i < nxt; i++ ) {
-        for( j = 0;j < nyt; j++ ) {
-          for( k = 0;k < nzt; k++ ) {
+        for( j = 0; j < nyt; j++ ) {
+          for( k = 0; k < nzt; k++ ) {
             tmppq[i][j][k]  = 0.0f;
             tmpsq[i][j][k]  = 0.0f;
           }
@@ -703,6 +704,7 @@ void odc::data::Mesh::inimesh( int       MEDIASTART,
               tmppq[i][j][k]  = i_inputBuffer[l_readOffset+var_offset+3];
               tmpsq[i][j][k]  = i_inputBuffer[l_readOffset+var_offset+4];
             }
+
             if( tmpvp[i][j][k] != tmpvp[i][j][k] ||
                 tmpvs[i][j][k] != tmpvs[i][j][k] ||
                 tmpdd[i][j][k] != tmpdd[i][j][k] ) {
@@ -720,7 +722,7 @@ void odc::data::Mesh::inimesh( int       MEDIASTART,
       w0  = 2.0 * pi * FP;
     }
 
-    float facex = (float)pow( FAC, EX );
+    float facex = (float) pow( FAC, EX );
 
 #pragma omp parallel for collapse( 2 )
     for( i = 0; i < nxt; i++ ) {
@@ -739,6 +741,7 @@ void odc::data::Mesh::inimesh( int       MEDIASTART,
             tmpvs[i][j][k]  = 200.0;
             tmpvp[i][j][k]  = 600.0;
           }
+
           tmpsq[i][j][k]    = 0.1 * tmpvs[i][j][k];
           tmppq[i][j][k]    = 2.0 * tmpsq[i][j][k];
 
@@ -755,6 +758,7 @@ void odc::data::Mesh::inimesh( int       MEDIASTART,
                 }
               }
             }
+
             mu1 = tmpdd[i][j][k] * tmpvp[i][j][k] * tmpvp[i][j][k] / (1.0 - val[0]);
           } else {
             num = 0;
@@ -771,12 +775,13 @@ void odc::data::Mesh::inimesh( int       MEDIASTART,
             for( ii = 0; ii < 2; ii++ ) {
               for( jj = 0; jj < 2; jj++ ) {
                 for( kk = 0; kk < 2; kk++ ) {
-                  value = value + 1.0 / (1.0 - ((double)weights_lop[ii][jj][kk]) / (1.0 + sqrtm1 * ((double)w0 * tau[ii][jj][kk])));
+                  value = value + 1.0 / (1.0 - ((double) weights_lop[ii][jj][kk]) / (1.0 + sqrtm1 * ((double) w0 * tau[ii][jj][kk])));
                 }
               }
             }
+
             value = 1.0 / value;
-            mu1   = tmpdd[i][j][k] * tmpvp[i][j][k] * tmpvp[i][j][k] / (8.0 * std::real(value));
+            mu1   = tmpdd[i][j][k] * tmpvp[i][j][k] * tmpvp[i][j][k] / (8.0 * std::real( value ));
           }
 
           tmpvp[i][j][k] = sqrt( mu1 / tmpdd[i][j][k] );
@@ -805,11 +810,12 @@ void odc::data::Mesh::inimesh( int       MEDIASTART,
                 }
               }
             }
+
             value = 0.0 + 0.0 * sqrtm1;
             for( ii = 0; ii < 2; ii++ ) {
               for( jj = 0; jj < 2; jj++ ) {
                 for( kk = 0; kk < 2; kk++ ) {
-                  value = value + 1.0 / (1.0 - ((double)weights_los[ii][jj][kk]) / (1.0 + sqrtm1 * ((double)w0 * tau[ii][jj][kk])));
+                  value = value + 1.0 / (1.0 - ((double) weights_los[ii][jj][kk]) / (1.0 + sqrtm1 * ((double) w0 * tau[ii][jj][kk])));
                 }
               }
             }
@@ -825,10 +831,12 @@ void odc::data::Mesh::inimesh( int       MEDIASTART,
             if( vpvs < 1.45 )
               tmpvs[i][j][k]  = tmpvp[i][j][k] / 1.45;
           }
+
           if( tmpvp[i][j][k] > 7600.0 ) {
             tmpvs[i][j][k]  = 4387.0;
             tmpvp[i][j][k]  = 7600.0;
           }
+
           if( tmpvs[i][j][k] < 200.0 ) {
             tmpvs[i][j][k]  = 200.0;
             tmpvp[i][j][k]  = 600.0;
@@ -837,6 +845,7 @@ void odc::data::Mesh::inimesh( int       MEDIASTART,
           offset  = i * i_strideX + j * i_strideY + (nzt - 1 - k) * i_strideZ;
           if( tmpdd[i][j][k] < 1700.0 )
             tmpdd[i][j][k]  = 1700.0;
+
 #ifdef YASK
           mu_grid->writeElem( 1.0 / (tmpdd[i][j][k] * tmpvs[i][j][k] * tmpvs[i][j][k]),
                               i + bdry_width, j + bdry_width, nzt - 1 - k + bdry_width, 0 );
@@ -850,6 +859,7 @@ void odc::data::Mesh::inimesh( int       MEDIASTART,
                                           -2.0 * tmpvs[i][j][k] * tmpvs[i][j][k]));
           d1[offset]  = tmpdd[i][j][k];
 #endif
+
           if( NVE == 1 ) {
             if( tmppq[i][j][k] <= 0.0 ) {
               qpinv = 0.0;
@@ -858,6 +868,7 @@ void odc::data::Mesh::inimesh( int       MEDIASTART,
               qpinv = 1.0 / tmppq[i][j][k];
               qsinv = 1.0 / tmpsq[i][j][k];
             }
+
             tmppq[i][j][k]  = qpinv / facex;
             tmpsq[i][j][k]  = qsinv / facex;
             qp[offset]      = tmppq[i][j][k];
@@ -891,10 +902,8 @@ void odc::data::Mesh::inimesh( int       MEDIASTART,
     Delloc3D( tmpvs );
     Delloc3D( tmpdd );
 
-    if( NVE == 1 ) {
-      Delloc3D( tmppq );
-      Delloc3D( tmpsq );
-    }
+    Delloc3D( tmppq );
+    Delloc3D( tmpsq );
   }
 
 #ifdef AWP_USE_MPI
@@ -1496,6 +1505,7 @@ void odc::data::Mesh::set_boundaries(
   for( i = 0; i < nx; i++ ) {
     for( j = 0; j < ny; j++ ) {
       k = nz;
+
 #ifdef YASK
       gd1->writeElem( gd1->readElem( h+i, h+j, h+k-1, 0 ), h+i, h+j, h+k, 0 );
       gmu->writeElem( gmu->readElem( h+i, h+j, h+k-1, 0 ), h+i, h+j, h+k, 0 );
@@ -1505,6 +1515,7 @@ void odc::data::Mesh::set_boundaries(
       mu[h+i][h+j][h+k]   = mu[h+i][h+j][h+k-1];
       lam[h+i][h+j][h+k]  = lam[h+i][h+j][h+k-1];
 #endif
+
       if( anelastic ) {
         qp[h+i][h+j][h+k] = qp[h+i][h+j][h+k-1];
         qs[h+i][h+j][h+k] = qs[h+i][h+j][h+k-1];
@@ -1530,6 +1541,7 @@ void odc::data::Mesh::finalize() {
     odc::data::Delloc3D( m_weights, odc::constants::boundary );
     odc::data::Delloc3Dww( m_weight_index, odc::constants::boundary );
 #endif
+
     Delloc1D( m_coeff );
   }
 }

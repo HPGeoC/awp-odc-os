@@ -32,6 +32,11 @@ int writeCHK( char *chkfile,  int ntiskp, float dt, float dh,
   FILE *fchk;
 
   fchk = fopen( chkfile, "w" );
+  if( fchk == NULL ) {
+    fprintf( stderr, "could not open %s\n", chkfile );
+    return -1;
+  }
+
   fprintf( fchk,"STABILITY CRITERIA .5 > CMAX*DT/DX:\t%f\n", vpe[1] * dt / dh );
   fprintf( fchk,"# OF X,Y,Z NODES PER PROC:\t%d, %d, %d\n", nxt, nyt, nzt );
   fprintf( fchk,"# OF TIME STEPS:\t%d\n", nt );

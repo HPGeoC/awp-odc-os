@@ -27,8 +27,8 @@ import warnings
 vars = Variables()
 
 vars.AddVariables(
-  EnumVariable( 'kernel',
-                'compute-kernel',
+  EnumVariable( 'kernels',
+                'compute kernels',
                 'vanilla',
                  allowed_values = ( 'cuda', 'vanilla', 'yask' )
               ),
@@ -154,7 +154,7 @@ if compilers == 'clang':
     print '  failed getting dir of libomp.so, not setting rpath'
 
 # add flags and cuda support if requested
-if 'cuda' in env['kernel']:
+if 'cuda' in env['kernels']:
   if 'cudaToolkitDir' not in env:
     print( '  cudaToolkitDir not set; defaulting to /usr/local/cuda' )
     env['cudaToolkitDir'] = '/usr/local/cuda'
@@ -163,7 +163,7 @@ if 'cuda' in env['kernel']:
   env.Append( CPPPATH = [ env['cudaToolkitDir'] + '/include' ] )
   env.Append( LIBPATH = [ env['cudaToolkitDir'] + '/lib64' ] )
   env.Append( LIBS    = ['cudart'] )
-elif 'yask' in env['kernel']:
+elif 'yask' in env['kernels']:
   env.Append( CPPDEFINES = ['YASK',
                             'REAL_BYTES=4',
                             'LAYOUT_3D=Layout_123',
