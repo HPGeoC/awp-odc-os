@@ -50,15 +50,14 @@ void dump_variable( float *var, long int nel, char *varname, char desc, int tste
   float* buf;
 
   fid = fopen( outfile, "w" );
-  if( fid == NULL )
+  if( fid != NULL ) {
+    buf = (float*) calloc( nel, sizeof( float ) );
+    cudaMemcpy( buf, var, nel * sizeof( float ), cudaMemcpyDeviceToHost );
+    fwrite( buf, nel, sizeof( float ), fid );
+    fclose( fid );
+    free( buf );
+  } else
     fprintf( stderr, "could not open %s\n", outfile );
-
-  buf = (float*) calloc( nel, sizeof( float ) );
-  cudaMemcpy( buf, var, nel * sizeof( float ), cudaMemcpyDeviceToHost );
-  fwrite( buf, nel, sizeof( float ), fid );
-  fclose( fid );
-
-  free( buf );
 }
 
 void dump_all_stresses( float *d_xx,  float *d_yy,  float *d_zz,  float *d_xz,  float *d_yz,  float *d_xy,
@@ -320,7 +319,7 @@ int main( int argc, char **argv ) {
     }
 
     MPI_Finalize();
-    return (0);
+    return 0;
   }
 
   if( (size_tot % 2) != 0 ) {
@@ -328,7 +327,7 @@ int main( int argc, char **argv ) {
       fprintf( stderr, "Error. Number of CPUs %d must be divisible by 2.\n", size_tot );
 
    MPI_Finalize();
-   return (0);
+   return 0;
   }
 
   size = size_tot / 2;
@@ -579,7 +578,9 @@ int main( int argc, char **argv ) {
 
     if( err ) {
       fprintf( stderr, "Source initialization failed!\n" );
-      return -1;
+
+      MPI_Finalize();
+      return 0;
     }
 
     time_src += gethrtime();
@@ -667,8 +668,10 @@ int main( int argc, char **argv ) {
       printf( "After inimesh. Time elapsed (sec): %lf\n\n", time_mesh );
 
     if( rank == 0 )
-      writeCHK( CHKFILE, NTISKP, DT, DH, nxt, nyt, nzt,
-                nt, ARBC, NPC, NVE, FAC, Q0, EX, FP, vse, vpe, dde );
+      if( writeCHK( CHKFILE, NTISKP, DT, DH, nxt, nyt, nzt,
+                    nt, ARBC, NPC, NVE, FAC, Q0, EX, FP, vse, vpe, dde ) == -1 ) {
+        MPI_Abort( MPI_COMM_WORLD, 1 );
+      }
 
     mediaswap( d1, mu, lam, qp, qs, rank, x_rank_L, x_rank_R, y_rank_F, y_rank_B, nxt, nyt, nzt, MCW );
 
@@ -1079,7 +1082,7 @@ int main( int argc, char **argv ) {
         cudaThreadSynchronize();
 
         if( (rank == srcproc) && (IFAULT == 4) ) {
-          fprintf( stdout, "Calling frcvel_H\n" );
+/*          fprintf( stdout, "Calling frcvel_H\n" );*/
           ++source_step;
           frcvel_H( source_step, READ_STEP_GPU, maxdim, d_tpsrc, npsrc, fbc_tskp, stream_i,
                     d_taxx, d_tayy, d_tazz, d_taxz, d_tayz, d_taxy, d_u1, d_v1, d_w1, -1, -1 );
@@ -1639,7 +1642,9 @@ int main( int argc, char **argv ) {
       cudaFree( d_tpsrc );
     }
 
+    printf( "%d) calling MPI_Comm_free... ", rank );
     MPI_Comm_free( &MC1 );
+    printf( "done.\n" );
   } //! end of if (rank < size)
 
   else {
@@ -1647,8 +1652,11 @@ int main( int argc, char **argv ) {
       background_velocity_reader( rank, size, NST, READ_STEP, MCS );
   }
 
+  printf( "%d) calling MPI_Finalize... ", rank);
   MPI_Finalize();
-  return (0);
+  printf( "done.\n" );
+
+  return 0;
 }
 
 /**

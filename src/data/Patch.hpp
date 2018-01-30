@@ -41,8 +41,10 @@ public:
   Patch( int_pt _nx, int_pt _ny, int_pt _nz, int_pt _bw );
   ~Patch();
 
-  void    initialize( odc::io::OptionParser i_options, int_pt _nx, int_pt _ny, int_pt _nz, int_pt _bw,
-                      int_pt i_globalX, int_pt i_globalY, int_pt i_globalZ, Grid1D i_inputBuffer );
+  void    initialize( odc::io::OptionParser& i_options,
+                      int_pt _nx,       int_pt _ny,       int_pt _nz, int_pt _bw,
+                      int_pt i_globalX, int_pt i_globalY, int_pt i_globalZ,
+                      Grid1D i_inputBuffer );
 
   bool    checkStressNaN();
 

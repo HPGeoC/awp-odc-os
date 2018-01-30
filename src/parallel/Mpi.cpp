@@ -80,9 +80,9 @@ bool    odc::parallel::Mpi::initialize( int i_argc, char *i_argv[], odc::io::Opt
 
   rankToCoord(coords, m_rank);
 
-  m_startX  = (i_options.m_nX * coords[0]) / m_ranksX;
-  m_startY  = (i_options.m_nY * coords[1]) / m_ranksY;
-  m_startZ  = (i_options.m_nZ * coords[2]) / m_ranksZ;
+  m_startX  = (i_options.m_nX * (int_pt) coords[0]) / (int_pt) m_ranksX;
+  m_startY  = (i_options.m_nY * (int_pt) coords[1]) / (int_pt) m_ranksY;
+  m_startZ  = (i_options.m_nZ * (int_pt) coords[2]) / (int_pt) m_ranksZ;
 
 #ifdef YASK
   if( (m_startX % CPTS_X) || (m_startY % CPTS_Y) || (m_startZ % CPTS_Z) ) {
@@ -91,9 +91,9 @@ bool    odc::parallel::Mpi::initialize( int i_argc, char *i_argv[], odc::io::Opt
   }
 #endif
 
-  m_endX    = (i_options.m_nX * (coords[0] + 1)) / m_ranksX;
-  m_endY    = (i_options.m_nY * (coords[1] + 1)) / m_ranksY;
-  m_endZ    = (i_options.m_nZ * (coords[2] + 1)) / m_ranksZ;
+  m_endX    = (i_options.m_nX * (int_pt) (coords[0] + 1)) / (int_pt) m_ranksX;
+  m_endY    = (i_options.m_nY * (int_pt) (coords[1] + 1)) / (int_pt) m_ranksY;
+  m_endZ    = (i_options.m_nZ * (int_pt) (coords[2] + 1)) / (int_pt) m_ranksZ;
 
   m_rangeX  = m_endX - m_startX;
   m_rangeY  = m_endY - m_startY;

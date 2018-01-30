@@ -73,8 +73,9 @@ public:
    * @param zPatchSize size of patch in z direction.
    * @param overlapSize size of patch overlap region in each dimension
    **/  
-  void    initialize( odc::io::OptionParser i_options, int_pt xSize, int_pt ySize, int_pt zSize,
-                      int_pt xPatchSize, int_pt yPatchSize, int_pt zPatchSize,
+  void    initialize( odc::io::OptionParser& i_options,
+                      int_pt xSize,       int_pt ySize,       int_pt zSize,
+                      int_pt xPatchSize,  int_pt yPatchSize,  int_pt zPatchSize,
                       int_pt overlapSize );
 
   /**

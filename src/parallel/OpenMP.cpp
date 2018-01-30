@@ -144,12 +144,12 @@ odc::parallel::OpenMP::OpenMP( int_pt       i_nPtsX,
   for( int y = 0; y < m_nWPY; y++ ) {
     for( int z = 0; z < m_nWPZ; z++ ) {
       int x         = 0;
-      int_pt startX = x * m_packageSizeX;
-      int_pt endX   = (x + 1) * m_packageSizeX;
-      int_pt startY = y * m_packageSizeY;
-      int_pt endY   = (y + 1) * m_packageSizeY;
-      int_pt startZ = z * m_packageSizeZ;
-      int_pt endZ   = (z + 1) * m_packageSizeZ;
+      int_pt startX = (int_pt) (x * m_packageSizeX);
+      int_pt endX   = (int_pt) ((x + 1) * m_packageSizeX);
+      int_pt startY = (int_pt) (y * m_packageSizeY);
+      int_pt endY   = (int_pt) ((y + 1) * m_packageSizeY);
+      int_pt startZ = (int_pt) (z * m_packageSizeZ);
+      int_pt endZ   = (int_pt) ((z + 1) * m_packageSizeZ);
 
       if( endX > i_nPtsX )
         endX = i_nPtsX;
@@ -168,13 +168,13 @@ odc::parallel::OpenMP::OpenMP( int_pt       i_nPtsX,
 
   for( int y = 0; y < m_nWPY; y++ ) {
     for( int z = 0; z < m_nWPZ; z++ ) {
-      int x         = m_nWPX-1;
-      int_pt startX = x * m_packageSizeX;
-      int_pt endX   = (x + 1) * m_packageSizeX;
-      int_pt startY = y * m_packageSizeY;
-      int_pt endY   = (y + 1) * m_packageSizeY;
-      int_pt startZ = z * m_packageSizeZ;
-      int_pt endZ   = (z + 1) * m_packageSizeZ;
+      int x         = m_nWPX - 1;
+      int_pt startX = (int_pt) (x * m_packageSizeX);
+      int_pt endX   = (int_pt) ((x + 1) * m_packageSizeX);
+      int_pt startY = (int_pt) (y * m_packageSizeY);
+      int_pt endY   = (int_pt) ((y + 1) * m_packageSizeY);
+      int_pt startZ = (int_pt) (z * m_packageSizeZ);
+      int_pt endZ   = (int_pt) ((z + 1) * m_packageSizeZ);
 
       if( endX > i_nPtsX )
         endX = i_nPtsX;
@@ -192,12 +192,12 @@ odc::parallel::OpenMP::OpenMP( int_pt       i_nPtsX,
   for( int x = 1; x < m_nWPX - 1; x++ ) {
     for( int z = 0; z < m_nWPZ; z++ ) {
       int y         = 0;
-      int_pt startX = x * m_packageSizeX;
-      int_pt endX   = (x + 1) * m_packageSizeX;
-      int_pt startY = y * m_packageSizeY;
-      int_pt endY   = (y + 1) * m_packageSizeY;
-      int_pt startZ = z * m_packageSizeZ;
-      int_pt endZ   = (z + 1) * m_packageSizeZ;
+      int_pt startX = (int_pt) (x * m_packageSizeX);
+      int_pt endX   = (int_pt) ((x + 1) * m_packageSizeX);
+      int_pt startY = (int_pt) (y * m_packageSizeY);
+      int_pt endY   = (int_pt) ((y + 1) * m_packageSizeY);
+      int_pt startZ = (int_pt) (z * m_packageSizeZ);
+      int_pt endZ   = (int_pt) ((z + 1) * m_packageSizeZ);
 
       if( endX > i_nPtsX )
         endX = i_nPtsX;
@@ -215,12 +215,12 @@ odc::parallel::OpenMP::OpenMP( int_pt       i_nPtsX,
   for( int x = 1; x < m_nWPX - 1; x++ ) {
     for( int z = 0; z < m_nWPZ; z++ ) {
       int y         = m_nWPY - 1;
-      int_pt startX = x * m_packageSizeX;
-      int_pt endX   = (x + 1) * m_packageSizeX;
-      int_pt startY = y * m_packageSizeY;
-      int_pt endY   = (y + 1) * m_packageSizeY;
-      int_pt startZ = z * m_packageSizeZ;
-      int_pt endZ   = (z + 1) * m_packageSizeZ;
+      int_pt startX = (int_pt) (x * m_packageSizeX);
+      int_pt endX   = (int_pt) ((x + 1) * m_packageSizeX);
+      int_pt startY = (int_pt) (y * m_packageSizeY);
+      int_pt endY   = (int_pt) ((y + 1) * m_packageSizeY);
+      int_pt startZ = (int_pt) (z * m_packageSizeZ);
+      int_pt endZ   = (int_pt) ((z + 1) * m_packageSizeZ);
 
       if( endX > i_nPtsX )
         endX = i_nPtsX;
@@ -244,12 +244,12 @@ odc::parallel::OpenMP::OpenMP( int_pt       i_nPtsX,
   for( int y = 1; y < m_nWPY - 1; y++ ) {
     for( int z = 0; z < m_nWPZ; z++ ) {
       int x         = 1;
-      int_pt startX = x * m_packageSizeX;
-      int_pt endX   = (x + 1) * m_packageSizeX;
-      int_pt startY = y * m_packageSizeY;
-      int_pt endY   = (y + 1) * m_packageSizeY;
-      int_pt startZ = z * m_packageSizeZ;
-      int_pt endZ   = (z + 1) * m_packageSizeZ;
+      int_pt startX = (int_pt) (x * m_packageSizeX);
+      int_pt endX   = (int_pt) ((x + 1) * m_packageSizeX);
+      int_pt startY = (int_pt) (y * m_packageSizeY);
+      int_pt endY   = (int_pt) ((y + 1) * m_packageSizeY);
+      int_pt startZ = (int_pt) (z * m_packageSizeZ);
+      int_pt endZ   = (int_pt) ((z + 1) * m_packageSizeZ);
 
       if( endX > i_nPtsX )
         endX = i_nPtsX;
@@ -292,20 +292,20 @@ odc::parallel::OpenMP::OpenMP( int_pt       i_nPtsX,
   */
 
   for( int x = 2; x < m_nWPX - 1; x++ ) {
-    int_pt startX = x * m_packageSizeX;
-    int_pt endX   = (x + 1) * m_packageSizeX;
+    int_pt startX = (int_pt) (x * m_packageSizeX);
+    int_pt endX   = (int_pt) ((x + 1) * m_packageSizeX);
     if( endX > i_nPtsX )
       endX = i_nPtsX;
 
     for( int y = 1; y < m_nWPY - 1; y++ ) {
-      int_pt startY = y * m_packageSizeY;
-      int_pt endY   = (y + 1) * m_packageSizeY;
+      int_pt startY = (int_pt) (y * m_packageSizeY);
+      int_pt endY   = (int_pt) ((y + 1) * m_packageSizeY);
       if( endY > i_nPtsY )
         endY = i_nPtsY;
 
       for( int z = 0; z < m_nWPZ; z++ ) {
-        int_pt startZ = z * m_packageSizeZ;
-        int_pt endZ   = (z + 1) * m_packageSizeZ;
+        int_pt startZ = (int_pt) (z * m_packageSizeZ);
+        int_pt endZ   = (int_pt) ((z + 1) * m_packageSizeZ);
         if( endZ > i_nPtsZ )
           endZ = i_nPtsZ;
 

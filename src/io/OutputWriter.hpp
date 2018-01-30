@@ -96,7 +96,7 @@ public:
   void update( int_pt i_timestep, PatchDecomp& i_ptchDec );
 
   void finalize();
-  OutputWriter( OptionParser i_options );
+  OutputWriter( odc::io::OptionParser& i_options );
 
 private:
   char m_filenamebasex[AWP_PATH_MAX];

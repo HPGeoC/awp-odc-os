@@ -17,7 +17,7 @@
 Import('env')
 
 # GPU-version
-if 'cuda' in env['kernel']:
+if 'cuda' in env['kernels']:
   env.Program( 'pmcl3d', source = [ 'pmcl3d.c',
                                     'io/command.c',
                                     'io/io.c',
@@ -29,7 +29,7 @@ if 'cuda' in env['kernel']:
                                     'kernels/kernel.cu' ] )
 # CPU-version
 # Vanilla kernel
-elif 'vanilla' in env['kernel']:
+elif 'vanilla' in env['kernels']:
   env.Program( 'pmcl3d', source = [ 'main.cpp',
                                     'util.cpp',
                                     'data/Grid.cpp',
@@ -47,7 +47,7 @@ elif 'vanilla' in env['kernel']:
                                     'data/Patch.cpp'
                                     ] )
 # YASK kernel
-elif 'yask' in env['kernel']:
+elif 'yask' in env['kernels']:
   env.Program( 'pmcl3d', source = [ 'main.cpp',
                                     'util.cpp',
                                     'data/Grid.cpp',
