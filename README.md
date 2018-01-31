@@ -1,4 +1,6 @@
 # awp-odc-os
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2FHPGeoC%2Fawp-odc-os.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2FHPGeoC%2Fawp-odc-os?ref=badge_shield)
+
 The Anelastic Wave Propagation software (awp-odc-os) simulates wave propagation
 in a 3D viscoelastic or elastic solid. Wave propagation use a variant of the staggered
 grid finite difference scheme to approximately solve the 3D elastodynamic
@@ -20,3 +22,6 @@ supports parallel computation (MPI-2) and parallel I/O (MPI-IO).
 
 ## License
 awp-odc-os is licensed under [BSD-2](LICENSE)
+
+
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2FHPGeoC%2Fawp-odc-os.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2FHPGeoC%2Fawp-odc-os?ref=badge_large)
