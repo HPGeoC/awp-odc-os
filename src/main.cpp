@@ -7,7 +7,7 @@
  Main file.
  
  @section LICENSE
- Copyright (c) 2013-2017, Regents of the University of California
+ Copyright (c) 2013-2018, Regents of the University of California
  All rights reserved.
  
  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -63,7 +63,7 @@ int main( int i_argc, char *i_argv[] ) {
   //! Fire up MPI, dummy call for non-mpi compilation
   if( !odc::parallel::Mpi::initialize( i_argc, i_argv, l_options ) ) {
     std::cout << "\tError during MPI initialization, aborting." << std::endl;
-    return 0;
+    return EXIT_FAILURE;
   }
 
   //! Get MPI details (just for code brevity)
@@ -73,7 +73,7 @@ int main( int i_argc, char *i_argv[] ) {
   const int_pt l_rangeZ   = odc::parallel::Mpi::m_rangeZ;
 
   if( l_rank == 0 )
-    std::cout << "Welcome to AWP-ODC-OS\nCopyright (c) 2013-2017, Regents of the University of California\n\n";
+    std::cout << "Welcome to AWP-ODC-OS\nCopyright (c) 2013-2018, Regents of the University of California\n\n";
 
 #ifdef AWP_USE_MPI
   if( l_rank == 0 )
@@ -525,5 +525,5 @@ int main( int i_argc, char *i_argv[] ) {
     std::cout << "Closing MPI" << std::endl;
   odc::parallel::Mpi::finalize();
 
-  return 0;
+  return EXIT_SUCCESS;
 }

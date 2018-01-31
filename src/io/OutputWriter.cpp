@@ -6,7 +6,7 @@
  Output writer.
 
  @section LICENSE
- Copyright (c) 2015-2017, Regents of the University of California
+ Copyright (c) 2015-2018, Regents of the University of California
  All rights reserved.
  
  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -344,7 +344,6 @@ odc::io::ReceiverWriter::ReceiverWriter( char *inputFileName, char *outputFileNa
   }
   m_numberOfReceivers = atoi( line );
 
-  //! Check for TAINTED_SCALAR (Coverity Scan)
   if( m_numberOfReceivers < 0 || m_numberOfReceivers >= 1.8e+19 ) {
     std::cerr << "Unhandled receiver-list length passed in file!" << std::endl;
     fclose( m_receiverInputFilePtr );
