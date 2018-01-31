@@ -57,8 +57,8 @@ void odc::data::Mesh::initialize( odc::io::OptionParser& i_options,
                                   Grid_XYZ* an_yz_grid
 #endif
                                 ) {
-  real taumax       = std::numeric_limits< real >::max();
-  real taumin       = -std::numeric_limits< real >::min();
+  real taumax       = -std::numeric_limits< real >::max();
+  real taumin       =  std::numeric_limits< real >::max();
 
   Grid3D tau        = Alloc3D( 2, 2, 2 );
   Grid3D tau1       = Alloc3D( 2, 2, 2 );
