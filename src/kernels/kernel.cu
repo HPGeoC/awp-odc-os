@@ -2238,7 +2238,7 @@ __global__ void frcvel_cu( int i,       int READ_STEP,  int dim,    int *psrc,  
     cuPrintf("u1[%d]=%e, u1[%d]=%e, u1_i=%e\n", i0, u1_p, i1, u1_n, u1_i);
       }*/
 
-      if (i == (READ_STEP * tskp - 1)){
+      if( i == (READ_STEP * tskp - 1) ) {
         //if (j==0) cuPrintf("inside frcvel_cu: last step at i=%d\n", i);
         /* copy last value back to beginning of array */
         axx[j]  = axx[i1*npsrc+j];
