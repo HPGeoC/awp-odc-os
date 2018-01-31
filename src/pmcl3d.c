@@ -6,8 +6,8 @@
  @brief Main runtime file for awp-odc-os (GPU Version).
  
  @section LICENSE
- Copyright (c) 2013-2017, Regents of the University of California
- Copyright (c) 2015-2017, San Diego State University Research Foundation
+ Copyright (c) 2013-2018, Regents of the University of California
+ Copyright (c) 2015-2018, San Diego State University Research Foundation
  All rights reserved.
  
  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -305,7 +305,7 @@ int main( int argc, char **argv ) {
   MPI_Comm_size( MPI_COMM_WORLD, &size_tot );
 
   if( rank == 0 )
-    printf( "Welcome to AWP-ODC-OS\nCopyright (c) 2013-2017, Regents of the University of California\nCopyright (c) 2015-2017, San Diego State University Research Foundation\n\n" );
+    printf( "Welcome to AWP-ODC-OS\nCopyright (c) 2013-2018, Regents of the University of California\nCopyright (c) 2015-2017, San Diego State University Research Foundation\n\n" );
 
   if( INRCVR[0] != '\0' || OUTRCVR[0] != '\0' )
     if( rank == 0 )
@@ -319,7 +319,7 @@ int main( int argc, char **argv ) {
     }
 
     MPI_Finalize();
-    return 0;
+    return EXIT_FAILURE;
   }
 
   if( (size_tot % 2) != 0 ) {
@@ -327,7 +327,7 @@ int main( int argc, char **argv ) {
       fprintf( stderr, "Error. Number of CPUs %d must be divisible by 2.\n", size_tot );
 
    MPI_Finalize();
-   return 0;
+   return EXIT_FAILURE;
   }
 
   size = size_tot / 2;
@@ -585,7 +585,7 @@ int main( int argc, char **argv ) {
       fprintf( stderr, "Source initialization failed!\n" );
 
       MPI_Finalize();
-      return 0;
+      return EXIT_FAILURE;
     }
 
     time_src += gethrtime();
@@ -1087,7 +1087,7 @@ int main( int argc, char **argv ) {
         cudaThreadSynchronize();
 
         if( (rank == srcproc) && (IFAULT == 4) ) {
-/*          fprintf( stdout, "Calling frcvel_H\n" );*/
+          fprintf( stdout, "Calling frcvel_H\n" );
           ++source_step;
           frcvel_H( source_step, READ_STEP_GPU, maxdim, d_tpsrc, npsrc, fbc_tskp, stream_i,
                     d_taxx, d_tayy, d_tazz, d_taxz, d_tayz, d_taxy, d_u1, d_v1, d_w1, -1, -1 );
@@ -1657,11 +1657,11 @@ int main( int argc, char **argv ) {
       background_velocity_reader( rank, size, NST, READ_STEP, MCS );
   }
 
-  printf( "%d) calling MPI_Finalize... ", rank);
+  printf( "%d) calling MPI_Finalize... ", rank );
   MPI_Finalize();
   printf( "done.\n" );
 
-  return 0;
+  return EXIT_SUCCESS;
 }
 
 /**

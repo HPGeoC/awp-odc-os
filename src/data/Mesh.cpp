@@ -7,7 +7,7 @@
 
  @section LICENSE
 
- Copyright (c) 2013-2017, Regents of the University of California
+ Copyright (c) 2013-2018, Regents of the University of California
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -27,6 +27,7 @@
 #include <cstdio>
 #include <cmath>
 #include <complex>
+#include <limits>
 
 #include <time.h>
 #include <sys/time.h>
@@ -56,7 +57,8 @@ void odc::data::Mesh::initialize( odc::io::OptionParser& i_options,
                                   Grid_XYZ* an_yz_grid
 #endif
                                 ) {
-  real taumax = 0.0, taumin = 0.0;
+  real taumax       = -std::numeric_limits< real >::max();
+  real taumin       = -std::numeric_limits< real >::max();
 
   Grid3D tau        = Alloc3D( 2, 2, 2 );
   Grid3D tau1       = Alloc3D( 2, 2, 2 );
