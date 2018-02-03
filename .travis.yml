@@ -82,7 +82,7 @@ install:
 
   # install valgrind
   - sudo apt-get install libc6-dbg
-  - wget http://valgrind.org/downloads/valgrind-3.13.0.tar.bz2
+  - wget ftp://sourceware.org/pub/valgrind/valgrind-3.13.0.tar.bz2
   - tar -xjf valgrind-3.13.0.tar.bz2
   - cd valgrind-3.13.0
   - ./configure && make -j 4 > /dev/null && sudo make install
