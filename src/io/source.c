@@ -74,8 +74,7 @@ int read_src_ifault_2( int rank,      int READ_STEP,
 
   //! First time entering this function
   if( idx == 1 ) {
-    //TODO: unsafe call; this should be snprintf, or fname should be dynamically allocated to always be large enough to hold the format string
-    sprintf( fname, "%s%07d", INSRC, rank );
+    snprintf( fname, sizeof( fname ), "%s%07d", INSRC, rank );
     printf( "SOURCE reading first time: %s\n", fname );
     f = fopen( fname, "rb" );
     if( f == NULL ) {
@@ -126,8 +125,7 @@ int read_src_ifault_2( int rank,      int READ_STEP,
   }
 
   if( *NPSRC > 0 ) {
-    //TODO: unsafe call; this should be snprintf, or fname should be dynamically allocated to always be large enough to hold the format string
-    sprintf( fname, "%s%07d_%03d", INSRC_I2, rank, idx );
+    snprintf( fname, sizeof( fname ), "%s%07d_%03d", INSRC_I2, rank, idx );
     printf( "SOURCE reading: %s\n",fname );
     f = fopen( fname, "rb" );
     if( f == NULL ) {
@@ -831,10 +829,10 @@ int read_src_ifault_4( int rank,          int READ_STEP,  char *INSRC,
       fprintf( stdout, "(%d) npsrc=%d\n", rank, npsrc );
     }
 
-    sprintf( xfile, fbc_pmask, 'X' );
+    snprintf( xfile, sizeof( xfile ), fbc_pmask, 'X' );
     fprintf( stdout, "(%d) xfile=%s\n", rank, xfile );
-    sprintf( yfile, fbc_pmask, 'Y' );
-    sprintf( zfile, fbc_pmask, 'Z' );
+    snprintf( yfile, sizeof( yfile ), fbc_pmask, 'Y' );
+    snprintf( zfile, sizeof( zfile ), fbc_pmask, 'Z' );
 
     ierr = MPI_Send( &npsrc,  1,      MPI_INT,  rank + size, MPIRANKSRC,     MPI_COMM_WORLD );
     errhandle( ierr, "MPI_Send 0" );

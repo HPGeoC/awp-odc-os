@@ -173,9 +173,9 @@ void inimesh( int rank,   int MEDIASTART, Grid3D d1,    Grid3D mu,  Grid3D lam, 
     if( MEDIASTART >= 1 && MEDIASTART <= 3 ) {
       char filename[AWP_PATH_MAX];
       if( MEDIASTART < 3 )
-        sprintf( filename, "%s", INVEL );
+        snprintf( filename, sizeof( filename ), "%s", INVEL );
       else if( MEDIASTART == 3 ) {
-        sprintf( filename, "input_rst/mediapart/media%07d.bin", rank );
+        snprintf( filename, sizeof( filename ), "input_rst/mediapart/media%07d.bin", rank );
         if( rank % 100 == 0 )
           printf( "Rank=%d, reading file=%s\n", rank, filename );
       }
@@ -1380,9 +1380,9 @@ void inidrpr_hoekbrown_light( int nxt,        int nyt,        int nzt,        in
   }
 
   FILE *dfid;
-  char ofname[200];
+  char ofname[AWP_PATH_MAX];
 
-  sprintf( ofname, "debug/debug.%04d_%04d", coords[0], coords[1] );
+  snprintf( ofname, sizeof( ofname ), "debug/debug.%04d_%04d", coords[0], coords[1] );
   dfid = fopen( ofname, "w" );
   if( dfid ) {
     for( k = ALIGN; k <= sInd; k++ )

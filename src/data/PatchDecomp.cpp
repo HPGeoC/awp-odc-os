@@ -73,9 +73,9 @@ void PatchDecomp::initialize( odc::io::OptionParser& i_options,
 
   //! If only one MPI task deployed
   if( odc::parallel::Mpi::m_size == 1 )
-    sprintf( meshFile, "%s", i_options.m_inVel );
+    snprintf( meshFile, sizeof( meshFile ), "%s", i_options.m_inVel );
   else
-    sprintf( meshFile, "%s.%d", i_options.m_inVel, odc::parallel::Mpi::m_rank );
+    snprintf( meshFile, sizeof( meshFile ), "%s.%d", i_options.m_inVel, odc::parallel::Mpi::m_rank );
 
   if( meshFile[0] == '\0' ) {
     std::cerr << "Warning: no mesh file specified in parameters!\n";

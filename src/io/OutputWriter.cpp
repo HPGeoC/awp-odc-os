@@ -307,27 +307,31 @@ void odc::io::OutputWriter::finalize() {
 
 //! ReceiverWriter class constructor
 //! TODO(Raj): Get m_buffSkip from script file instead of defining it here?
-odc::io::ReceiverWriter::ReceiverWriter( char *inputFileName, char *outputFileName, real deltaH, int_pt numZGridPoints ):
-                                    m_buffSkip(10), m_receiverInputFilePtr(nullptr), m_receiverOutputFilePtr(nullptr) {
-  int_pt  i = 0;                    //! receiver counter
-  int_pt  k;                        //! loop counter
-  real    rcvrX, rcvrY, rcvrZ;      //! receiver coordinates
-  int_pt  gridX, gridY, gridZ;      //! receiver grid points
-  char    *token;                   //! token read from receiver input file
-  char    line[1024];               //! line read from receiver input file
+odc::io::ReceiverWriter::ReceiverWriter( const char *i_inputFileName,
+                                         const char *i_outputFileName,
+                                         const real &i_deltaH,
+                                         const int_pt &i_numZGridPoints ):
+                                              m_buffSkip(10),
+                                              m_receiverInputFilePtr(nullptr),
+                                              m_receiverOutputFilePtr(nullptr) {
+  int_pt  l_i = 0;                      //! receiver counter
+  int_pt  l_k;                          //! loop counter
+  real    l_rcvrX, l_rcvrY, l_rcvrZ;    //! receiver coordinates
+  int_pt  l_gridX, l_gridY, l_gridZ;    //! receiver grid points
+  char    *l_token;                     //! token read from receiver input file
+  char    l_line[1024];                 //! line read from receiver input file
 
-  if( inputFileName[0] == '\0' ) {
+  if( i_inputFileName[0] == '\0' ) {
     m_numberOfReceivers = 0;
     return;
   }
 
   //! Copy the receiver input file name set in launch script
-  std::strncpy( m_receiverInputFileName, inputFileName, sizeof( m_receiverInputFileName ) );
-  m_receiverInputFileName[sizeof(m_receiverInputFileName)] = '\0';
+  snprintf( m_receiverInputFileName, sizeof( m_receiverInputFileName ), "%s", i_inputFileName );
 
   if( !m_receiverInputFilePtr ) {
     //! Open the receiver input-file in read-mode
-    m_receiverInputFilePtr = std::fopen(m_receiverInputFileName, "r");
+    m_receiverInputFilePtr = std::fopen( m_receiverInputFileName, "r" );
 
     if( !m_receiverInputFilePtr ) {
       std::cerr << "Error opening receiver-list " << m_receiverInputFileName << std::endl;
@@ -336,14 +340,14 @@ odc::io::ReceiverWriter::ReceiverWriter( char *inputFileName, char *outputFileNa
   }
 
   //! Get the total no. of receivers (first line in input file)
-  if ( !fgets( line, sizeof( line ), m_receiverInputFilePtr ) ) {
+  if ( !fgets( l_line, sizeof( l_line ), m_receiverInputFilePtr ) ) {
     std::cerr << "Cannot read file " << m_receiverInputFileName << std::endl;
     fclose( m_receiverInputFilePtr );
     m_receiverInputFilePtr = nullptr;
     return;
   }
-  m_numberOfReceivers = atoi( line );
 
+  m_numberOfReceivers = atoi( l_line );
   if( m_numberOfReceivers < 0 || m_numberOfReceivers >= 1.8e+19 ) {
     std::cerr << "Unhandled receiver-list length passed in file!" << std::endl;
     fclose( m_receiverInputFilePtr );
@@ -352,72 +356,74 @@ odc::io::ReceiverWriter::ReceiverWriter( char *inputFileName, char *outputFileNa
   }
 
   //! Dynamic memory allocation
-  m_ownedByThisRank   = new bool [m_numberOfReceivers];
-  m_arrayGridX        = new int_pt [m_numberOfReceivers];
-  m_arrayGridY        = new int_pt [m_numberOfReceivers];
-  m_arrayGridZ        = new int_pt [m_numberOfReceivers];
-  m_buffCount         = new int_pt [m_numberOfReceivers];
-  for( k = 0; k < m_numberOfReceivers; k++ )
-    m_buffCount[k] = 0;
+  m_ownedByThisRank = new bool [m_numberOfReceivers];
+  m_arrayGridX      = new int_pt [m_numberOfReceivers];
+  m_arrayGridY      = new int_pt [m_numberOfReceivers];
+  m_arrayGridZ      = new int_pt [m_numberOfReceivers];
+  m_buffCount       = new int_pt [m_numberOfReceivers];
+  for( l_k = 0; l_k < m_numberOfReceivers; l_k++ )
+    m_buffCount[l_k] = 0;
 
-  m_buffTimestep      = new int_pt* [m_numberOfReceivers];
-  for( k = 0; k < m_numberOfReceivers; k++ )
-    m_buffTimestep[k] = new int_pt [m_buffSkip];
+  m_buffTimestep    = new int_pt *[m_numberOfReceivers];
+  for( l_k = 0; l_k < m_numberOfReceivers; l_k++ )
+    m_buffTimestep[l_k] = new int_pt [m_buffSkip];
 
-  m_buffVelX          = new real* [m_numberOfReceivers];
-  for( k = 0; k < m_numberOfReceivers; k++ )
-    m_buffVelX[k] = new real [m_buffSkip];
+  m_buffVelX        = new real *[m_numberOfReceivers];
+  for( l_k = 0; l_k < m_numberOfReceivers; l_k++ )
+    m_buffVelX[l_k] = new real [m_buffSkip];
 
-  m_buffVelY          = new real* [m_numberOfReceivers];
-  for( k = 0; k < m_numberOfReceivers; k++ )
-    m_buffVelY[k] = new real [m_buffSkip];
+  m_buffVelY        = new real *[m_numberOfReceivers];
+  for( l_k = 0; l_k < m_numberOfReceivers; l_k++ )
+    m_buffVelY[l_k] = new real [m_buffSkip];
 
-  m_buffVelZ          = new real* [m_numberOfReceivers];
-  for( k = 0; k < m_numberOfReceivers; k++ )
-    m_buffVelZ[k] = new real [m_buffSkip];
+  m_buffVelZ        = new real *[m_numberOfReceivers];
+  for( l_k = 0; l_k < m_numberOfReceivers; l_k++ )
+    m_buffVelZ[l_k] = new real [m_buffSkip];
 
-  m_receiverOutputLogs = new char* [m_numberOfReceivers];
-  for( k = 0; k < m_numberOfReceivers; k++ )
-    m_receiverOutputLogs[k] = new char [AWP_PATH_MAX];
+  m_receiverOutputLogs = new char *[m_numberOfReceivers];
+  for( l_k = 0; l_k < m_numberOfReceivers; l_k++ )
+    m_receiverOutputLogs[l_k] = new char [AWP_PATH_MAX];
 
-  while( fgets( line, sizeof( line ), m_receiverInputFilePtr ) ) {
+  while( fgets( l_line, sizeof( l_line ), m_receiverInputFilePtr ) ) {
     //! Skip empty line
-    if( line[0] == '\n' )
+    if( l_line[0] == '\n' )
       continue;
 
     //! Get token words every line between spaces and convert to real coordinates
-    token   = strtok( line, " " );
-    rcvrX   = atof( token );
-    token   = strtok( NULL, " " );
-    rcvrY   = atof( token );
-    token   = strtok( NULL, " " );
-    rcvrZ   = atof( token );
+    l_token = strtok( l_line, " " );
+    l_rcvrX = atof( l_token );
+    l_token = strtok( NULL, " " );
+    l_rcvrY = atof( l_token );
+    l_token = strtok( NULL, " " );
+    l_rcvrZ = atof( l_token );
 
     //! Convert real coordinates to integral grid points in the mesh
-    gridX   = (int_pt)(rcvrX / deltaH + 0.5);
-    gridY   = (int_pt)(rcvrY / deltaH + 0.5);
+    l_gridX = (int_pt) (l_rcvrX / i_deltaH + 0.5);
+    l_gridY = (int_pt) (l_rcvrY / i_deltaH + 0.5);
 
     /** Receiver z-coordinate is specified starting from Earth surface whereas internally,
         front lower left corner is considered origin, thus the following transformation */
-    gridZ   = numZGridPoints - 1 - (int_pt)(rcvrZ / deltaH + 0.5);
+    l_gridZ = i_numZGridPoints - 1 - (int_pt) (l_rcvrZ / i_deltaH + 0.5);
 
     //! Determine if the current MPI contains the receiver
-    m_ownedByThisRank[i] = odc::parallel::Mpi::isInThisRank( gridX, gridY, gridZ );
+    m_ownedByThisRank[l_i] = odc::parallel::Mpi::isInThisRank( l_gridX, l_gridY, l_gridZ );
 
     //! Subtracting the MPI starting coordinates to get local coordinates in that MPI
-    m_arrayGridX[i] = gridX - odc::parallel::Mpi::m_startX;
-    m_arrayGridY[i] = gridY - odc::parallel::Mpi::m_startY;
-    m_arrayGridZ[i] = gridZ - odc::parallel::Mpi::m_startZ;
+    m_arrayGridX[l_i] = l_gridX - odc::parallel::Mpi::m_startX;
+    m_arrayGridY[l_i] = l_gridY - odc::parallel::Mpi::m_startY;
+    m_arrayGridZ[l_i] = l_gridZ - odc::parallel::Mpi::m_startZ;
 
-    //! Construct name of receiver output log based on receiver, for ex: receiverOutput_13.log and store in an array
-    std::strncpy( m_receiverOutputFileName, outputFileName, sizeof( m_receiverOutputFileName ) );
-    m_receiverOutputFileName[sizeof(m_receiverOutputFileName)] = '\0';
-    sprintf( m_receiverOutputLogs[i], "%s_%" AWP_PT_FORMAT_STRING ".csv", m_receiverOutputFileName, i + 1 );
+    //! Construct name of receiver output log based on receiver eg: receiverOutput_13.csv
+    snprintf( m_receiverOutputFileName, sizeof( m_receiverOutputFileName ),
+              "%s", i_outputFileName );
+
+    sprintf( m_receiverOutputLogs[l_i], "%s_%" AWP_PT_FORMAT_STRING ".csv",
+             m_receiverOutputFileName, l_i + 1 );
 
     //! If the current MPI owns the grid point, we create a corresponding file
-    if( m_ownedByThisRank[i] ) {
+    if( m_ownedByThisRank[l_i] ) {
       //! Open file in truncate mode, i.e. discard previous run values and close file
-      m_receiverOutputFilePtr = std::fopen( m_receiverOutputLogs[i], "w" );
+      m_receiverOutputFilePtr = std::fopen( m_receiverOutputLogs[l_i], "w" );
       if( !m_receiverOutputFilePtr )
         continue;
 
@@ -425,7 +431,7 @@ odc::io::ReceiverWriter::ReceiverWriter( char *inputFileName, char *outputFileNa
     }
 
     m_receiverOutputFilePtr = nullptr;
-    i++;
+    l_i++;
   }
 
   fclose( m_receiverInputFilePtr );
@@ -433,17 +439,19 @@ odc::io::ReceiverWriter::ReceiverWriter( char *inputFileName, char *outputFileNa
 }
 
 //! writeReceiverOutputFiles function
-void odc::io::ReceiverWriter::writeReceiverOutputFiles( int_pt currentTimeStep, int_pt numTimestepsToSkip, PatchDecomp& i_ptchDec ) {
-  for( int_pt i = 0; i < m_numberOfReceivers; i++ ) {
+void odc::io::ReceiverWriter::writeReceiverOutputFiles( const int_pt &i_currentTimeStep,
+                                                        const int_pt &i_numTimestepsToSkip,
+                                                        PatchDecomp& i_ptchDec ) {
+  for( int_pt l_i = 0; l_i < m_numberOfReceivers; l_i++ ) {
     //! Only consider time-steps which are a multiple of timesteps-to-skip
-    if( m_ownedByThisRank[i] && (currentTimeStep % numTimestepsToSkip == 0) ) {
+    if( m_ownedByThisRank[l_i] && (i_currentTimeStep % i_numTimestepsToSkip == 0) ) {
 
       //! Only write output to file every buffer-skip steps (by default 10)
-      if( (currentTimeStep / numTimestepsToSkip) % m_buffSkip == 0 ) {
+      if( (i_currentTimeStep / i_numTimestepsToSkip) % m_buffSkip == 0 ) {
         if( !m_receiverOutputFilePtr ) {
 
           //! Open receiver output log in append mode
-          m_receiverOutputFilePtr = std::fopen( m_receiverOutputLogs[i], "a+" );
+          m_receiverOutputFilePtr = std::fopen( m_receiverOutputLogs[l_i], "a+" );
 
           if( !m_receiverOutputFilePtr ) {
             std::cerr << "Error opening receiver output log file!" << std::endl;
@@ -452,28 +460,53 @@ void odc::io::ReceiverWriter::writeReceiverOutputFiles( int_pt currentTimeStep, 
         }
 
         //! Append into array the velocity values at the buffer-skip step (by default 10th)
-        m_buffTimestep[i][m_buffSkip-1] = currentTimeStep;
-        m_buffVelX[i][m_buffSkip-1]     = i_ptchDec.getVelX( m_arrayGridX[i], m_arrayGridY[i], m_arrayGridZ[i], currentTimeStep );
-        m_buffVelY[i][m_buffSkip-1]     = i_ptchDec.getVelY( m_arrayGridX[i], m_arrayGridY[i], m_arrayGridZ[i], currentTimeStep );
-        m_buffVelZ[i][m_buffSkip-1]     = i_ptchDec.getVelZ( m_arrayGridX[i], m_arrayGridY[i], m_arrayGridZ[i], currentTimeStep );
+        m_buffTimestep[l_i][m_buffSkip-1] = i_currentTimeStep;
+
+        m_buffVelX[l_i][m_buffSkip-1]     = i_ptchDec.getVelX( m_arrayGridX[l_i],
+                                                               m_arrayGridY[l_i],
+                                                               m_arrayGridZ[l_i],
+                                                               i_currentTimeStep );
+
+        m_buffVelY[l_i][m_buffSkip-1]     = i_ptchDec.getVelY( m_arrayGridX[l_i],
+                                                               m_arrayGridY[l_i],
+                                                               m_arrayGridZ[l_i],
+                                                               i_currentTimeStep );
+
+        m_buffVelZ[l_i][m_buffSkip-1]     = i_ptchDec.getVelZ( m_arrayGridX[l_i],
+                                                               m_arrayGridY[l_i],
+                                                               m_arrayGridZ[l_i],
+                                                               i_currentTimeStep );
 
         //! Write to file in a csv format
-        for( int_pt j = 0; j < m_buffSkip; j++ )
+        for( int_pt l_j = 0; l_j < m_buffSkip; l_j++ )
           fprintf( m_receiverOutputFilePtr, "%" AWP_PT_FORMAT_STRING ",%e,%e,%e\n",
-                   m_buffTimestep[i][j], m_buffVelX[i][j], m_buffVelY[i][j], m_buffVelZ[i][j] );
+                   m_buffTimestep[l_i][l_j],
+                   m_buffVelX[l_i][l_j], m_buffVelY[l_i][l_j], m_buffVelZ[l_i][l_j] );
 
         //! After every disk-write, flush and close file pointer and reset buffer counter to zero
-        m_buffCount[i] = 0;
+        m_buffCount[l_i] = 0;
         fflush( m_receiverOutputFilePtr );
         fclose( m_receiverOutputFilePtr );
         m_receiverOutputFilePtr = nullptr;
       } else {
         //! Store intermediate (till buffer is filled) velocity values in arrays
-        m_buffTimestep[i][m_buffCount[i]] = currentTimeStep;
-        m_buffVelX[i][m_buffCount[i]]     = i_ptchDec.getVelX( m_arrayGridX[i], m_arrayGridY[i], m_arrayGridZ[i], currentTimeStep );
-        m_buffVelY[i][m_buffCount[i]]     = i_ptchDec.getVelY( m_arrayGridX[i], m_arrayGridY[i], m_arrayGridZ[i], currentTimeStep );
-        m_buffVelZ[i][m_buffCount[i]]     = i_ptchDec.getVelZ( m_arrayGridX[i], m_arrayGridY[i], m_arrayGridZ[i], currentTimeStep );
-        m_buffCount[i]++;
+        m_buffTimestep[l_i][m_buffCount[l_i]] = i_currentTimeStep;
+
+        m_buffVelX[l_i][m_buffCount[l_i]]     = i_ptchDec.getVelX( m_arrayGridX[l_i],
+                                                                   m_arrayGridY[l_i],
+                                                                   m_arrayGridZ[l_i],
+                                                                   i_currentTimeStep );
+
+        m_buffVelY[l_i][m_buffCount[l_i]]     = i_ptchDec.getVelY( m_arrayGridX[l_i],
+                                                                   m_arrayGridY[l_i],
+                                                                   m_arrayGridZ[l_i],
+                                                                   i_currentTimeStep );
+
+        m_buffVelZ[l_i][m_buffCount[l_i]]     = i_ptchDec.getVelZ( m_arrayGridX[l_i],
+                                                                   m_arrayGridY[l_i],
+                                                                   m_arrayGridZ[l_i],
+                                                                   i_currentTimeStep );
+        m_buffCount[l_i]++;
       }
     }
   }
@@ -481,7 +514,7 @@ void odc::io::ReceiverWriter::writeReceiverOutputFiles( int_pt currentTimeStep, 
 
 //! ReceiverWriter class cleanup function
 void odc::io::ReceiverWriter::finalize() {
-  int_pt k;     //! loop counter
+  int_pt l_k;     //! loop counter
 
   if( m_receiverInputFilePtr ) {
     fclose( m_receiverInputFilePtr );
@@ -500,39 +533,40 @@ void odc::io::ReceiverWriter::finalize() {
   delete[] m_ownedByThisRank;
   delete[] m_buffCount;
 
-  for( k = 0; k < m_numberOfReceivers; k++ )
-    delete[] m_buffTimestep[k];
+  for( l_k = 0; l_k < m_numberOfReceivers; l_k++ )
+    delete[] m_buffTimestep[l_k];
   delete[] m_buffTimestep;
 
-  for( k = 0; k < m_numberOfReceivers; k++ )
-    delete[] m_buffVelX[k];
+  for( l_k = 0; l_k < m_numberOfReceivers; l_k++ )
+    delete[] m_buffVelX[l_k];
   delete[] m_buffVelX;
 
-  for( k = 0; k < m_numberOfReceivers; k++ )
-    delete[] m_buffVelY[k];
+  for( l_k = 0; l_k < m_numberOfReceivers; l_k++ )
+    delete[] m_buffVelY[l_k];
   delete[] m_buffVelY;
 
-  for( k = 0; k < m_numberOfReceivers; k++ )
-    delete[] m_buffVelZ[k];
+  for( l_k = 0; l_k < m_numberOfReceivers; l_k++ )
+    delete[] m_buffVelZ[l_k];
   delete[] m_buffVelZ;
 
-  for( k = 0; k < m_numberOfReceivers; k++ )
-    delete[] m_receiverOutputLogs[k];
+  for( l_k = 0; l_k < m_numberOfReceivers; l_k++ )
+    delete[] m_receiverOutputLogs[l_k];
   delete[] m_receiverOutputLogs;
 }
 
-odc::io::CheckpointWriter::CheckpointWriter( char *chkfile, int_pt nd, int_pt timestepsToSkip, int_pt numZGridPoints ) {
-  if( (chkfile != NULL && chkfile[0] == '\0') || chkfile == nullptr ) {
+odc::io::CheckpointWriter::CheckpointWriter( const char *i_chkfile, const int_pt &i_nd,
+                                             const int_pt &i_timestepsToSkip,
+                                             const int_pt &i_numZGridPoints ) {
+  if( (i_chkfile != NULL && i_chkfile[0] == '\0') || i_chkfile == nullptr ) {
     std::cerr << "\nWarning: no checkfile specified in input parameters!\n";
     m_ownedByThisRank = false;
     return;
   }
 
-  m_nd = nd;
-  m_numTimestepsToSkip = timestepsToSkip;
-  m_numZGridPoints = numZGridPoints;
-  std::strncpy( m_checkPointFileName, chkfile, sizeof( m_checkPointFileName ) );
-  m_checkPointFileName[sizeof(m_checkPointFileName)] = '\0';
+  m_nd                  = i_nd;
+  m_numTimestepsToSkip  = i_timestepsToSkip;
+  m_numZGridPoints      = i_numZGridPoints;
+  snprintf( m_checkPointFileName, sizeof( m_checkPointFileName ), "%s", i_chkfile );
 
   m_rcdX = m_nd;
   m_rcdY = m_nd;
@@ -541,59 +575,73 @@ odc::io::CheckpointWriter::CheckpointWriter( char *chkfile, int_pt nd, int_pt ti
   m_ownedByThisRank = odc::parallel::Mpi::isInThisRank( m_rcdX, m_rcdY, m_rcdZ );
 }
 
-void odc::io::CheckpointWriter::writeUpdatedStats( int_pt currentTimeStep, PatchDecomp& i_ptchDec ) {
-  if( m_ownedByThisRank && currentTimeStep % m_numTimestepsToSkip == 0 ) {
+void odc::io::CheckpointWriter::writeUpdatedStats( int_pt i_currentTimeStep,
+                                                   PatchDecomp& i_ptchDec ) {
+  if( m_ownedByThisRank && i_currentTimeStep % m_numTimestepsToSkip == 0 ) {
     if( !m_checkPointFile )
       m_checkPointFile = std::fopen( m_checkPointFileName, "a+" );
 
 // TODO(Josh): This update seems pointless?  Is there a reason?
 #ifdef YASK
-    currentTimeStep++;
+    i_currentTimeStep++;
 #endif
     fprintf( m_checkPointFile,"%" AWP_PT_FORMAT_STRING " :\t%e\t%e\t%e\n",
 #ifdef YASK
-             currentTimeStep - 1,
+             i_currentTimeStep - 1,
 #else
-             currentTimeStep,
+             i_currentTimeStep,
 #endif
-             i_ptchDec.getVelX( m_rcdX, m_rcdY, m_rcdZ, currentTimeStep ),
-             i_ptchDec.getVelY( m_rcdX, m_rcdY, m_rcdZ, currentTimeStep ),
-             i_ptchDec.getVelZ( m_rcdX, m_rcdY, m_rcdZ, currentTimeStep ) );
+             i_ptchDec.getVelX( m_rcdX, m_rcdY, m_rcdZ, i_currentTimeStep ),
+             i_ptchDec.getVelY( m_rcdX, m_rcdY, m_rcdZ, i_currentTimeStep ),
+             i_ptchDec.getVelZ( m_rcdX, m_rcdY, m_rcdZ, i_currentTimeStep ) );
 
     fflush( m_checkPointFile );
   }
 }
 
-void odc::io::CheckpointWriter::writeInitialStats( int_pt ntiskp, real dt, real dh, int_pt nxt, int_pt nyt, int_pt nzt,
-                                                   int_pt nt, real arbc, int_pt npc, int_pt nve, real fac, real q0, real ex, real fp,
-                                                   real vse_min, real vse_max, real vpe_min, real vpe_max,
-                                                   real dde_min, real dde_max ) {
+void odc::io::CheckpointWriter::writeInitialStats( const int_pt &i_ntiskp,  const real i_dt,
+                                                   const real &i_dh,        const int_pt &i_nxt,
+                                                   const int_pt &i_nyt,     const int_pt &i_nzt,
+                                                   const int_pt &i_nt,      const real &i_arbc,
+                                                   const int_pt &i_npc,     const int_pt &i_nve,
+                                                   const real &i_fac,       const real &i_q0,
+                                                   const real &i_ex,        const real &i_fp,
+                                                   const real &i_vse_min,   const real &i_vse_max,
+                                                   const real &i_vpe_min,   const real &i_vpe_max,
+                                                   const real &i_dde_min,   const real &i_dde_max ) {
   if( !m_ownedByThisRank )
     return;
 
-  FILE *fchk;
-  fchk = std::fopen( m_checkPointFileName, "w" );
-  fprintf( fchk, "STABILITY CRITERIA .5 > CMAX*DT/DX:\t%f\n", vpe_max * dt / dh );
+  FILE *l_fchk;
+  l_fchk = std::fopen( m_checkPointFileName, "w" );
+  if( !l_fchk ) {
+    std::cerr << "Error opening checkfile!" << std::endl;
+    return;
+  }
 
-  if( vpe_max * dt / dh >= 0.5 )
-    fprintf( fchk, "!! WARNING: STABILITY CRITERIA NOT MET, MAY DIVERGE !!\n" );
+  fprintf( l_fchk, "STABILITY CRITERIA .5 > CMAX*DT/DX:\t%f\n", i_vpe_max * i_dt / i_dh );
 
-  fprintf( fchk, "# OF X,Y,Z NODES PER PROC:\t%" AWP_PT_FORMAT_STRING ", %" AWP_PT_FORMAT_STRING ", %" AWP_PT_FORMAT_STRING "\n", nxt, nyt, nzt );
-  fprintf( fchk, "# OF TIME STEPS:\t%" AWP_PT_FORMAT_STRING "\n", nt );
-  fprintf( fchk, "DISCRETIZATION IN SPACE:\t%f\n", dh );
-  fprintf( fchk, "DISCRETIZATION IN TIME:\t%f\n", dt );
-  fprintf( fchk, "PML REFLECTION COEFFICIENT:\t%f\n", arbc );
-  fprintf( fchk, "HIGHEST P-VELOCITY ENCOUNTERED:\t%f\n", vpe_max );
-  fprintf( fchk, "LOWEST P-VELOCITY ENCOUNTERED:\t%f\n", vpe_min );
-  fprintf( fchk, "HIGHEST S-VELOCITY ENCOUNTERED:\t%f\n", vse_max );
-  fprintf( fchk, "LOWEST S-VELOCITY ENCOUNTERED:\t%f\n", vse_min );
-  fprintf( fchk, "HIGHEST DENSITY ENCOUNTERED:\t%f\n", dde_max );
-  fprintf( fchk, "LOWEST  DENSITY ENCOUNTERED:\t%f\n", dde_min );
-  fprintf( fchk, "SKIP OF SEISMOGRAMS IN TIME (LOOP COUNTER):\t%" AWP_PT_FORMAT_STRING "\n", ntiskp );
-  fprintf( fchk, "ABC CONDITION, PML=1 OR CERJAN=0:\t%" AWP_PT_FORMAT_STRING "\n", npc );
-  fprintf( fchk, "FD SCHEME, VISCO=1 OR ELASTIC=0:\t%" AWP_PT_FORMAT_STRING "\n", nve );
-  fprintf( fchk, "Q, FAC,Q0,EX,FP:\t%f, %f, %f, %f\n", fac, q0, ex, fp );
-  fclose( fchk );
+  if( i_vpe_max * i_dt / i_dh >= 0.5 )
+    fprintf( l_fchk, "!! WARNING: STABILITY CRITERIA NOT MET, MAY DIVERGE !!\n" );
+
+  fprintf( l_fchk, "# OF X,Y,Z NODES PER PROC:\t%" AWP_PT_FORMAT_STRING ", %" \
+           AWP_PT_FORMAT_STRING ", %" AWP_PT_FORMAT_STRING "\n", i_nxt, i_nyt, i_nzt );
+  fprintf( l_fchk, "# OF TIME STEPS:\t%" AWP_PT_FORMAT_STRING "\n", i_nt );
+  fprintf( l_fchk, "DISCRETIZATION IN SPACE:\t%f\n", i_dh );
+  fprintf( l_fchk, "DISCRETIZATION IN TIME:\t%f\n", i_dt );
+  fprintf( l_fchk, "PML REFLECTION COEFFICIENT:\t%f\n", i_arbc );
+  fprintf( l_fchk, "HIGHEST P-VELOCITY ENCOUNTERED:\t%f\n", i_vpe_max );
+  fprintf( l_fchk, "LOWEST P-VELOCITY ENCOUNTERED:\t%f\n", i_vpe_min );
+  fprintf( l_fchk, "HIGHEST S-VELOCITY ENCOUNTERED:\t%f\n", i_vse_max );
+  fprintf( l_fchk, "LOWEST S-VELOCITY ENCOUNTERED:\t%f\n", i_vse_min );
+  fprintf( l_fchk, "HIGHEST DENSITY ENCOUNTERED:\t%f\n", i_dde_max );
+  fprintf( l_fchk, "LOWEST  DENSITY ENCOUNTERED:\t%f\n", i_dde_min );
+  fprintf( l_fchk, "SKIP OF SEISMOGRAMS IN TIME (LOOP COUNTER):\t%" AWP_PT_FORMAT_STRING "\n", i_ntiskp );
+  fprintf( l_fchk, "ABC CONDITION, PML=1 OR CERJAN=0:\t%" AWP_PT_FORMAT_STRING "\n", i_npc );
+  fprintf( l_fchk, "FD SCHEME, VISCO=1 OR ELASTIC=0:\t%" AWP_PT_FORMAT_STRING "\n", i_nve );
+  fprintf( l_fchk, "Q, FAC,Q0,EX,FP:\t%f, %f, %f, %f\n", i_fac, i_q0, i_ex, i_fp );
+
+  fclose( l_fchk );
 }
 
 void odc::io::CheckpointWriter::finalize() {

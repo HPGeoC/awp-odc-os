@@ -42,8 +42,11 @@ namespace odc {
 
 class odc::io::ReceiverWriter {
 public:
-  ReceiverWriter( char *inputFileName, char *outputFileName, real deltaH, int_pt numZGridPoints );
-  void    writeReceiverOutputFiles( int_pt currentTimeStep, int_pt numTimestepsToSkip, PatchDecomp& i_ptchDec );
+  ReceiverWriter( const char *i_inputFileName,  const char *i_outputFileName,
+                  const real &i_deltaH,         const int_pt &i_numZGridPoints );
+  void    writeReceiverOutputFiles( const int_pt &i_currentTimeStep,
+                                    const int_pt &i_numTimestepsToSkip,
+                                    PatchDecomp& i_ptchDec );
   void    finalize();
 
 private:
@@ -70,13 +73,21 @@ private:
 
 class odc::io::CheckpointWriter {
 public:
-  CheckpointWriter( char *i_fileName, int_pt nd, int_pt numTimestepsToSkip, int_pt numZGridPoints );
+  CheckpointWriter( const char *i_fileName,             const int_pt &i_nd,
+                    const int_pt &i_numTimestepsToSkip, const int_pt &i_numZGridPoints );
 
-  void writeInitialStats( int_pt ntiskp, real dt, real dh, int_pt nxt, int_pt nyt, int_pt nzt,
-                          int_pt nt, real arbc, int_pt npc, int_pt nve, real fac, real q0, real ex, real fp,
-                          real vse_min, real vse_max, real vpe_min, real vpe_max, real dde_min, real dde_max );
+  void writeInitialStats( const int_pt &i_ntiskp,  const real i_dt,
+                          const real &i_dh,        const int_pt &i_nxt,
+                          const int_pt &i_nyt,     const int_pt &i_nzt,
+                          const int_pt &i_nt,      const real &i_arbc,
+                          const int_pt &i_npc,     const int_pt &i_nve,
+                          const real &i_fac,       const real &i_q0,
+                          const real &i_ex,        const real &i_fp,
+                          const real &i_vse_min,   const real &i_vse_max,
+                          const real &i_vpe_min,   const real &i_vpe_max,
+                          const real &i_dde_min,   const real &i_dde_max );
 
-  void writeUpdatedStats( int_pt currentTimeStep, PatchDecomp& i_ptchDec );
+  void writeUpdatedStats( int_pt i_currentTimeStep, PatchDecomp& i_ptchDec );
   void finalize();
 
 private:

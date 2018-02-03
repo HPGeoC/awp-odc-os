@@ -46,7 +46,7 @@ double gethrtime() {
 void dump_variable( float *var, long int nel, char *varname, char desc, int tstep, int tsub, int rank, int ncpus ) {
   FILE* fid;
   char outfile[200];
-  sprintf( outfile, "output_dbg.%1d/%s_%c_%07d-%1d.r%1d", ncpus, varname, desc, tstep, tsub, rank );
+  snprintf( outfile, sizeof( outfile ), "output_dbg.%1d/%s_%c_%07d-%1d.r%1d", ncpus, varname, desc, tstep, tsub, rank );
   float* buf;
 
   fid = fopen( outfile, "w" );
@@ -275,11 +275,11 @@ int main( int argc, char **argv ) {
            &NBGX, &NEDX, &NSKPX, &NBGY, &NEDY, &NSKPY, &NBGZ, &NEDZ, &NSKPZ,
            &FAC, &Q0, &EX, &FP, &IDYNA, &SoCalQ, INSRC, INVEL, OUT, INSRC_I2, CHKFILE, INRCVR, OUTRCVR );
 
-  sprintf( filenamebasex,   "%s/SX",  OUT );
-  sprintf( filenamebasey,   "%s/SY",  OUT );
-  sprintf( filenamebasez,   "%s/SZ",  OUT );
-  sprintf( filenamebaseeta, "%s/Eta", OUT );
-  sprintf( filenamebaseep,  "%s/EP",  OUT );
+  snprintf( filenamebasex,    sizeof( filenamebasex ),    "%s/SX",  OUT );
+  snprintf( filenamebasey,    sizeof( filenamebasey ),    "%s/SY",  OUT );
+  snprintf( filenamebasez,    sizeof( filenamebasez ),    "%s/SZ",  OUT );
+  snprintf( filenamebaseeta,  sizeof( filenamebaseeta ),  "%s/Eta", OUT );
+  snprintf( filenamebaseep,   sizeof( filenamebaseep ),   "%s/EP",  OUT );
 
   // TODO: (gwilkins) make this an input variable
   //printf("After command.\n");
@@ -305,7 +305,7 @@ int main( int argc, char **argv ) {
   MPI_Comm_size( MPI_COMM_WORLD, &size_tot );
 
   if( rank == 0 )
-    printf( "Welcome to AWP-ODC-OS\nCopyright (c) 2013-2018, Regents of the University of California\nCopyright (c) 2015-2017, San Diego State University Research Foundation\n\n" );
+    printf( "Welcome to AWP-ODC-OS\nCopyright (c) 2013-2018, Regents of the University of California\nCopyright (c) 2015-2018, San Diego State University Research Foundation\n\n" );
 
   if( INRCVR[0] != '\0' || OUTRCVR[0] != '\0' )
     if( rank == 0 )
@@ -1295,7 +1295,7 @@ int main( int argc, char **argv ) {
 
           if( (cur_step / NTISKP) % WRITE_STEP == 0 ) {
             cudaThreadSynchronize();
-            sprintf( filename, "%s%07ld", filenamebasex, cur_step );
+            snprintf( filename, sizeof( filename ), "%s%07ld", filenamebasex, cur_step );
 
             if( !rank )
               time_fileio_tmp = -gethrtime();
@@ -1304,12 +1304,12 @@ int main( int argc, char **argv ) {
             err = MPI_File_set_view( fh, displacement, MPI_FLOAT, filetype, "native", MPI_INFO_NULL );
             err = MPI_File_write_all( fh, Bufx, rec_nxt * rec_nyt * rec_nzt * WRITE_STEP, MPI_FLOAT, &filestatus );
             err = MPI_File_close( &fh );
-            sprintf( filename, "%s%07ld", filenamebasey, cur_step );
+            snprintf( filename, sizeof( filename ), "%s%07ld", filenamebasey, cur_step );
             err = MPI_File_open( MCW, filename, MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &fh );
             err = MPI_File_set_view( fh, displacement, MPI_FLOAT, filetype, "native", MPI_INFO_NULL );
             err = MPI_File_write_all( fh, Bufy, rec_nxt * rec_nyt * rec_nzt * WRITE_STEP, MPI_FLOAT, &filestatus );
             err = MPI_File_close( &fh );
-            sprintf( filename, "%s%07ld", filenamebasez, cur_step );
+            snprintf( filename, sizeof( filename ), "%s%07ld", filenamebasez, cur_step );
             err = MPI_File_open( MCW, filename, MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &fh );
             err = MPI_File_set_view( fh, displacement, MPI_FLOAT, filetype, "native", MPI_INFO_NULL );
             err = MPI_File_write_all( fh, Bufz, rec_nxt * rec_nyt * rec_nzt * WRITE_STEP, MPI_FLOAT, &filestatus );
@@ -1317,7 +1317,7 @@ int main( int argc, char **argv ) {
 
             //! saves the plastic shear work
             if( NVE == 3 ) {
-              sprintf( filename, "%s%07ld", filenamebaseeta, cur_step );
+              snprintf( filename, sizeof( filename ), "%s%07ld", filenamebaseeta, cur_step );
               err = MPI_File_open( MCW, filename, MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &fh );
               err = MPI_File_set_view( fh, displacement, MPI_FLOAT, filetype, "native", MPI_INFO_NULL );
               err = MPI_File_write_all( fh, Bufeta, rec_nxt * rec_nyt * rec_nzt * WRITE_STEP, MPI_FLOAT, &filestatus );
@@ -1453,7 +1453,7 @@ int main( int argc, char **argv ) {
         printf( "Filetype size (supposedly=rec_nxt*rec_nyt*rec_nzt*4=%d) = %d",
                 rec_nxt * rec_nyt * rec_nzt * 4, tmpSize );
 
-      sprintf( filename, "Finaleta%07ld", cur_step );
+      snprintf( filename, sizeof( filename ), "Finaleta%07ld", cur_step );
       err = MPI_File_open( MCW, filename, MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &fh );
       err = MPI_File_set_view( fh, displacement, MPI_FLOAT, filetype2, "native", MPI_INFO_NULL );
       if( err != MPI_SUCCESS ) {
