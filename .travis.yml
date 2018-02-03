@@ -80,14 +80,6 @@ install:
   - ./configure && make -j 4 > /dev/null && sudo make install
   - cd ..
 
-  # install valgrind
-  - sudo apt-get install libc6-dbg
-  - wget ftp://sourceware.org/pub/valgrind/valgrind-3.13.0.tar.bz2
-  - tar -xjf valgrind-3.13.0.tar.bz2
-  - cd valgrind-3.13.0
-  - ./configure && make -j 4 > /dev/null && sudo make install
-  - cd ..
-
   # get the input file
   - cd awp-odc-os
   - wget hpgeoc.sdsc.edu/downloads/plane_wave.tar.gz
@@ -107,7 +99,7 @@ script:
   - OMP_NUM_THREADS=1 mpiexec -n 1 ./bin/pmcl3d -X 128 -Y 128 -Z  64 -x 1 -y 1 --TMAX 1.0 --DH 10.0 --DT 0.0025 --NVAR 8 --NSRC 7744 --NST 400 --IFAULT 1 --MEDIASTART 2 --FAC 1.0 --Q0 150.0 --EX 0.6 --FP 0.5 --READ_STEP 400 --WRITE_STEP 1 --NSKPX 2 --NSKPY 1 --NEDZ 64 --NTISKP 2000 -c stats.log -o output_sfc --INSRC planeP.bin --INVEL gvalley.otc
 
   - scons kernels=vanilla parallel=mpi+omp cov=1 mode=debug
-  - OMP_NUM_THREADS=1 mpiexec -n 1 valgrind --gen-suppressions=all --suppressions=.vgrind.supp --leak-check=full --error-exitcode=1 ./bin/pmcl3d -X 128 -Y 128 -Z  64 -x 1 -y 1 --TMAX 1.0 --DH 10.0 --DT 0.0025 --NVAR 8 --NSRC 7744 --NST 400 --IFAULT 1 --MEDIASTART 2 --FAC 1.0 --Q0 150.0 --EX 0.6 --FP 0.5 --READ_STEP 400 --WRITE_STEP     1 --NSKPX 2 --NSKPY 1 --NEDZ 64 --NTISKP 2000 -c stats.log -o output_sfc --INSRC planeP.bin --INVEL gvalley.otc
+  - OMP_NUM_THREADS=1 mpiexec -n 1 ./bin/pmcl3d -X 128 -Y 128 -Z  64 -x 1 -y 1 --TMAX 1.0 --DH 10.0 --DT 0.0025 --NVAR 8 --NSRC 7744 --NST 400 --IFAULT 1 --MEDIASTART 2 --FAC 1.0 --Q0 150.0 --EX 0.6 --FP 0.5 --READ_STEP 400 --WRITE_STEP     1 --NSKPX 2 --NSKPY 1 --NEDZ 64 --NTISKP 2000 -c stats.log -o output_sfc --INSRC planeP.bin --INVEL gvalley.otc
 
 after_success:
   - ${GCOV} -v
