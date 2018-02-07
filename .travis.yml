@@ -40,10 +40,20 @@ matrix:
         apt:
           sources: ['ubuntu-toolchain-r-test']
           packages: ['g++-4.9']
+        coverity_scan:
+          project:
+            name: "HPGeoC/awp-odc-os"
+            description: "Build submitted via Travis CI"
+          notification_email:
+          build_command_prepend: "scons kernels=vanilla parallel=mpi+omp mode=release --clean"
+          build_command: "scons kernels=vanilla parallel=mpi+omp mode=release"
+          branch_pattern: develop
       env:
       - CXX_COMPILER=g++-4.9
       - CC_COMPILER=gcc-4.9
       - GCOV=gcov-4.9
+      - COVERITY=1
+      - COVERITY_SCAN_PROJECT_NAME=HPGeoC/awp-odc-os
 
     - os: linux
       compiler: gcc
@@ -56,7 +66,7 @@ matrix:
             name: "HPGeoC/awp-odc-os"
             description: "Build submitted via Travis CI"
           notification_email:
-          build_command_prepend: "cov-configure --comptype g++ -co $CXX --template; scons kernels=vanilla parallel=mpi+omp mode=release --clean"
+          build_command_prepend: "scons kernels=vanilla parallel=mpi+omp mode=release --clean"
           build_command: "scons kernels=vanilla parallel=mpi+omp mode=release"
           branch_pattern: develop
       env:
@@ -68,7 +78,7 @@ matrix:
 
 before_install:
   - cd ..
-  - echo -n | openssl s_client -connect https://scan.coverity.com:443 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | sudo tee -a /etc/ssl/certs/ca-
+  - echo -n | openssl s_client -connect scan.coverity.com:443 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | sudo tee -a /etc/ssl/certs/ca-
   - sudo apt-get update -qq
 
 install:
