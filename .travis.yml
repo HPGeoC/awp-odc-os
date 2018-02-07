@@ -59,7 +59,7 @@ matrix:
             #COVERITY_SCAN_NOTIFICATION_EMAIL
             secure: "dl3Nw7SVWsXiOk82kBaqiHknpHGJQVbQXgaQ+8BB8W03kBCSRVCIt0MnOA5hOo9be9ra8cxzKiN+kEbxk+x17NFa5A5WO3yxM8e85GgOaEGiGYFGyPCOWDYmxrM8HNVOR+PNG9zOAPA4+xppkjhWknQin2ipk9UdnlLEZ/BrIwwpF9/YFvMCFF3T4TqjZkxFzQ2KWJhBp4NqjRN5Z3XkBTxTScwCaiYjJooO3tAZf9UuI5YR+LMx+gWw1xdIQ4eW12CO1BOEa2+C5taTB174oD/k5ZCaC1B8ZvgqAYs9O/XRtoulaUlTobBLtN7Is4MCtIZeqTqGmPcrwKCNXTHtaAfYpnkFiN3JAUEbOQB8EirsWeXO3JBByZ+P84QL0h6uyRijmT2CXC7av3/W5FpkhnQ6n9Oxp2JPQ1guam8z2NzaT2urq06Y6eXrEdoid8q8cD3vTjMIx7kkgesvX8msOa6QUszObfejH5kbs7Uw3QnZbQcIcoVd3stxGUyqfNhwWbdydFG/OhHRgKxkmyQGNF03CrlIs/IhwnpAvgRsog4/rzzKHW9vL4MU/w+pXoFNHXv3+sjmIwgxPWgF4eUZEQl7CS5Bltl4DKUuRT8om46oRGZkby3AfhGe7q3Q1siGXrwonSpXRaNhMS3LdsZDfd+CnDO+Cpl03+WaVjG4jHA="
           build_command_prepend: "cd awp-odc-os; scons kernels=vanilla parallel=mpi+omp mode=release --clean"
-          build_command: "cd awp-odc-os; scons kernels=vanilla parallel=mpi+omp mode=release"
+          build_command: "scons kernels=vanilla parallel=mpi+omp mode=release"
           branch_pattern: develop
       env:
       - CXX_COMPILER=g++-5
