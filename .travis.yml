@@ -40,20 +40,10 @@ matrix:
         apt:
           sources: ['ubuntu-toolchain-r-test']
           packages: ['g++-4.9']
-        coverity_scan:
-          project:
-            name: "HPGeoC/awp-odc-os"
-            description: "Build submitted via Travis CI"
-          notification_email:
-          build_command_prepend: "scons kernels=vanilla parallel=mpi+omp mode=release --clean"
-          build_command: "scons kernels=vanilla parallel=mpi+omp mode=release"
-          branch_pattern: develop
       env:
       - CXX_COMPILER=g++-4.9
       - CC_COMPILER=gcc-4.9
       - GCOV=gcov-4.9
-      - COVERITY=1
-      - COVERITY_SCAN_PROJECT_NAME=HPGeoC/awp-odc-os
 
     - os: linux
       compiler: gcc
