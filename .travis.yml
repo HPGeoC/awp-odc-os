@@ -23,7 +23,7 @@ sudo: required
 env:
   global:
    # COVERITY_SCAN_TOKEN
-   - secure: "lmtcdgFup1tvrl28lf0LUV9zJ36jgZKLbbEhvrIXHw5l+PPB/ZbOKyiyyyEPL9geN6iiy7W1N9ECp511RrvYvplCI1UTjE+NzVTrvUttAOfullW2j76hDdH5w5TvezeP3sxmUGuzUGo7RUfFi1No7bS0bNTjA/ufcOcxXeXFGI/YEM/w8gAArvjH3bPj+1ZVeyUWgm9LuMdjx61humKjAw2ZbNACwaE/jZ9uABRGSAOd+4v3CEKvCMz9Kb8gUxHWjeNLM/nPEaLhC+suP2TA9J9UE6NgaQPd86TeysHDvVX9Hv9Now93Uf00csGzPwYO/7bVIUkYcONQsLM5iyCTd07JhLeRGP7cjnC9yhGMke6wn8/41DV0jHwX48FInkFHVwXe0yMfXc3wgpY6DzB+vKsoyOYOC6K2m/QwAQNEyAUoA+Tf8lJ6ifN/4ZeWmC+M7TTePmsj6hh44AWUWMyiq5x2NpVNAuWWitiW2hn9nXNef2ihN8YlcvxR5+kzpvq/0O/I81oVBR2iYJUeMm/C5xbf3QEUAKbQyD8VoBmLrhDqkZOEaMYK3Op0Y9JdphkPQWD1eF//2tffCX9JNx1yVHZ+RDg5cGRinlWT1undy1bBMuvNCVWfqSySONAp3KpnNKFYAuWOkk37b/TIbh/2xh9Es5W402X0VgiLcaaiH0E="
+   - secure: "YIH2VLyiz44OcY+zbaHtdBwLDEBtDa0MUTRdT0JzgpNXF8in38QoqackxZ6yMKhAzGvecft+qxtKTGLucPO9ARdxHnMo/kSVxA4PkYs2/RP880m0ettVP6RAlqhREPeBjMZgxoF7X+/5clFiDQBk3tRf3gQt83pxeJDrMWwuLUmtXdhzxzqy1ZvEpA5OkSVhezt2WM34FB+Ef4XumELCFQkGuxMVDxnaFb7lXs2WPRIu6I1DXi4TNH3kzLwnek0kpq3pTfewp7WGBt69w5j5GggBAAgVkH4+oV+D1bwrEnFl4MjZmyqvksOdtH5v2IIAR95gEP4ioD0DFam0j2vALiuJ/+pcFZdipI+g8F9Sv8+mzDCtYYiVn+DXs4leVWTaFJUs+0l4X4ALGoJr0syzLxe6/R4jahPv/Z/2QMVXUXFpGneg+pTeBLVWLj0xKGkcjXffv+E1NBDw9Gz1eKZM1nkoStt3AbQmWfWb1Qc0eQ3ynLW32ykXfFE6DSwUnCF4u13EaM3YlpyMKDF4lE7EYB2F0W5wjWYa5w7yeWsh3Pwi3VLNIi5Ze+IougvVZMgUXD1icqvYJIMuT93rTPuyulLOtz3SvfrdR3QcGjy1jCoCQSWgXEvcf7cjID5gC6pIaZVAYHLL8j45Fsa6flZE0o+u/jYoT9vlTRipLmzVzTQ="
 
 notifications:
   email:
@@ -51,18 +51,20 @@ matrix:
         apt:
           sources: ['ubuntu-toolchain-r-test']
           packages: ['g++-5']
-      coverity_scan:
-        project:
-          name: "HPGeoC/awp-odc-os"
-          description: "Build submitted via Travis CI"
-        notification_email:
-        build_command_prepend: "scons kernels=vanilla parallel=mpi+omp mode=release --clean"
-        build_command: "scons kernels=vanilla parallel=mpi+omp mode=release"
-        branch_pattern: develop
+        coverity_scan:
+          project:
+            name: "HPGeoC/awp-odc-os"
+            description: "Build submitted via Travis CI"
+          notification_email:
+          build_command_prepend: "cov-configure --comptype g++ -co $CXX --template; scons kernels=vanilla parallel=mpi+omp mode=release --clean"
+          build_command: "scons kernels=vanilla parallel=mpi+omp mode=release"
+          branch_pattern: develop
       env:
       - CXX_COMPILER=g++-5
       - CC_COMPILER=gcc-5
       - GCOV=gcov-5
+      - COVERITY=1
+      - COVERITY_SCAN_PROJECT_NAME=HPGeoC/awp-odc-os
 
 before_install:
   - cd ..
