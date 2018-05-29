@@ -1,0 +1,1205 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  @file This file is part of AWP_ODC_OS.
+
+  @author Rajdeep Konwar (rkonwar AT ucsd.edu)
+
+  @section LICENSE
+  Copyright (c) 2018, Regents of the University of California
+  All rights reserved.
+
+  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+
+  2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+
+  3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
+
+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+  @section DESCRIPTION
+  Template for AWP-ODC-OS's GoCD-config.
+
+  The following template parameters are used and have to be substituted before the config is usable:
+
+    TEMPLATE_AGENT_AUTO_REGISTER_KEY
+    TEMPLATE_WEBHOOK_SECRET
+    TEMPLATE_SERVER_ID
+    TEMPLATE_TOKEN_GENERATION_KEY
+
+    TEMPLATE_GIT_AWP_ODC_OS_CORE
+    TEMPLATE_GIT_AWP_ODC_OS_OPT
+
+    TEMPLATE_COMET_IP
+    TEMPLATE_COMET_UUID
+    TEMPLATE_REVENGE_IP
+    TEMPLATE_REVENGE_UUID
+    TEMPLATE_HPGEOC_GPU4_IP
+    TEMPLATE_HPGEOC_GPU4_UUID
+-->
+<cruise xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="cruise-config.xsd" schemaVersion="100">
+  <server artifactsdir="artifacts" agentAutoRegisterKey="TEMPLATE_AGENT_AUTO_REGISTER_KEY" webhookSecret="TEMPLATE_WEBHOOK_SECRET" commandRepositoryLocation="default" serverId="TEMPLATE_SERVER_ID" tokenGenerationKey="TEMPLATE_TOKEN_GENERATION_KEY">
+    <security>
+      <!-- Authentification -->
+      <authConfigs>
+        <authConfig id="auth_file" pluginId="cd.go.authentication.passwordfile">
+          <property>
+            <key>PasswordFilePath</key>
+            <value>/var/go/go_awp_htpasswd</value>
+          </property>
+        </authConfig>
+      </authConfigs>
+
+      <!-- Admins -->
+      <admins>
+        <user>hpgeoc</user>
+      </admins>
+    </security>
+  </server>
+
+  <!-- CI Pipelines -->
+  <pipelines group="CI">
+    <pipeline name="CI_develop_clang">
+      <environmentvariables>
+        <variable name="CXX_DEBUG">
+          <value>mpiCC</value>
+        </variable>
+        <variable name="CC_DEBUG">
+          <value>clang</value>
+        </variable>
+        <variable name="OMPI_CXX_DEBUG">
+          <value>clang++</value>
+        </variable>
+        <variable name="AWP_MODE_DEBUG">
+          <value>debug+san</value>
+        </variable>
+        <variable name="AWP_MODE_RELEASE">
+          <value>release+san</value>
+        </variable>
+        <variable name="CXX_RELEASE">
+          <value>mpiCC</value>
+        </variable>
+        <variable name="CC_RELEASE">
+          <value>clang</value>
+        </variable>
+        <variable name="OMPI_CXX_RELEASE">
+          <value>clang++</value>
+        </variable>
+        <variable name="MPI_EXEC">
+          <value>/var/go/.linuxbrew/Cellar/open-mpi/2.1.0/bin/mpiexec</value>
+        </variable>
+        <variable name="AWP_X">
+          <value>20</value>
+        </variable>
+        <variable name="AWP_Y">
+          <value>20</value>
+        </variable>
+        <variable name="AWP_Z">
+          <value>20</value>
+        </variable>
+        <variable name="AWP_TMAX">
+          <value>0.01</value>
+        </variable>
+        <variable name="AWP_DH">
+          <value>10.0</value>
+        </variable>
+        <variable name="AWP_DT">
+          <value>0.001</value>
+        </variable>
+        <variable name="AWP_NVAR">
+          <value>8</value>
+        </variable>
+        <variable name="AWP_NSRC">
+          <value>1</value>
+        </variable>
+        <variable name="AWP_NST">
+          <value>100</value>
+        </variable>
+        <variable name="AWP_IFAULT">
+          <value>3</value>
+        </variable>
+        <variable name="AWP_MEDIASTART">
+          <value>4</value>
+        </variable>
+        <variable name="AWP_FAC">
+          <value>1.0</value>
+        </variable>
+        <variable name="AWP_Q0">
+          <value>150.0</value>
+        </variable>
+        <variable name="AWP_EX">
+          <value>0.6</value>
+        </variable>
+        <variable name="AWP_FP">
+          <value>0.5</value>
+        </variable>
+        <variable name="AWP_NTISKP">
+          <value>10</value>
+        </variable>
+      </environmentvariables>
+      <materials>
+        <git url="TEMPLATE_GIT_AWP_ODC_OS_CORE" branch="develop" dest="awp_src" materialName="awp-odc-os" />
+        <git url="TEMPLATE_GIT_AWP_ODC_OS_OPT" dest="input" materialName="awp-input" />
+      </materials>
+      <stage name="fetch_input" cleanWorkingDir="true">
+        <approval type="manual" />
+        <jobs>
+          <job name="bitbucket">
+            <tasks>
+              <exec command="/bin/bash" workingdir="input">
+                <arg>-c</arg>
+                <arg>git lfs fetch -I gocd_input.tar.gz</arg>
+                <runif status="passed" />
+              </exec>
+              <exec command="/bin/bash" workingdir="input">
+                <arg>-c</arg>
+                <arg>git lfs checkout gocd_input.tar.gz</arg>
+                <runif status="passed" />
+              </exec>
+              <exec command="/bin/bash" workingdir="input">
+                <arg>-c</arg>
+                <arg>tar -zxvf gocd_input.tar.gz</arg>
+                <runif status="passed" />
+              </exec>
+            </tasks>
+          </job>
+        </jobs>
+      </stage>
+      <stage name="sanity_vanilla" fetchMaterials="false">
+        <environmentvariables>
+          <variable name="AWP_KERNEL_DEBUG">
+            <value>vanilla</value>
+          </variable>
+          <variable name="AWP_KERNEL_RELEASE">
+            <value>vanilla</value>
+          </variable>
+        </environmentvariables>
+        <jobs>
+          <job name="cppcheck">
+            <tasks>
+              <exec command="cppcheck" workingdir="awp_src">
+                <arg>--force</arg>
+                <arg>--error-exitcode=1</arg>
+                <arg>src</arg>
+                <runif status="passed" />
+              </exec>
+            </tasks>
+          </job>
+          <job name="sanitizer_debug">
+            <environmentvariables>
+              <variable name="OUTPUT_DIR">
+                <value>clang_vanilla_san_debug</value>
+              </variable>
+              <variable name="LSAN_SUPP">
+                <value>LSAN_OPTIONS=suppressions=.asan.supp</value>
+              </variable>
+            </environmentvariables>
+            <tasks>
+              <exec command="/bin/bash" workingdir="awp_src">
+                <arg>-c</arg>
+                <arg>CXX=${CXX_DEBUG} OMPI_CXX=${OMPI_CXX_DEBUG} CC=${CC_DEBUG} scons -j ${SCONS_JOBS} kernel=${AWP_KERNEL_DEBUG} parallel=${AWP_PARALLEL_DEBUG} mode=${AWP_MODE_DEBUG}</arg>
+                <runif status="passed" />
+              </exec>
+              <exec command="/bin/bash" workingdir="awp_src">
+                <arg>-c</arg>
+                <arg>mkdir $OUTPUT_DIR; mkdir $OUTPUT_DIR/logs; mkdir $OUTPUT_DIR/raw; mkdir $OUTPUT_DIR/raw/workflow</arg>
+                <runif status="passed" />
+              </exec>
+              <exec command="/bin/bash" workingdir="awp_src">
+                <arg>-c</arg>
+                <arg>LSAN_OPTIONS=suppressions=.asan.supp ${MPI_EXEC} -n 1 bin/pmcl3d -X ${AWP_X} -Y ${AWP_Y} -Z ${AWP_Z} -x 1 -y 1 --TMAX ${AWP_TMAX} --DH ${AWP_DH} --DT ${AWP_DT} --NVAR ${AWP_NVAR} --NSRC ${AWP_NSRC} --NST ${AWP_NST} --IFAULT ${AWP_IFAULT} --MEDIASTART ${AWP_MEDIASTART} --FAC ${AWP_FAC} --Q0 ${AWP_Q0} --EX ${AWP_EX} --FP ${AWP_FP} --NTISKP ${AWP_NTISKP} -c $OUTPUT_DIR/logs/workflow.log -o $OUTPUT_DIR/raw/workflow --INSRC $INPUT_DIR/inputSrc_gocd.txt --INVEL $INPUT_DIR/inputMesh_gocd.bin --INRCVR $INPUT_DIR/inputRecvrList_gocd.txt --OUTRCVR $OUTPUT_DIR/logs/receiverOutput_gocd</arg>
+                <runif status="passed" />
+              </exec>
+            </tasks>
+          </job>
+          <job name="sanitizer_release">
+            <environmentvariables>
+              <variable name="OUTPUT_DIR">
+                <value>clang_vanilla_san_release</value>
+              </variable>
+            </environmentvariables>
+            <tasks>
+              <exec command="/bin/bash" workingdir="awp_src">
+                <arg>-c</arg>
+                <arg>CXX=${CXX_RELEASE} OMPI_CXX=${OMPI_CXX_RELEASE} CC=${CC_RELEASE} scons -j ${SCONS_JOBS} kernel=${AWP_KERNEL_RELEASE} parallel=${AWP_PARALLEL_RELEASE} mode=${AWP_MODE_RELEASE}</arg>
+                <runif status="passed" />
+              </exec>
+              <exec command="/bin/bash" workingdir="awp_src">
+                <arg>-c</arg>
+                <arg>mkdir $OUTPUT_DIR; mkdir $OUTPUT_DIR/logs; mkdir $OUTPUT_DIR/raw; mkdir $OUTPUT_DIR/raw/workflow</arg>
+                <runif status="passed" />
+              </exec>
+              <exec command="/bin/bash" workingdir="awp_src">
+                <arg>-c</arg>
+                <arg>LSAN_OPTIONS=suppressions=.asan.supp ${MPI_EXEC} -n 1 bin/pmcl3d -X ${AWP_X} -Y ${AWP_Y} -Z ${AWP_Z} -x 1 -y 1 --TMAX ${AWP_TMAX} --DH ${AWP_DH} --DT ${AWP_DT} --NVAR ${AWP_NVAR} --NSRC ${AWP_NSRC} --NST ${AWP_NST} --IFAULT ${AWP_IFAULT} --MEDIASTART ${AWP_MEDIASTART} --FAC ${AWP_FAC} --Q0 ${AWP_Q0} --EX ${AWP_EX} --FP ${AWP_FP} --NTISKP ${AWP_NTISKP} -c $OUTPUT_DIR/logs/workflow.log -o $OUTPUT_DIR/raw/workflow --INSRC $INPUT_DIR/inputSrc_gocd.txt --INVEL $INPUT_DIR/inputMesh_gocd.bin --INRCVR $INPUT_DIR/inputRecvrList_gocd.txt --OUTRCVR $OUTPUT_DIR/logs/receiverOutput_gocd</arg>
+                <runif status="passed" />
+              </exec>
+            </tasks>
+          </job>
+        </jobs>
+      </stage>
+    </pipeline>
+    <pipeline name="CI_develop_gnu">
+      <environmentvariables>
+        <variable name="CXX_DEBUG">
+          <value>mpicxx</value>
+        </variable>
+        <variable name="CC_DEBUG">
+          <value>mpicc</value>
+        </variable>
+        <variable name="AWP_ARCH_DEBUG">
+          <value>host</value>
+        </variable>
+        <variable name="AWP_ARCH_RELEASE">
+          <value>host</value>
+        </variable>
+        <variable name="CXX_RELEASE">
+          <value>mpiCC</value>
+        </variable>
+        <variable name="CC_RELEASE">
+          <value>mpicc</value>
+        </variable>
+        <variable name="AWP_MODE_DEBUG">
+          <value>debug</value>
+        </variable>
+        <variable name="AWP_MODE_RELEASE">
+          <value>release</value>
+        </variable>
+        <variable name="AWP_X">
+          <value>20</value>
+        </variable>
+        <variable name="AWP_Y">
+          <value>20</value>
+        </variable>
+        <variable name="AWP_Z">
+          <value>20</value>
+        </variable>
+        <variable name="AWP_TMAX">
+          <value>0.01</value>
+        </variable>
+        <variable name="AWP_DH">
+          <value>10.0</value>
+        </variable>
+        <variable name="AWP_DT">
+          <value>0.001</value>
+        </variable>
+        <variable name="AWP_NVAR">
+          <value>8</value>
+        </variable>
+        <variable name="AWP_NSRC">
+          <value>1</value>
+        </variable>
+        <variable name="AWP_NST">
+          <value>100</value>
+        </variable>
+        <variable name="AWP_IFAULT">
+          <value>3</value>
+        </variable>
+        <variable name="AWP_MEDIASTART">
+          <value>4</value>
+        </variable>
+        <variable name="AWP_FAC">
+          <value>1.0</value>
+        </variable>
+        <variable name="AWP_Q0">
+          <value>150.0</value>
+        </variable>
+        <variable name="AWP_EX">
+          <value>0.6</value>
+        </variable>
+        <variable name="AWP_FP">
+          <value>0.5</value>
+        </variable>
+        <variable name="AWP_NTISKP">
+          <value>10</value>
+        </variable>
+      </environmentvariables>
+      <materials>
+        <git url="TEMPLATE_GIT_AWP_ODC_OS_CORE" branch="develop" dest="awp_src" materialName="awp-odc-os" />
+        <git url="TEMPLATE_GIT_AWP_ODC_OS_OPT" dest="input" materialName="awp-input" />
+      </materials>
+      <stage name="fetch_input" cleanWorkingDir="true">
+        <approval type="manual" />
+        <jobs>
+          <job name="bitbucket">
+            <tasks>
+              <exec command="/bin/bash" workingdir="input">
+                <arg>-c</arg>
+                <arg>git lfs fetch -I gocd_input.tar.gz</arg>
+                <runif status="passed" />
+              </exec>
+              <exec command="/bin/bash" workingdir="input">
+                <arg>-c</arg>
+                <arg>git lfs checkout gocd_input.tar.gz</arg>
+                <runif status="passed" />
+              </exec>
+              <exec command="/bin/bash" workingdir="input">
+                <arg>-c</arg>
+                <arg>tar -zxvf gocd_input.tar.gz</arg>
+                <runif status="passed" />
+              </exec>
+            </tasks>
+          </job>
+        </jobs>
+      </stage>
+      <stage name="sanity_vanilla" fetchMaterials="false">
+        <environmentvariables>
+          <variable name="AWP_KERNEL_DEBUG">
+            <value>vanilla</value>
+          </variable>
+          <variable name="AWP_KERNEL_RELEASE">
+            <value>vanilla</value>
+          </variable>
+        </environmentvariables>
+        <jobs>
+          <job name="cppcheck">
+            <tasks>
+              <exec command="cppcheck" workingdir="awp_src">
+                <arg>--force</arg>
+                <arg>--error-exitcode=1</arg>
+                <arg>src</arg>
+                <runif status="passed" />
+              </exec>
+            </tasks>
+          </job>
+          <job name="valgrind">
+            <environmentvariables>
+              <variable name="OUTPUT_DIR">
+                <value>gnu_vanilla_valgrind</value>
+              </variable>
+              <variable name="DEBUGGER">
+                <value>valgrind --gen-suppressions=all --suppressions=.vgrind.supp --leak-check=full --error-exitcode=1</value>
+              </variable>
+            </environmentvariables>
+            <tasks>
+              <exec command="/bin/bash" workingdir="awp_src">
+                <arg>-c</arg>
+                <arg>CXX=${CXX_DEBUG} CC=${CC_DEBUG} scons -j ${SCONS_JOBS} kernel=${AWP_KERNEL_DEBUG} parallel=${AWP_PARALLEL_DEBUG} cpu_arch=${AWP_ARCH_DEBUG} mode=${AWP_MODE_DEBUG}</arg>
+                <runif status="passed" />
+              </exec>
+              <exec command="/bin/bash" workingdir="awp_src">
+                <arg>-c</arg>
+                <arg>mkdir $OUTPUT_DIR; mkdir $OUTPUT_DIR/logs; mkdir $OUTPUT_DIR/raw; mkdir $OUTPUT_DIR/raw/workflow</arg>
+                <runif status="passed" />
+              </exec>
+              <exec command="/bin/bash" workingdir="awp_src">
+                <arg>-c</arg>
+                <arg>mpiexec -n 1 ${DEBUGGER} bin/pmcl3d -X ${AWP_X} -Y ${AWP_Y} -Z ${AWP_Z} -x 1 -y 1 --TMAX ${AWP_TMAX} --DH ${AWP_DH} --DT ${AWP_DT} --NVAR ${AWP_NVAR} --NSRC ${AWP_NSRC} --NST ${AWP_NST} --IFAULT ${AWP_IFAULT} --MEDIASTART ${AWP_MEDIASTART} --FAC ${AWP_FAC} --Q0 ${AWP_Q0} --EX ${AWP_EX} --FP ${AWP_FP} --NTISKP ${AWP_NTISKP} -c $OUTPUT_DIR/logs/workflow.log -o $OUTPUT_DIR/raw/workflow --INSRC $INPUT_DIR/inputSrc_gocd.txt --INVEL $INPUT_DIR/inputMesh_gocd.bin --INRCVR $INPUT_DIR/inputRecvrList_gocd.txt --OUTRCVR $OUTPUT_DIR/logs/receiverOutput_gocd</arg>
+                <runif status="passed" />
+              </exec>
+            </tasks>
+          </job>
+        </jobs>
+      </stage>
+    </pipeline>
+    <pipeline name="CI_develop_intel">
+      <environmentvariables>
+        <variable name="CXX_DEBUG">
+          <value>mpiicpc</value>
+        </variable>
+        <variable name="CXX_RELEASE">
+          <value>mpiicpc</value>
+        </variable>
+        <variable name="CC_DEBUG">
+          <value>mpiicc</value>
+        </variable>
+        <variable name="CC_RELEASE">
+          <value>mpiicc</value>
+        </variable>
+        <variable name="AWP_ARCH_DEBUG">
+          <value>knl</value>
+        </variable>
+        <variable name="AWP_ARCH_RELEASE">
+          <value>knl</value>
+        </variable>
+        <variable name="AWP_MODE_DEBUG">
+          <value>debug</value>
+        </variable>
+        <variable name="AWP_MODE_RELEASE">
+          <value>release</value>
+        </variable>
+        <variable name="AWP_X">
+          <value>20</value>
+        </variable>
+        <variable name="AWP_Y">
+          <value>20</value>
+        </variable>
+        <variable name="AWP_Z">
+          <value>20</value>
+        </variable>
+        <variable name="AWP_TMAX">
+          <value>0.01</value>
+        </variable>
+        <variable name="AWP_DH">
+          <value>10.0</value>
+        </variable>
+        <variable name="AWP_DT">
+          <value>0.001</value>
+        </variable>
+        <variable name="AWP_NVAR">
+          <value>8</value>
+        </variable>
+        <variable name="AWP_NSRC">
+          <value>1</value>
+        </variable>
+        <variable name="AWP_NST">
+          <value>100</value>
+        </variable>
+        <variable name="AWP_IFAULT">
+          <value>3</value>
+        </variable>
+        <variable name="AWP_MEDIASTART">
+          <value>4</value>
+        </variable>
+        <variable name="AWP_FAC">
+          <value>1.0</value>
+        </variable>
+        <variable name="AWP_Q0">
+          <value>150.0</value>
+        </variable>
+        <variable name="AWP_EX">
+          <value>0.6</value>
+        </variable>
+        <variable name="AWP_FP">
+          <value>0.5</value>
+        </variable>
+        <variable name="AWP_NTISKP">
+          <value>10</value>
+        </variable>
+      </environmentvariables>
+      <materials>
+        <git url="TEMPLATE_GIT_AWP_ODC_OS_CORE" branch="develop" dest="awp_src" materialName="awp-odc-os" />
+        <git url="TEMPLATE_GIT_AWP_ODC_OS_OPT" dest="input" materialName="awp-input" />
+      </materials>
+      <stage name="fetch_input" cleanWorkingDir="true">
+        <approval type="manual" />
+        <jobs>
+          <job name="bitbucket">
+            <tasks>
+              <exec command="/bin/bash" workingdir="input">
+                <arg>-c</arg>
+                <arg>git lfs fetch -I gocd_input.tar.gz</arg>
+                <runif status="passed" />
+              </exec>
+              <exec command="/bin/bash" workingdir="input">
+                <arg>-c</arg>
+                <arg>git lfs checkout gocd_input.tar.gz</arg>
+                <runif status="passed" />
+              </exec>
+              <exec command="/bin/bash" workingdir="input">
+                <arg>-c</arg>
+                <arg>tar -zxvf gocd_input.tar.gz</arg>
+                <runif status="passed" />
+              </exec>
+            </tasks>
+          </job>
+        </jobs>
+      </stage>
+      <stage name="sanity_vanilla" fetchMaterials="false">
+        <environmentvariables>
+          <variable name="AWP_KERNEL_DEBUG">
+            <value>vanilla</value>
+          </variable>
+          <variable name="AWP_KERNEL_RELEASE">
+            <value>vanilla</value>
+          </variable>
+          <variable name="DEBUGGER">
+            <value>inspxe-cl --result-dir=inspxe_vanilla_results --collect=mi2 --suppression-file=".inspxe.supp"</value>
+          </variable>
+        </environmentvariables>
+        <jobs>
+          <job name="cppcheck">
+            <tasks>
+              <exec command="cppcheck" workingdir="awp_src">
+                <arg>--force</arg>
+                <arg>--error-exitcode=1</arg>
+                <arg>src</arg>
+                <runif status="passed" />
+              </exec>
+            </tasks>
+          </job>
+          <job name="inspxe">
+            <environmentvariables>
+              <variable name="OUTPUT_DIR">
+                <value>intel_vanilla_inspxe</value>
+              </variable>
+            </environmentvariables>
+            <tasks>
+              <exec command="/bin/bash" workingdir="awp_src">
+                <arg>-c</arg>
+                <arg>CXX=${CXX_DEBUG} CC=${CC_DEBUG} scons -j ${SCONS_JOBS} kernel=${AWP_KERNEL_DEBUG} parallel=${AWP_PARALLEL_DEBUG} cpu_arch=${AWP_ARCH_DEBUG} mode=${AWP_MODE_DEBUG}</arg>
+                <runif status="passed" />
+              </exec>
+              <exec command="/bin/bash" workingdir="awp_src">
+                <arg>-c</arg>
+                <arg>mkdir $OUTPUT_DIR; mkdir $OUTPUT_DIR/logs; mkdir $OUTPUT_DIR/raw; mkdir $OUTPUT_DIR/raw/workflow</arg>
+                <runif status="passed" />
+              </exec>
+              <exec command="/bin/bash" workingdir="awp_src">
+                <arg>-c</arg>
+                <arg>mpiexec -n 1 ${DEBUGGER} bin/pmcl3d -X ${AWP_X} -Y ${AWP_Y} -Z ${AWP_Z} -x 1 -y 1 --TMAX ${AWP_TMAX} --DH ${AWP_DH} --DT ${AWP_DT} --NVAR ${AWP_NVAR} --NSRC ${AWP_NSRC} --NST ${AWP_NST} --IFAULT ${AWP_IFAULT} --MEDIASTART ${AWP_MEDIASTART} --FAC ${AWP_FAC} --Q0 ${AWP_Q0} --EX ${AWP_EX} --FP ${AWP_FP} --NTISKP ${AWP_NTISKP} -c $OUTPUT_DIR/logs/workflow.log -o $OUTPUT_DIR/raw/workflow --INSRC $INPUT_DIR/inputSrc_gocd.txt --INVEL $INPUT_DIR/inputMesh_gocd.bin --INRCVR $INPUT_DIR/inputRecvrList_gocd.txt --OUTRCVR $OUTPUT_DIR/logs/receiverOutput_gocd</arg>
+                <runif status="passed" />
+              </exec>
+            </tasks>
+          </job>
+        </jobs>
+      </stage>
+      <stage name="sanity_yask" fetchMaterials="false">
+        <environmentvariables>
+          <variable name="AWP_KERNEL_DEBUG">
+            <value>yask</value>
+          </variable>
+          <variable name="AWP_KERNEL_RELEASE">
+            <value>yask</value>
+          </variable>
+          <variable name="DEBUGGER">
+            <value>inspxe-cl --result-dir=inspxe_yask_results --collect=mi2 --suppression-file=".inspxe.supp"</value>
+          </variable>
+        </environmentvariables>
+        <jobs>
+          <job name="inspxe">
+            <environmentvariables>
+              <variable name="OUTPUT_DIR">
+                <value>intel_yask_inspxe</value>
+              </variable>
+            </environmentvariables>
+            <tasks>
+              <exec command="/bin/bash" workingdir="awp_src">
+                <arg>-c</arg>
+                <arg>CXX=${CXX_DEBUG} CC=${CC_DEBUG} scons -j ${SCONS_JOBS} kernel=${AWP_KERNEL_DEBUG} parallel=${AWP_PARALLEL_DEBUG} cpu_arch=${AWP_ARCH_DEBUG} mode=${AWP_MODE_DEBUG}</arg>
+                <runif status="passed" />
+              </exec>
+              <exec command="/bin/bash" workingdir="awp_src">
+                <arg>-c</arg>
+                <arg>mkdir $OUTPUT_DIR; mkdir $OUTPUT_DIR/logs; mkdir $OUTPUT_DIR/raw; mkdir $OUTPUT_DIR/raw/workflow</arg>
+                <runif status="passed" />
+              </exec>
+              <exec command="/bin/bash" workingdir="awp_src">
+                <arg>-c</arg>
+                <arg>mpiexec -n 1 ${DEBUGGER} bin/pmcl3d -X ${AWP_X} -Y ${AWP_Y} -Z ${AWP_Z} -x 1 -y 1 --TMAX ${AWP_TMAX} --DH ${AWP_DH} --DT ${AWP_DT} --NVAR ${AWP_NVAR} --NSRC ${AWP_NSRC} --NST ${AWP_NST} --IFAULT ${AWP_IFAULT} --MEDIASTART ${AWP_MEDIASTART} --FAC ${AWP_FAC} --Q0 ${AWP_Q0} --EX ${AWP_EX} --FP ${AWP_FP} --NTISKP ${AWP_NTISKP} -c $OUTPUT_DIR/logs/workflow.log -o $OUTPUT_DIR/raw/workflow --INSRC $INPUT_DIR/inputSrc_gocd.txt --INVEL $INPUT_DIR/inputMesh_gocd.bin --INRCVR $INPUT_DIR/inputRecvrList_gocd.txt --OUTRCVR $OUTPUT_DIR/logs/receiverOutput_gocd</arg>
+                <runif status="passed" />
+              </exec>
+            </tasks>
+          </job>
+        </jobs>
+      </stage>
+    </pipeline>
+    <pipeline name="CI_develop_cuda">
+      <environmentvariables>
+        <variable name="CC_CUDA">
+          <value>mpicc</value>
+        </variable>
+        <variable name="AWP_KERNEL">
+          <value>cuda</value>
+        </variable>
+        <variable name="AWP_PARALLEL">
+          <value>mpi</value>
+        </variable>
+        <variable name="AWP_X">
+          <value>160</value>
+        </variable>
+        <variable name="AWP_Y">
+          <value>160</value>
+        </variable>
+        <variable name="AWP_Z">
+          <value>256</value>
+        </variable>
+        <variable name="AWP_TMAX">
+          <value>0.2</value>
+        </variable>
+        <variable name="AWP_DH">
+          <value>40.0</value>
+        </variable>
+        <variable name="AWP_DT">
+          <value>0.002</value>
+        </variable>
+        <variable name="AWP_NSRC">
+          <value>1</value>
+        </variable>
+        <variable name="AWP_NST">
+          <value>101</value>
+        </variable>
+        <variable name="AWP_IFAULT">
+          <value>1</value>
+        </variable>
+        <variable name="AWP_MEDIASTART">
+          <value>2</value>
+        </variable>
+        <variable name="AWP_READ_STEP">
+          <value>101</value>
+        </variable>
+        <variable name="AWP_WRITE_STEP">
+          <value>100</value>
+        </variable>
+        <variable name="AWP_NSKPX">
+          <value>2</value>
+        </variable>
+        <variable name="AWP_NSKPY">
+          <value>2</value>
+        </variable>
+        <variable name="AWP_NTISKP">
+          <value>20</value>
+        </variable>
+      </environmentvariables>
+      <materials>
+        <git url="TEMPLATE_GIT_AWP_ODC_OS_CORE" branch="develop" dest="awp_src" materialName="awp-odc-os" />
+        <git url="TEMPLATE_GIT_AWP_ODC_OS_OPT" dest="input" materialName="awp-input" />
+      </materials>
+      <stage name="fetch_input" cleanWorkingDir="true">
+        <approval type="manual" />
+        <jobs>
+          <job name="bitbucket">
+            <tasks>
+              <exec command="/bin/bash" workingdir="input">
+                <arg>-c</arg>
+                <arg>git lfs fetch -I cuda_input.tar.gz</arg>
+                <runif status="passed" />
+              </exec>
+              <exec command="/bin/bash" workingdir="input">
+                <arg>-c</arg>
+                <arg>git lfs checkout cuda_input.tar.gz</arg>
+                <runif status="passed" />
+              </exec>
+              <exec command="/bin/bash" workingdir="input">
+                <arg>-c</arg>
+                <arg>tar -xzvf cuda_input.tar.gz</arg>
+                <runif status="passed" />
+              </exec>
+            </tasks>
+          </job>
+        </jobs>
+      </stage>
+      <stage name="sanity_cuda" fetchMaterials="false">
+        <jobs>
+          <job name="cppcheck">
+            <tasks>
+              <exec command="cppcheck" workingdir="awp_src">
+                <arg>--force</arg>
+                <arg>--suppress=*:src/pmcl3d.c</arg>
+                <arg>--error-exitcode=1</arg>
+                <arg>src</arg>
+                <runif status="passed" />
+              </exec>
+            </tasks>
+          </job>
+          <job name="memcheck">
+            <environmentvariables>
+              <variable name="OUTPUT_DIR">
+                <value>cuda_memcheck</value>
+              </variable>
+              <variable name="DEBUGGER">
+                <value>cuda-memcheck --tool memcheck --error-exitcode 1</value>
+              </variable>
+            </environmentvariables>
+            <tasks>
+              <exec command="/bin/bash" workingdir="awp_src">
+                <arg>-c</arg>
+                <arg>CC=${CC_CUDA} scons kernel=${AWP_KERNEL} parallel=${AWP_PARALLEL} cudaToolkitDir=${AWP_CUDATOOLKIT_DIR}</arg>
+                <runif status="passed" />
+              </exec>
+              <exec command="/bin/bash" workingdir="awp_src">
+                <arg>-c</arg>
+                <arg>mkdir $OUTPUT_DIR</arg>
+                <runif status="passed" />
+              </exec>
+              <exec command="/bin/bash" workingdir="awp_src">
+                <arg>-c</arg>
+                <arg>mpiexec -n 1 ${DEBUGGER} bin/pmcl3d -X ${AWP_X} -Y ${AWP_Y} -Z ${AWP_Z} -x 1 -y 1 --TMAX ${AWP_TMAX} --DH ${AWP_DH} --DT ${AWP_DT} --NSRC ${AWP_NSRC} --NST ${AWP_NST} --IFAULT ${AWP_IFAULT} --MEDIASTART ${AWP_MEDIASTART} --READ_STEP ${AWP_READ_STEP} --WRITE_STEP ${AWP_WRITE_STEP} --NSKPX ${AWP_NSKPX} --NSKPY ${AWP_NSKPY} --NTISKP ${AWP_NTISKP} -c $OUTPUT_DIR/raw -o $OUTPUT_DIR --INSRC $INPUT_DIR/source --INVEL $INPUT_DIR/mesh.bin</arg>
+                <runif status="passed" />
+              </exec>
+            </tasks>
+          </job>
+          <job name="racecheck">
+            <environmentvariables>
+              <variable name="OUTPUT_DIR">
+                <value>cuda_racecheck</value>
+              </variable>
+              <variable name="DEBUGGER">
+                <value>cuda-memcheck --tool racecheck --error-exitcode 1</value>
+              </variable>
+            </environmentvariables>
+            <tasks>
+              <exec command="/bin/bash" workingdir="awp_src">
+                <arg>-c</arg>
+                <arg>CC=${CC_CUDA} scons kernel=${AWP_KERNEL} parallel=${AWP_PARALLEL} cudaToolkitDir=${AWP_CUDATOOLKIT_DIR}</arg>
+                <runif status="passed" />
+              </exec>
+              <exec command="/bin/bash" workingdir="awp_src">
+                <arg>-c</arg>
+                <arg>mkdir $OUTPUT_DIR</arg>
+                <runif status="passed" />
+              </exec>
+              <exec command="/bin/bash" workingdir="awp_src">
+                <arg>-c</arg>
+                <arg>mpiexec -n 1 ${DEBUGGER} bin/pmcl3d -X ${AWP_X} -Y ${AWP_Y} -Z ${AWP_Z} -x 1 -y 1 --TMAX ${AWP_TMAX} --DH ${AWP_DH} --DT ${AWP_DT} --NSRC ${AWP_NSRC} --NST ${AWP_NST} --IFAULT ${AWP_IFAULT} --MEDIASTART ${AWP_MEDIASTART} --READ_STEP ${AWP_READ_STEP} --WRITE_STEP ${AWP_WRITE_STEP} --NSKPX ${AWP_NSKPX} --NSKPY ${AWP_NSKPY} --NTISKP ${AWP_NTISKP} -c $OUTPUT_DIR/raw -o $OUTPUT_DIR --INSRC $INPUT_DIR/source --INVEL $INPUT_DIR/mesh.bin</arg>
+                <runif status="passed" />
+              </exec>
+            </tasks>
+          </job>
+          <job name="initcheck">
+            <environmentvariables>
+              <variable name="OUTPUT_DIR">
+                <value>cuda_initcheck</value>
+              </variable>
+              <variable name="DEBUGGER">
+                <value>cuda-memcheck --tool initcheck --error-exitcode 1</value>
+              </variable>
+            </environmentvariables>
+            <tasks>
+              <exec command="/bin/bash" workingdir="awp_src">
+                <arg>-c</arg>
+                <arg>CC=${CC_CUDA} scons kernel=${AWP_KERNEL} parallel=${AWP_PARALLEL} cudaToolkitDir=${AWP_CUDATOOLKIT_DIR}</arg>
+                <runif status="passed" />
+              </exec>
+              <exec command="/bin/bash" workingdir="awp_src">
+                <arg>-c</arg>
+                <arg>mkdir $OUTPUT_DIR</arg>
+                <runif status="passed" />
+              </exec>
+              <exec command="/bin/bash" workingdir="awp_src">
+                <arg>-c</arg>
+                <arg>mpiexec -n 1 ${DEBUGGER} bin/pmcl3d -X ${AWP_X} -Y ${AWP_Y} -Z ${AWP_Z} -x 1 -y 1 --TMAX ${AWP_TMAX} --DH ${AWP_DH} --DT ${AWP_DT} --NSRC ${AWP_NSRC} --NST ${AWP_NST} --IFAULT ${AWP_IFAULT} --MEDIASTART ${AWP_MEDIASTART} --READ_STEP ${AWP_READ_STEP} --WRITE_STEP ${AWP_WRITE_STEP} --NSKPX ${AWP_NSKPX} --NSKPY ${AWP_NSKPY} --NTISKP ${AWP_NTISKP} -c $OUTPUT_DIR/raw -o $OUTPUT_DIR --INSRC $INPUT_DIR/source --INVEL $INPUT_DIR/mesh.bin</arg>
+                <runif status="passed" />
+              </exec>
+            </tasks>
+          </job>
+        </jobs>
+      </stage>
+    </pipeline>
+  </pipelines>
+  <pipelines group="SAGA-Python">
+    <pipeline name="SAGA_setup_yask">
+      <materials>
+        <git url="TEMPLATE_GIT_AWP_ODC_OS_CORE" branch="develop" dest="awp-odc-os" materialName="awp-odc-os" />
+        <git url="TEMPLATE_GIT_AWP_ODC_OS_OPT" dest="input" materialName="awp-input" />
+      </materials>
+      <stage name="fetch_input" cleanWorkingDir="true">
+        <approval type="manual" />
+        <jobs>
+          <job name="bitbucket">
+            <tasks>
+              <exec command="/bin/bash" workingdir="input">
+                <arg>-c</arg>
+                <arg>git lfs fetch -I gocd_input.tar.gz</arg>
+                <runif status="passed" />
+              </exec>
+              <exec command="/bin/bash" workingdir="input">
+                <arg>-c</arg>
+                <arg>git lfs checkout gocd_input.tar.gz</arg>
+                <runif status="passed" />
+              </exec>
+              <exec command="/bin/bash" workingdir="input">
+                <arg>-c</arg>
+                <arg>git lfs fetch -I awp_stampede_unzip_compile.sh</arg>
+                <runif status="passed" />
+              </exec>
+              <exec command="/bin/bash" workingdir="input">
+                <arg>-c</arg>
+                <arg>git lfs checkout awp_stampede_unzip_compile.sh</arg>
+                <runif status="passed" />
+              </exec>
+              <exec command="/bin/bash" workingdir="input">
+                <arg>-c</arg>
+                <arg>git lfs fetch -I awp_test.py</arg>
+                <runif status="passed" />
+              </exec>
+              <exec command="/bin/bash" workingdir="input">
+                <arg>-c</arg>
+                <arg>git lfs checkout awp_test.py</arg>
+                <runif status="passed" />
+              </exec>
+              <exec command="/bin/bash" workingdir="input">
+                <arg>-c</arg>
+                <arg>git lfs fetch -I awp_test.xml</arg>
+                <runif status="passed" />
+              </exec>
+              <exec command="/bin/bash" workingdir="input">
+                <arg>-c</arg>
+                <arg>git lfs checkout -I awp_test.xml</arg>
+                <runif status="passed" />
+              </exec>
+              <exec command="/bin/bash" workingdir="input">
+                <arg>-c</arg>
+                <arg>git lfs fetch -I flowTools</arg>
+                <runif status="passed" />
+              </exec>
+              <exec command="/bin/bash" workingdir="input">
+                <arg>-c</arg>
+                <arg>git lfs checkout -I flowTools</arg>
+                <runif status="passed" />
+              </exec>
+              <exec command="/bin/bash" workingdir="input">
+                <arg>-c</arg>
+                <arg>git lfs fetch -I testGSI</arg>
+                <runif status="passed" />
+              </exec>
+              <exec command="/bin/bash" workingdir="input">
+                <arg>-c</arg>
+                <arg>git lfs checkout testGSI</arg>
+                <runif status="passed" />
+              </exec>
+              <exec command="/bin/bash" workingdir="input">
+                <arg>-c</arg>
+                <arg>tar -zxvf gocd_input.tar.gz</arg>
+                <runif status="passed" />
+              </exec>
+              <exec command="/bin/bash" workingdir="input">
+                <arg>-c</arg>
+                <arg>tar -zcvf saga.tar.gz inputSrc_gocd.txt inputMesh_gocd.bin inputRecvrList_gocd.txt</arg>
+                <runif status="passed" />
+              </exec>
+              <exec command="/bin/bash" workingdir="input">
+                <arg>-c</arg>
+                <arg>tar -zcvf awp-odc-os.tar.gz ../awp-odc-os</arg>
+                <runif status="passed" />
+              </exec>
+            </tasks>
+          </job>
+        </jobs>
+      </stage>
+      <stage name="saga_python" fetchMaterials="false">
+        <jobs>
+          <job name="run_script">
+            <tasks>
+              <exec command="/bin/bash" workingdir="input">
+                <arg>-c</arg>
+                <arg>chmod 600 testGSI</arg>
+                <runif status="passed" />
+              </exec>
+              <exec command="/bin/bash" workingdir="input">
+                <arg>-c</arg>
+                <arg>GLOBUS_LOCATION=/var/go/.linuxbrew/Cellar/globus-toolkit/6.0.1506371041/libexec X509_USER_KEY=/ssd/go-agent-awp/pipelines/SAGA_setup_yask/input/testGSI X509_USER_CERT=/ssd/go-agent-awp/pipelines/SAGA_setup_yask/input/testGSI X509_CERT_DIR=/tmp/xsede-ca-certificates python awp_test.py testGSI awp_test.xml</arg>
+                <runif status="passed" />
+              </exec>
+            </tasks>
+          </job>
+        </jobs>
+      </stage>
+    </pipeline>
+    <pipeline name="SAGA_setup_cuda">
+      <materials>
+        <git url="TEMPLATE_GIT_AWP_ODC_OS_CORE" branch="develop" dest="awp-odc-os" materialName="awp-odc-os" />
+        <git url="TEMPLATE_GIT_AWP_ODC_OS_OPT" dest="input" materialName="awp-input" />
+      </materials>
+      <stage name="fetch_input" cleanWorkingDir="true">
+        <approval type="manual" />
+        <jobs>
+          <job name="bitbucket">
+            <tasks>
+              <exec command="/bin/bash" workingdir="input">
+                <arg>-c</arg>
+                <arg>git lfs fetch -I cuda_input.tar.gz</arg>
+                <runif status="passed" />
+              </exec>
+              <exec command="/bin/bash" workingdir="input">
+                <arg>-c</arg>
+                <arg>git lfs checkout cuda_input.tar.gz</arg>
+                <runif status="passed" />
+              </exec>
+              <exec command="/bin/bash" workingdir="input">
+                <arg>-c</arg>
+                <arg>git lfs fetch -I awp_comet_unzip_compile.sh</arg>
+                <runif status="passed" />
+              </exec>
+              <exec command="/bin/bash" workingdir="input">
+                <arg>-c</arg>
+                <arg>git lfs checkout awp_comet_unzip_compile.sh</arg>
+                <runif status="passed" />
+              </exec>
+              <exec command="/bin/bash" workingdir="input">
+                <arg>-c</arg>
+                <arg>git lfs fetch -I saga_goCD_comet.py</arg>
+                <runif status="passed" />
+              </exec>
+              <exec command="/bin/bash" workingdir="input">
+                <arg>-c</arg>
+                <arg>git lfs checkout saga_gocd_comet.py</arg>
+                <runif status="passed" />
+              </exec>
+              <exec command="/bin/bash" workingdir="input">
+                <arg>-c</arg>
+                <arg>git lfs fetch -I gsi_licence_comet</arg>
+                <runif status="passed" />
+              </exec>
+              <exec command="/bin/bash" workingdir="input">
+                <arg>-c</arg>
+                <arg>git lfs checkout gsi_licence_comet</arg>
+                <runif status="passed" />
+              </exec>
+              <exec command="/bin/bash" workingdir="input">
+                <arg>-c</arg>
+                <arg>tar -zxvf cuda_input.tar.gz</arg>
+                <runif status="passed" />
+              </exec>
+              <exec command="/bin/bash" workingdir="input">
+                <arg>-c</arg>
+                <arg>tar -zcvf saga.tar.gz mesh.bin source</arg>
+                <runif status="passed" />
+              </exec>
+              <exec command="/bin/bash" workingdir="input">
+                <arg>-c</arg>
+                <arg>tar -zcvf awp-odc-os.tar.gz ../awp-odc-os</arg>
+                <runif status="passed" />
+              </exec>
+            </tasks>
+          </job>
+        </jobs>
+      </stage>
+      <stage name="saga_python">
+        <jobs>
+          <job name="run_script">
+            <tasks>
+              <exec command="/bin/bash" workingdir="input">
+                <arg>-c</arg>
+                <arg>chmod 600 gsissh_licence_comet</arg>
+                <runif status="passed" />
+              </exec>
+              <exec command="/bin/bash" workingdir="input">
+                <arg>-c</arg>
+                <arg>GLOBUS_LOCATION=/var/go/.linuxbrew/Cellar/globus-toolkit/6.0.1506371041/libexec X509_USER_KEY=/ssd/go-agent-awp/pipelines/SAGA_setup_yask/input/testGSI X509_USER_CERT=/ssd/go-agent-awp/pipelines/SAGA_setup_yask/input/testGSI X509_CERT_DIR=/tmp/xsede-ca-certificates-1.10-1 python saga_gocd_comet.py</arg>
+                <runif status="passed" />
+              </exec>
+            </tasks>
+          </job>
+        </jobs>
+      </stage>
+    </pipeline>
+    <pipeline name="SAGA_Stampede2">
+      <materials>
+        <git url="TEMPLATE_GIT_AWP_ODC_OS_CORE" branch="develop" dest="awp-odc-os" materialName="awp-odc-os" />
+        <git url="TEMPLATE_GIT_AWP_ODC_OS_OPT" dest="input" materialName="awp-input" />
+      </materials>
+      <stage name="Fetch" cleanWorkingDir="true">
+        <approval type="manual" />
+        <jobs>
+          <job name="Prep_Inputs">
+            <tasks>
+              <exec command="/bin/bash" workingdir="input">
+                <arg>-c</arg>
+                <arg>git lfs fetch -I gocd_input.tar.gz</arg>
+                <runif status="passed" />
+              </exec>
+              <exec command="/bin/bash" workingdir="input">
+                <arg>-c</arg>
+                <arg>git lfs checkout gocd_input.tar.gz</arg>
+                <runif status="passed" />
+              </exec>
+              <exec command="/bin/bash" workingdir="input">
+                <arg>-c</arg>
+                <arg>tar -zcvf awp-odc-os.tar.gz ../awp-odc-os</arg>
+                <runif status="passed" />
+              </exec>
+              <exec command="/bin/bash" workingdir="input">
+                <arg>-c</arg>
+                <arg>chmod 600 testGSI</arg>
+                <runif status="passed" />
+              </exec>
+            </tasks>
+          </job>
+        </jobs>
+      </stage>
+      <stage name="Run" fetchMaterials="false">
+        <jobs>
+          <job name="Vanilla">
+            <tasks>
+              <exec command="/bin/bash" workingdir="input">
+                <arg>-c</arg>
+                <arg>GLOBUS_LOCATION=/var/go/.linuxbrew/Cellar/globus-toolkit/6.0.1506371041/libexec X509_USER_KEY=/ssd/go-agent-awp/pipelines/SAGA_Stampede2/input/testGSI X509_USER_CERT=/ssd/go-agent-awp/pipelines/SAGA_Stampede2/input/testGSI X509_CERT_DIR=/tmp/xsede-ca-certificates python awp_test.py -c testGSI -x awp_stampede2_vanilla.xml</arg>
+                <runif status="passed" />
+              </exec>
+            </tasks>
+          </job>
+          <job name="YASK">
+            <tasks>
+              <exec command="/bin/bash" workingdir="input">
+                <arg>-c</arg>
+                <arg>GLOBUS_LOCATION=/var/go/.linuxbrew/Cellar/globus-toolkit/6.0.1506371041/libexec X509_USER_KEY=/ssd/go-agent-awp/pipelines/SAGA_Stampede2/input/testGSI X509_USER_CERT=/ssd/go-agent-awp/pipelines/SAGA_Stampede2/input/testGSI X509_CERT_DIR=/tmp/xsede-ca-certificates python awp_test.py -c testGSI -x awp_stampede2_yask.xml</arg>
+                <runif status="passed" />
+              </exec>
+            </tasks>
+          </job>
+        </jobs>
+      </stage>
+    </pipeline>
+    <pipeline name="YASK-KNL-remoteRun">
+      <environmentvariables>
+        <variable name="X509_CERT_DIR">
+          <value>/ssd/scratch/go-agent-awp/xsede-ca-certificates</value>
+        </variable>
+        <variable name="GLOBUS_LOCATION">
+          <value>/var/go/.linuxbrew/Cellar/globus-toolkit/6.0.1506371041/libexec</value>
+        </variable>
+        <variable name="X509_USER_KEY">
+          <value>/ssd/go-agent-awp/pipelines/YASK-KNL-remoteRun/input/tempCert</value>
+        </variable>
+        <variable name="X509_USER_CERT">
+          <value>/ssd/go-agent-awp/pipelines/YASK-KNL-remoteRun/input/tempCert</value>
+        </variable>
+        <variable name="PATH_TO_CERT" secure="true">
+          <encryptedValue>HyM9hh8t2Rv1JI4ibKWwLGOB/rCWVqzaPqYyoM/ZpJyhs39DS8k1bw==</encryptedValue>
+        </variable>
+      </environmentvariables>
+      <materials>
+        <git url="TEMPLATE_GIT_AWP_ODC_OS_CORE" branch="develop" dest="awp-odc-os" materialName="awp-odc-os" />
+        <git url="TEMPLATE_GIT_AWP_ODC_OS_OPT" dest="input" materialName="awp-input" />
+      </materials>
+      <stage name="Setup">
+        <jobs>
+          <job name="setup">
+            <tasks>
+              <exec command="/bin/bash" workingdir="input">
+                <arg>-c</arg>
+                <arg>cat $PATH_TO_CERT &gt; tempCert</arg>
+              </exec>
+              <exec command="/bin/bash" workingdir="input">
+                <arg>-c</arg>
+                <arg>chmod 600 tempCert</arg>
+                <runif status="passed" />
+              </exec>
+            </tasks>
+          </job>
+        </jobs>
+      </stage>
+      <stage name="Fetch" fetchMaterials="false">
+        <jobs>
+          <job name="Input1">
+            <environmentvariables>
+              <variable name="INPUT_NAME">
+                <value>input1</value>
+              </variable>
+            </environmentvariables>
+            <tasks>
+              <exec command="/bin/bash" workingdir="input">
+                <arg>-c</arg>
+                <arg>git lfs fetch -I gocd_input.tar.gz</arg>
+                <runif status="passed" />
+              </exec>
+              <exec command="/bin/bash" workingdir="input">
+                <arg>-c</arg>
+                <arg>git lfs checkout gocd_input.tar.gz</arg>
+                <runif status="passed" />
+              </exec>
+              <exec command="/bin/bash" workingdir="input">
+                <arg>-c</arg>
+                <arg>tar -zcvf awp-odc-os.tar.gz ../awp-odc-os</arg>
+                <runif status="passed" />
+              </exec>
+              <exec command="/bin/bash" workingdir="input">
+                <arg>-c</arg>
+                <arg>cp awp_stampede2_yask.xml awp_stampede2_yask_copy.xml</arg>
+                <runif status="passed" />
+              </exec>
+              <exec command="/bin/bash" workingdir="input">
+                <arg>-c</arg>
+                <arg>sed -i 's|TEMPLATE_WORKSPACE|work/04878/tg841779/stampede2/awp|g' awp_stampede2_yask_copy.xml</arg>
+                <runif status="passed" />
+              </exec>
+              <exec command="/bin/bash" workingdir="input">
+                <arg>-c</arg>
+                <arg>sed -i 's|TEMPLATE_GOCD_ID|${GO_PIPELINE_NAME}_${GO_PIPELINE_COUNTER}|g' awp_stampede2_yask_copy.xml</arg>
+                <runif status="passed" />
+              </exec>
+              <exec command="/bin/bash" workingdir="input">
+                <arg>-c</arg>
+                <arg>sed -i 's|TEMPLATE_INPUT|${INPUT_NAME}|g' awp_stampede2_yask_copy.xml</arg>
+                <runif status="passed" />
+              </exec>
+              <exec command="/bin/bash" workingdir="input">
+                <arg>-c</arg>
+                <arg>python awp_test.py -c tempCert -x awp_stampede2_yask_copy.xml --pre --infiles</arg>
+                <runif status="passed" />
+              </exec>
+            </tasks>
+          </job>
+        </jobs>
+      </stage>
+      <stage name="Run" fetchMaterials="false">
+        <jobs>
+          <job name="YASK">
+            <tasks>
+              <exec command="/bin/bash" workingdir="input">
+                <arg>-c</arg>
+                <arg>cat $PATH_TO_CERT &gt; tempCert</arg>
+                <runif status="passed" />
+              </exec>
+              <exec command="/bin/bash" workingdir="input">
+                <arg>-c</arg>
+                <arg>chmod 600 tempCert</arg>
+                <runif status="passed" />
+              </exec>
+              <exec command="/bin/bash" workingdir="input">
+                <arg>-c</arg>
+                <arg>python awp_test.py -c tempCert -x awp_stampede2_yask.xml</arg>
+                <runif status="passed" />
+              </exec>
+              <exec command="/bin/bash" workingdir="input">
+                <arg>-c</arg>
+                <arg>rm tempCert</arg>
+                <runif status="passed" />
+              </exec>
+            </tasks>
+          </job>
+        </jobs>
+      </stage>
+    </pipeline>
+  </pipelines>
+
+  <environments>
+    <environment name="revenge-knl">
+      <environmentvariables>
+        <variable name="INPUT_DIR">
+          <value>../input</value>
+        </variable>
+        <variable name="SCONS_JOBS">
+          <value>32</value>
+        </variable>
+        <variable name="AWP_PARALLEL_DEBUG">
+          <value>mpi+omp</value>
+        </variable>
+        <variable name="AWP_PARALLEL_RELEASE">
+          <value>mpi+omp</value>
+        </variable>
+        <variable name="KMP_AFFINITY">
+          <value>norespect,compact,1,0</value>
+        </variable>
+        <variable name="OMP_NUM_THREADS">
+          <value>64</value>
+        </variable>
+      </environmentvariables>
+      <agents>
+        <physical uuid="TEMPLATE_REVENGE_UUID" />
+      </agents>
+      <pipelines>
+        <pipeline name="CI_develop_clang" />
+        <pipeline name="CI_develop_gnu" />
+        <pipeline name="CI_develop_intel" />
+        <pipeline name="SAGA_Stampede2" />
+        <pipeline name="YASK-KNL-remoteRun" />
+      </pipelines>
+    </environment>
+    <environment name="hpgeoc-gpu4">
+      <environmentvariables>
+        <variable name="INPUT_DIR">
+          <value>../input_gpu</value>
+        </variable>
+        <variable name="AWP_CUDATOOLKIT_DIR">
+          <value>/usr/local/cuda</value>
+        </variable>
+      </environmentvariables>
+      <agents>
+        <physical uuid="TEMPLATE_HPGEOC_GPU4_UUID" />
+      </agents>
+      <pipelines>
+        <pipeline name="CI_develop_cuda" />
+        <pipeline name="SAGA_setup_cuda" />
+      </pipelines>
+    </environment>
+  </environments>
+
+  <agents>
+    <agent hostname="sdsc413-01" ipaddress="TEMPLATE_COMET_IP" uuid="TEMPLATE_COMET_UUID" isDisabled="true" />
+    <agent hostname="revenge" ipaddress="TEMPLATE_REVENGE_IP" uuid="TEMPLATE_REVENGE_UUID" />
+    <agent hostname="hpgeoc-gpu4.sdsc.edu" ipaddress="TEMPLATE_HPGEOC_GPU4_IP" uuid="TEMPLATE_HPGEOC_GPU4_UUID" />
+  </agents>
+</cruise>
