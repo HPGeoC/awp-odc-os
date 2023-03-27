@@ -34,7 +34,7 @@ __constant__ int   d_yline_2;
 texture<float, 1, cudaReadModeElementType> p_vx1;
 texture<float, 1, cudaReadModeElementType> p_vx2;
 
-extern "C"
+
 void SetDeviceConstValue(float DH, float DT, int nxt, int nyt, int nzt)
 {
     float h_c1, h_c2, h_dth, h_dt1, h_dh1;
@@ -66,7 +66,7 @@ void SetDeviceConstValue(float DH, float DT, int nxt, int nyt, int nzt)
     return;
 }
 
-extern "C"
+
 void BindArrayToTexture(float* vx1, float* vx2, int memsize)
 {
    cudaBindTexture(0, p_vx1,  vx1,  memsize);
@@ -75,7 +75,7 @@ void BindArrayToTexture(float* vx1, float* vx2, int memsize)
    return;
 }
 
-extern "C"
+
 void UnBindArrayFromTexture()
 {
    cudaUnbindTexture(p_vx1);
@@ -83,7 +83,7 @@ void UnBindArrayFromTexture()
    return;
 }
 
-extern "C"
+
 void dvelcx_H(float* u1,    float* v1,    float* w1,    float* xx,  float* yy, float* zz, float* xy,      float* xz, float* yz,
              float* dcrjx, float* dcrjy, float* dcrjz, float* d_1, int nyt,   int nzt,   cudaStream_t St, int s_i,   int e_i)
 {
@@ -94,7 +94,7 @@ void dvelcx_H(float* u1,    float* v1,    float* w1,    float* xx,  float* yy, f
     return;
 }
 
-extern "C"
+
 void dvelcy_H(float* u1,       float* v1,    float* w1,    float* xx,  float* yy, float* zz, float* xy,   float* xz,   float* yz,
               float* dcrjx,    float* dcrjy, float* dcrjz, float* d_1, int nxt,   int nzt,   float* s_u1, float* s_v1, float* s_w1,
               cudaStream_t St, int s_j,      int e_j,      int rank)
@@ -107,7 +107,7 @@ void dvelcy_H(float* u1,       float* v1,    float* w1,    float* xx,  float* yy
     return;
 }
 
-extern "C"
+
 void update_bound_y_H(float* u1,   float* v1, float* w1, float* f_u1,      float* f_v1,      float* f_w1,  float* b_u1, float* b_v1,
                       float* b_w1, int nxt,   int nzt,   cudaStream_t St1, cudaStream_t St2, int rank_f,  int rank_b)
 {
@@ -120,7 +120,7 @@ void update_bound_y_H(float* u1,   float* v1, float* w1, float* f_u1,      float
      return;
 }
 
-extern "C"
+
 void dstrqc_H(float* xx,       float* yy,     float* zz,    float* xy,    float* xz, float* yz,
               float* r1,       float* r2,     float* r3,    float* r4,    float* r5, float* r6,
               float* u1,       float* v1,     float* w1,    float* lam,   float* mu, float* qp,
@@ -137,7 +137,7 @@ void dstrqc_H(float* xx,       float* yy,     float* zz,    float* xy,    float*
     return;
 }
 
-extern "C"
+
 void addsrc_H(int i,      int READ_STEP, int dim,    int* psrc,  int npsrc,  cudaStream_t St,
               float* axx, float* ayy,    float* azz, float* axz, float* ayz, float* axy,
               float* xx,  float* yy,     float* zz,  float* xy,  float* yz,  float* xz)
