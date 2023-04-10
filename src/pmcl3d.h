@@ -19,10 +19,9 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 * all pmcl3d data types are defined here                                       *
 ********************************************************************************
 */
-#include <cuda.h>
-#include <cuda_runtime.h>
 #include <mpi.h>
 #include "pmcl3d_cons.h"
+#include "cuda_to_hip.h"
 
 #ifdef __RESTRICT
 #define RESTRICT restrict

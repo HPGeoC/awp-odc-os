@@ -20,6 +20,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #include <math.h>
 #include <string.h>
 #include "pmcl3d.h"
+#include "cuda_to_hip.h"
 
 const double   micro = 1.0e-6;
 
@@ -36,7 +37,7 @@ void dstrqc_H(float* xx,       float* yy,     float* zz,    float* xy,    float*
               float* u1,       float* v1,     float* w1,    float* lam,   float* mu, float* qp,
               float* qs,       float* dcrjx,  float* dcrjy, float* dcrjz, int nyt,   int nzt,
               cudaStream_t St, float* lam_mu, int NX,       int rankx,    int ranky, int s_i,
-              int e_i,         int s_j,       int e_j);
+              int e_i,         int s_j,       int e_j,      float* d_vx1, float* d_vx2);
 void addsrc_H(int i,      int READ_STEP, int dim,    int* psrc,  int npsrc,  cudaStream_t St,
               float* axx, float* ayy,    float* azz, float* axz, float* ayz, float* axy,
               float* xx,  float* yy,     float* zz,  float* xy,  float* yz,  float* xz);
@@ -384,15 +385,15 @@ rank, READ_STEP, READ_STEP_GPU, NST, IFAULT);
        cudaMemcpy(d_tpsrc,tpsrc,num_bytes,cudaMemcpyHostToDevice);
     }
 
-    d1     = Alloc3D(nxt+4+8*loop, nyt+4+8*loop, nzt+2*align);
-    mu     = Alloc3D(nxt+4+8*loop, nyt+4+8*loop, nzt+2*align);
-    lam    = Alloc3D(nxt+4+8*loop, nyt+4+8*loop, nzt+2*align);
+    d1     = Alloc3D(nxt+4+8*loop, nyt+4+8*loop, nzt+2*awp_align);
+    mu     = Alloc3D(nxt+4+8*loop, nyt+4+8*loop, nzt+2*awp_align);
+    lam    = Alloc3D(nxt+4+8*loop, nyt+4+8*loop, nzt+2*awp_align);
     lam_mu = Alloc3D(nxt+4+8*loop, nyt+4+8*loop, 1);
 
     if(NVE==1)
     {
-       qp   = Alloc3D(nxt+4+8*loop, nyt+4+8*loop, nzt+2*align);
-       qs   = Alloc3D(nxt+4+8*loop, nyt+4+8*loop, nzt+2*align);
+       qp   = Alloc3D(nxt+4+8*loop, nyt+4+8*loop, nzt+2*awp_align);
+       qs   = Alloc3D(nxt+4+8*loop, nyt+4+8*loop, nzt+2*awp_align);
     }
 
     if(rank==0) printf("Before inimesh\n");
@@ -410,8 +411,8 @@ rank, READ_STEP, READ_STEP_GPU, NST, IFAULT);
       for(j=yls;j<yre+1;j++)
       {
          float t_xl, t_xl2m;
-         t_xl             = 1.0/lam[i][j][nzt+align-1];
-         t_xl2m           = 2.0/mu[i][j][nzt+align-1] + t_xl;
+         t_xl             = 1.0/lam[i][j][nzt+awp_align-1];
+         t_xl2m           = 2.0/mu[i][j][nzt+awp_align-1] + t_xl;
          lam_mu[i][j][0]  = t_xl/t_xl2m;
       }
 
@@ -419,19 +420,19 @@ rank, READ_STEP, READ_STEP_GPU, NST, IFAULT);
     cudaMalloc((void**)&d_lam_mu, num_bytes);
     cudaMemcpy(d_lam_mu,&lam_mu[0][0][0],num_bytes,cudaMemcpyHostToDevice);
 
-    vx1  = Alloc3D(nxt+4+8*loop, nyt+4+8*loop, nzt+2*align);
-    vx2  = Alloc3D(nxt+4+8*loop, nyt+4+8*loop, nzt+2*align);
+    vx1  = Alloc3D(nxt+4+8*loop, nyt+4+8*loop, nzt+2*awp_align);
+    vx2  = Alloc3D(nxt+4+8*loop, nyt+4+8*loop, nzt+2*awp_align);
     if(NPC==0)
     {
 	dcrjx = Alloc1D(nxt+4+8*loop);
         dcrjy = Alloc1D(nyt+4+8*loop);
-        dcrjz = Alloc1D(nzt+2*align);
+        dcrjz = Alloc1D(nzt+2*awp_align);
 
         for(i=0;i<nxt+4+8*loop;i++)
 	   dcrjx[i]  = 1.0;
         for(j=0;j<nyt+4+8*loop;j++)
            dcrjy[j]  = 1.0;
-        for(k=0;k<nzt+2*align;k++)
+        for(k=0;k<nzt+2*awp_align;k++)
            dcrjz[k]  = 1.0;
 
         inicrj(ARBC, coord, nxt, nyt, nzt, NX, NY, ND, dcrjx, dcrjy, dcrjz);
@@ -461,7 +462,7 @@ rank, READ_STEP, READ_STEP_GPU, NST, IFAULT);
     }
 
     if(rank==0) printf("Allocate device media pointers and copy.\n");
-    num_bytes = sizeof(float)*(nxt+4+8*loop)*(nyt+4+8*loop)*(nzt+2*align);
+    num_bytes = sizeof(float)*(nxt+4+8*loop)*(nyt+4+8*loop)*(nzt+2*awp_align);
     cudaMalloc((void**)&d_d1, num_bytes);
     cudaMemcpy(d_d1,&d1[0][0][0],num_bytes,cudaMemcpyHostToDevice);
     cudaMalloc((void**)&d_lam, num_bytes);
@@ -476,7 +477,7 @@ rank, READ_STEP, READ_STEP_GPU, NST, IFAULT);
     cudaMemcpy(d_vx1,&vx1[0][0][0],num_bytes,cudaMemcpyHostToDevice);
     cudaMalloc((void**)&d_vx2, num_bytes);
     cudaMemcpy(d_vx2,&vx2[0][0][0],num_bytes,cudaMemcpyHostToDevice);
-    BindArrayToTexture(d_vx1, d_vx2, num_bytes);
+//    BindArrayToTexture(d_vx1, d_vx2, num_bytes);
     if(NPC==0)
     {
     	num_bytes = sizeof(float)*(nxt+4+8*loop);
@@ -485,29 +486,29 @@ rank, READ_STEP, READ_STEP_GPU, NST, IFAULT);
         num_bytes = sizeof(float)*(nyt+4+8*loop);
         cudaMalloc((void**)&d_dcrjy, num_bytes);
         cudaMemcpy(d_dcrjy,dcrjy,num_bytes,cudaMemcpyHostToDevice);
-        num_bytes = sizeof(float)*(nzt+2*align);
+        num_bytes = sizeof(float)*(nzt+2*awp_align);
         cudaMalloc((void**)&d_dcrjz, num_bytes);
         cudaMemcpy(d_dcrjz,dcrjz,num_bytes,cudaMemcpyHostToDevice);
     }
 
     if(rank==0) printf("Allocate host velocity and stress pointers.\n");
-    u1  = Alloc3D(nxt+4+8*loop, nyt+4+8*loop, nzt+2*align);
-    v1  = Alloc3D(nxt+4+8*loop, nyt+4+8*loop, nzt+2*align);
-    w1  = Alloc3D(nxt+4+8*loop, nyt+4+8*loop, nzt+2*align);
-    xx  = Alloc3D(nxt+4+8*loop, nyt+4+8*loop, nzt+2*align);
-    yy  = Alloc3D(nxt+4+8*loop, nyt+4+8*loop, nzt+2*align);
-    zz  = Alloc3D(nxt+4+8*loop, nyt+4+8*loop, nzt+2*align);
-    xy  = Alloc3D(nxt+4+8*loop, nyt+4+8*loop, nzt+2*align);
-    yz  = Alloc3D(nxt+4+8*loop, nyt+4+8*loop, nzt+2*align);
-    xz  = Alloc3D(nxt+4+8*loop, nyt+4+8*loop, nzt+2*align);
+    u1  = Alloc3D(nxt+4+8*loop, nyt+4+8*loop, nzt+2*awp_align);
+    v1  = Alloc3D(nxt+4+8*loop, nyt+4+8*loop, nzt+2*awp_align);
+    w1  = Alloc3D(nxt+4+8*loop, nyt+4+8*loop, nzt+2*awp_align);
+    xx  = Alloc3D(nxt+4+8*loop, nyt+4+8*loop, nzt+2*awp_align);
+    yy  = Alloc3D(nxt+4+8*loop, nyt+4+8*loop, nzt+2*awp_align);
+    zz  = Alloc3D(nxt+4+8*loop, nyt+4+8*loop, nzt+2*awp_align);
+    xy  = Alloc3D(nxt+4+8*loop, nyt+4+8*loop, nzt+2*awp_align);
+    yz  = Alloc3D(nxt+4+8*loop, nyt+4+8*loop, nzt+2*awp_align);
+    xz  = Alloc3D(nxt+4+8*loop, nyt+4+8*loop, nzt+2*awp_align);
     if(NVE==1)
     {
-        r1  = Alloc3D(nxt+4+8*loop, nyt+4+8*loop, nzt+2*align);
-        r2  = Alloc3D(nxt+4+8*loop, nyt+4+8*loop, nzt+2*align);
-        r3  = Alloc3D(nxt+4+8*loop, nyt+4+8*loop, nzt+2*align);
-        r4  = Alloc3D(nxt+4+8*loop, nyt+4+8*loop, nzt+2*align);
-        r5  = Alloc3D(nxt+4+8*loop, nyt+4+8*loop, nzt+2*align);
-        r6  = Alloc3D(nxt+4+8*loop, nyt+4+8*loop, nzt+2*align);
+        r1  = Alloc3D(nxt+4+8*loop, nyt+4+8*loop, nzt+2*awp_align);
+        r2  = Alloc3D(nxt+4+8*loop, nyt+4+8*loop, nzt+2*awp_align);
+        r3  = Alloc3D(nxt+4+8*loop, nyt+4+8*loop, nzt+2*awp_align);
+        r4  = Alloc3D(nxt+4+8*loop, nyt+4+8*loop, nzt+2*awp_align);
+        r5  = Alloc3D(nxt+4+8*loop, nyt+4+8*loop, nzt+2*awp_align);
+        r6  = Alloc3D(nxt+4+8*loop, nyt+4+8*loop, nzt+2*awp_align);
     }
 
     source_step = 1;
@@ -518,7 +519,7 @@ rank, READ_STEP, READ_STEP_GPU, NST, IFAULT);
     }
 
     if(rank==0) printf("Allocate device velocity and stress pointers and copy.\n");
-    num_bytes = sizeof(float)*(nxt+4+8*loop)*(nyt+4+8*loop)*(nzt+2*align);
+    num_bytes = sizeof(float)*(nxt+4+8*loop)*(nyt+4+8*loop)*(nzt+2*awp_align);
     cudaMalloc((void**)&d_u1, num_bytes);
     cudaMemcpy(d_u1,&u1[0][0][0],num_bytes,cudaMemcpyHostToDevice);
     cudaMalloc((void**)&d_v1, num_bytes);
@@ -558,25 +559,25 @@ rank, READ_STEP, READ_STEP_GPU, NST, IFAULT);
     Bufx  = Alloc1D(rec_nxt*rec_nyt*rec_nzt*WRITE_STEP);
     Bufy  = Alloc1D(rec_nxt*rec_nyt*rec_nzt*WRITE_STEP);
     Bufz  = Alloc1D(rec_nxt*rec_nyt*rec_nzt*WRITE_STEP);
-    num_bytes = sizeof(float)*3*(4*loop)*(nyt+4+8*loop)*(nzt+2*align);
+    num_bytes = sizeof(float)*3*(4*loop)*(nyt+4+8*loop)*(nzt+2*awp_align);
     cudaMallocHost((void**)&SL_vel, num_bytes);
     cudaMallocHost((void**)&SR_vel, num_bytes);
     cudaMallocHost((void**)&RL_vel, num_bytes);
     cudaMallocHost((void**)&RR_vel, num_bytes);
-    num_bytes = sizeof(float)*3*(4*loop)*(nxt+4+8*loop)*(nzt+2*align);
+    num_bytes = sizeof(float)*3*(4*loop)*(nxt+4+8*loop)*(nzt+2*awp_align);
     cudaMallocHost((void**)&SF_vel, num_bytes);
     cudaMallocHost((void**)&SB_vel, num_bytes);
     cudaMallocHost((void**)&RF_vel, num_bytes);
     cudaMallocHost((void**)&RB_vel, num_bytes);
-    num_bytes = sizeof(float)*(4*loop)*(nxt+4+8*loop)*(nzt+2*align);
+    num_bytes = sizeof(float)*(4*loop)*(nxt+4+8*loop)*(nzt+2*awp_align);
     cudaMalloc((void**)&d_f_u1, num_bytes);
     cudaMalloc((void**)&d_f_v1, num_bytes);
     cudaMalloc((void**)&d_f_w1, num_bytes);
     cudaMalloc((void**)&d_b_u1, num_bytes);
     cudaMalloc((void**)&d_b_v1, num_bytes);
     cudaMalloc((void**)&d_b_w1, num_bytes);
-    msg_v_size_x = 3*(4*loop)*(nyt+4+8*loop)*(nzt+2*align);
-    msg_v_size_y = 3*(4*loop)*(nxt+4+8*loop)*(nzt+2*align);
+    msg_v_size_x = 3*(4*loop)*(nyt+4+8*loop)*(nzt+2*awp_align);
+    msg_v_size_y = 3*(4*loop)*(nxt+4+8*loop)*(nzt+2*awp_align);
     SetDeviceConstValue(DH, DT, nxt, nyt, nzt);
     cudaStreamCreate(&stream_1);
     cudaStreamCreate(&stream_2);
@@ -625,9 +626,10 @@ rank, READ_STEP, READ_STEP_GPU, NST, IFAULT);
 	 MPI_Waitall(count_x, request_x, status_x);
          Cpy2Device_VX(d_u1, d_v1, d_w1, RL_vel, RR_vel, nxt, nyt, nzt, stream_i, stream_i, x_rank_L, x_rank_R);
 	 //stress computation whole 3D Grid (nxt+4, nyt+4, nzt)
+     // Missing the rank parameter, could be issue to check?
          dstrqc_H(d_xx, d_yy, d_zz, d_xy,    d_xz,    d_yz,    d_r1, d_r2, d_r3,     d_r4,     d_r5, d_r6,     d_u1, d_v1, d_w1, d_lam,
                   d_mu, d_qp, d_qs, d_dcrjx, d_dcrjy, d_dcrjz, nyt,  nzt,  stream_i, d_lam_mu, NX,   coord[0], coord[1],   xls,  xre,
-                  yls,  yre);
+                  yls,  yre, d_vx1, d_vx2);
          //update source input
          if(rank==srcproc && cur_step<NST)
          {
@@ -638,7 +640,7 @@ rank, READ_STEP, READ_STEP_GPU, NST, IFAULT);
          cudaThreadSynchronize();
 
          if(cur_step%NTISKP == 0){
-          num_bytes = sizeof(float)*(nxt+4+8*loop)*(nyt+4+8*loop)*(nzt+2*align);
+          num_bytes = sizeof(float)*(nxt+4+8*loop)*(nyt+4+8*loop)*(nzt+2*awp_align);
           cudaMemcpy(&u1[0][0][0],d_u1,num_bytes,cudaMemcpyDeviceToHost);
           cudaMemcpy(&v1[0][0][0],d_v1,num_bytes,cudaMemcpyDeviceToHost);
           cudaMemcpy(&w1[0][0][0],d_w1,num_bytes,cudaMemcpyDeviceToHost);
@@ -647,7 +649,7 @@ rank, READ_STEP, READ_STEP_GPU, NST, IFAULT);
           tmpInd = idtmp;
           //if(rank==0) printf("idtmp=%ld\n", idtmp);
           // surface: k=nzt+align-1;
-          for(k=nzt+align-1 - rec_nbgz; k>=nzt+align-1 - rec_nedz; k=k-NSKPZ)
+          for(k=nzt+awp_align-1 - rec_nbgz; k>=nzt+awp_align-1 - rec_nedz; k=k-NSKPZ)
             for(j=2+4*loop + rec_nbgy; j<=2+4*loop + rec_nedy; j=j+NSKPY)
               for(i=2+4*loop + rec_nbgx; i<=2+4*loop + rec_nedx; i=i+NSKPX)
               {
@@ -685,7 +687,7 @@ rank, READ_STEP, READ_STEP_GPU, NST, IFAULT);
           if(rank==0){
             i = ND+2+4*loop;
             j = i;
-            k = nzt+align-1-ND;
+            k = nzt+awp_align-1-ND;
             fprintf(fchk,"%ld :\t%e\t%e\t%e\n",cur_step,u1[i][j][k],v1[i][j][k],w1[i][j][k]);
             fflush(fchk);
           }
@@ -859,7 +861,7 @@ rank, READ_STEP, READ_STEP_GPU, NST, IFAULT);
 //  Main Loop Ends
 
 //  program ends, free all memories
-    UnBindArrayFromTexture();
+//    UnBindArrayFromTexture();
     Delloc3D(u1);
     Delloc3D(v1);
     Delloc3D(w1);

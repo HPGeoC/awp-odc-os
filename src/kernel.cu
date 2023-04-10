@@ -31,6 +31,31 @@ __constant__ int   d_slice_2;
 __constant__ int   d_yline_1;
 __constant__ int   d_yline_2;
 
+/* Strategy:
+ * - Have file the converts CUDA to HIP (cuda_to_hip.h)
+ * - Ensure that gets applied
+ * - Compile the code
+ * - Compiler flags might need to be changed, errors that need to be addressed
+ * - Once it is compiling, need to make sure it works as expected
+ * - Run an actual simulation to ensure that we get the same output within the floating point precision of error
+ * - Output formats might be different; might need to compare by myself
+      - Cybershake was built on this open source version
+      - Our output is only velocity
+      - Cybershake is SGT output
+ * - Outputs are different from the two codes, be careful
+*/
+
+// Key difference between NVIDIA and HIP
+// NVIDIA has a different number of threads (warp) than AMD
+// NVIDIA warp size is 32, AMD warp size is 64
+// This value isn't hardcoded, but if it had been it could be an issue with correctness or memory access
+// Typically has performance benefits, want to pick number of threads_per_block to be a multiple of warp size
+
+// There was a macro called "align" that is a macro to 32, but it was another keyword used in the HIP runtime library
+// Some C++ include function had defined align, causing a conflict, safer to rename to awp_align.
+
+
+// This couldn't be ported to HIP, instead of putting in texture memory, load it directly from global
 texture<float, 1, cudaReadModeElementType> p_vx1;
 texture<float, 1, cudaReadModeElementType> p_vx2;
 
@@ -44,10 +69,10 @@ void SetDeviceConstValue(float DH, float DT, int nxt, int nyt, int nzt)
     h_dth = DT/DH;
     h_dt1 = 1.0/DT;
     h_dh1 = 1.0/DH;
-    slice_1  = (nyt+4+8*loop)*(nzt+2*align);
-    slice_2  = (nyt+4+8*loop)*(nzt+2*align)*2;
-    yline_1  = nzt+2*align;
-    yline_2  = (nzt+2*align)*2;
+    slice_1  = (nyt+4+8*loop)*(nzt+2*awp_align);
+    slice_2  = (nyt+4+8*loop)*(nzt+2*awp_align)*2;
+    yline_1  = nzt+2*awp_align;
+    yline_2  = (nzt+2*awp_align)*2;
 
     cudaMemcpyToSymbol(d_c1,      &h_c1,    sizeof(float));
     cudaMemcpyToSymbol(d_c2,      &h_c2,    sizeof(float));
@@ -120,20 +145,20 @@ void update_bound_y_H(float* u1,   float* v1, float* w1, float* f_u1,      float
      return;
 }
 
-
+// Possible argument misalignment, we are excluding one argument that doesn't seem to fit in our code (int rank)
 void dstrqc_H(float* xx,       float* yy,     float* zz,    float* xy,    float* xz, float* yz,
               float* r1,       float* r2,     float* r3,    float* r4,    float* r5, float* r6,
               float* u1,       float* v1,     float* w1,    float* lam,   float* mu, float* qp,
               float* qs,       float* dcrjx,  float* dcrjy, float* dcrjz, int nyt,   int nzt,
               cudaStream_t St, float* lam_mu, int NX,       int rankx,    int ranky, int  s_i,
-              int e_i,         int s_j,       int e_j)
+              int e_i,         int s_j,       int e_j,      float* p_vx1, float* p_vx2)
 {
     dim3 block (BLOCK_SIZE_Z, BLOCK_SIZE_Y, 1);
     dim3 grid ((nzt+BLOCK_SIZE_Z-1)/BLOCK_SIZE_Z, (e_j-s_j+1+BLOCK_SIZE_Y-1)/BLOCK_SIZE_Y,1);
     cudaFuncSetCacheConfig(dstrqc, cudaFuncCachePreferL1);
     dstrqc<<<grid, block, 0, St>>>(xx,    yy,    zz,  xy,  xz, yz, r1, r2,    r3,    r4,    r5,     r6,
                                    u1,    v1,    w1,  lam, mu, qp, qs, dcrjx, dcrjy, dcrjz, lam_mu, NX,
-                                   rankx, ranky, s_i, e_i, s_j);
+                                   rankx, ranky, s_i, e_i, s_j, p_vx1, p_vx2);
     return;
 }
 
@@ -176,7 +201,7 @@ __global__ void dvelcx(float* u1,    float* v1,    float* w1,    float* xx, floa
     register float f_xz,    xz_ip1,  xz_ip2,  xz_im1;
     register float f_d1,    f_d2,    f_d3,    f_dcrj, f_dcrjy, f_dcrjz, f_yz;
 
-    k    = blockIdx.x*BLOCK_SIZE_Z+threadIdx.x+align;
+    k    = blockIdx.x*BLOCK_SIZE_Z+threadIdx.x+awp_align;
     j    = blockIdx.y*BLOCK_SIZE_Y+threadIdx.y+2+4*loop;
     i    = e_i;
     pos  = i*d_slice_1+j*d_yline_1+k;
@@ -261,7 +286,7 @@ __global__ void dvelcy(float* u1,    float* v1,    float* w1,    float* xx,  flo
     register float f_yz,    yz_jp1,  yz_jm1,  yz_jm2;
     register float f_d1,    f_d2,    f_d3,    f_dcrj, f_dcrjx, f_dcrjz, f_xz;
 
-    k     = blockIdx.x*BLOCK_SIZE_Z+threadIdx.x+align;
+    k     = blockIdx.x*BLOCK_SIZE_Z+threadIdx.x+awp_align;
     i     = blockIdx.y*BLOCK_SIZE_Y+threadIdx.y+2+4*loop;
     j     = e_j;
     j2    = 4*loop-1;
@@ -337,7 +362,7 @@ __global__ void dvelcy(float* u1,    float* v1,    float* w1,    float* xx,  flo
 __global__ void update_boundary_y(float* u1, float* v1, float* w1, float* s_u1, float* s_v1, float* s_w1, int rank, int flag)
 {
     register int i, j, k, pos, posj;
-    k     = blockIdx.x*BLOCK_SIZE_Z+threadIdx.x+align;
+    k     = blockIdx.x*BLOCK_SIZE_Z+threadIdx.x+awp_align;
     i     = blockIdx.y*BLOCK_SIZE_Y+threadIdx.y+2+4*loop;
 
     if(flag==Front && rank!=-1){
@@ -372,7 +397,8 @@ __global__ void dstrqc(float* xx, float* yy,    float* zz,    float* xy,    floa
                        float* r1, float* r2,    float* r3,    float* r4,    float* r5,     float* r6,
                        float* u1, float* v1,    float* w1,    float* lam,   float* mu,     float* qp,
                        float* qs, float* dcrjx, float* dcrjy, float* dcrjz, float* lam_mu, int NX,
-                       int rankx, int ranky,    int s_i,      int e_i,      int s_j)
+                       int rankx, int ranky,    int s_i,      int e_i,      int s_j,       float* p_vx1,
+                       float* p_vx2)
 {
     register int   i,  j,  k,  g_i;
     register int   pos,     pos_ip1, pos_im2, pos_im1;
@@ -387,7 +413,7 @@ __global__ void dstrqc(float* xx, float* yy,    float* zz,    float* xy,    floa
     register float f_v1, v1_im1, v1_ip1, v1_im2;
     register float f_w1, w1_im1, w1_im2, w1_ip1;
 
-    k    = blockIdx.x*BLOCK_SIZE_Z+threadIdx.x+align;
+    k    = blockIdx.x*BLOCK_SIZE_Z+threadIdx.x+awp_align;
     j    = blockIdx.y*BLOCK_SIZE_Y+threadIdx.y+s_j;
     i    = e_i;
     pos  = i*d_slice_1+j*d_yline_1+k;
@@ -405,8 +431,10 @@ __global__ void dstrqc(float* xx, float* yy,    float* zz,    float* xy,    floa
     f_dcrjy = dcrjy[j];
     for(i=e_i;i>=s_i;i--)
     {
-        f_vx1    = tex1Dfetch(p_vx1, pos);
-        f_vx2    = tex1Dfetch(p_vx2, pos);
+//        f_vx1    = tex1Dfetch(p_vx1, pos);
+//        f_vx2    = tex1Dfetch(p_vx2, pos);
+        f_vx1    = p_vx1[pos];
+        f_vx2    = p_vx2[pos];
         f_dcrj   = dcrjx[i]*f_dcrjy*f_dcrjz;
 
         pos_km2  = pos-2;
@@ -477,7 +505,7 @@ __global__ void dstrqc(float* xx, float* yy,    float* zz,    float* xy,    floa
         w1_im1   = w1_im2;
         w1_im2   = w1[pos_im2];
 
-        if(k == d_nzt+align-1)
+        if(k == d_nzt+awp_align-1)
         {
 		u1[pos_kp1] = f_u1 - (f_w1        - w1_im1);
     		v1[pos_kp1] = f_v1 - (w1[pos_jp1] - f_w1);
@@ -498,7 +526,7 @@ __global__ void dstrqc(float* xx, float* yy,    float* zz,    float* xy,    floa
     		w1[pos_kp1]	= w1[pos_km1] - lam_mu[i*(d_nyt+4+8*loop) + j]*((vs1         - u1[pos_kp1]) + (u1_ip1 - f_u1)
                                       +     			                (v1[pos_kp1] - vs2)         + (f_v1   - v1[pos_jm1]) );
         }
-	else if(k == d_nzt+align-2)
+	else if(k == d_nzt+awp_align-2)
 	{
                 u1[pos_kp2] = u1[pos_kp1] - (w1[pos_kp1]   - w1[pos_im1+1]);
                 v1[pos_kp2] = v1[pos_kp1] - (w1[pos_jp1+1] - w1[pos_kp1]);
@@ -528,7 +556,7 @@ __global__ void dstrqc(float* xx, float* yy,    float* zz,    float* xy,    floa
         xy[pos]  = (xy[pos]  + xmu1*(vs1+vs2) + vx1*f_r)*f_dcrj;
         r4[pos]  = f_vx2*f_r + h1*(vs1+vs2);
 
-        if(k == d_nzt+align-1)
+        if(k == d_nzt+awp_align-1)
         {
                 zz[pos+1] = -zz[pos];
         	xz[pos]   = 0.0;
@@ -549,13 +577,13 @@ __global__ void dstrqc(float* xx, float* yy,    float* zz,    float* xy,    floa
         	yz[pos] = (yz[pos]  + xmu3*(vs1+vs2) + vx1*f_r)*f_dcrj;
         	r6[pos] = f_vx2*f_r + h3*(vs1+vs2);
 
-                if(k == d_nzt+align-2)
+                if(k == d_nzt+awp_align-2)
                 {
                     zz[pos+3] = -zz[pos];
                     xz[pos+2] = -xz[pos];
                     yz[pos+2] = -yz[pos];
 		}
-		else if(k == d_nzt+align-3)
+		else if(k == d_nzt+awp_align-3)
 		{
                     xz[pos+4] = -xz[pos];
                     yz[pos+4] = -yz[pos];
@@ -580,7 +608,7 @@ __global__ void addsrc_cu(int i,      int READ_STEP, int dim,    int* psrc,  int
         i   = i - 1;
         idx = psrc[j*dim]   + 1 + 4*loop;
         idy = psrc[j*dim+1] + 1 + 4*loop;
-        idz = psrc[j*dim+2] + align - 1;
+        idz = psrc[j*dim+2] + awp_align - 1;
         pos = idx*d_slice_1 + idy*d_yline_1 + idz;
 
         xx[pos] = xx[pos] - vtst*axx[j*READ_STEP+i];

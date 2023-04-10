@@ -30,8 +30,10 @@
 #define cudaSuccess hipSuccess
 #define cudaThreadSynchronize hipDeviceSynchronize
 #define cudaUnbindTexture hipUnbindTexture
+// Perhaps newer version of AMD HIP has this implemented?
 #define cudaFuncSetCacheConfig //Not available: hipFuncSetCacheConfig
 #define cudaMemcpyAsync hipMemcpyAsync
+// Register is the keyword available in CUDA but not HIP, so just remove it cause it throws a compiler error
 #define register
 #else
 #include <cuda.h>
