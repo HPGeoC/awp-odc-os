@@ -1,0 +1,51 @@
+CUDA_HOME = $(subst bin/hipcc,,$(shell which hipcc))
+MPI_HOME=$(dir $(shell which mpicc))../
+
+# export OMPI_CXX=amdclang
+CC      = mpic++
+LD      = mpic++
+LDFLAGS = -O3 -g -D__HIP
+CFLAGS = -O3 -g -D__HIP -x hip 
+GFLAGS = hipcc -D__HIP
+
+INCDIR  = -I$(MPI_HOME)/include
+OBJECTS = command.o pmcl3d.o grid.o source.o mesh.o cerjan.o swap.o io.o sgt.o kernel.o
+LIB     = -L$(MPI_HOME)/lib
+
+pmcl3d:	$(OBJECTS)
+	[ -d bin ] || mkdir -p bin
+	$(LD) $(LDFLAGs) $(INCDIR) -o	pmcl3d	$(OBJECTS)	$(LIB)
+	cp pmcl3d ../bin/
+
+pmcl3d.o:	pmcl3d.c
+	$(CC) $(CFLAGS) $(INCDIR) -c -o pmcl3d.o	pmcl3d.c		
+
+command.o:	command.c
+	$(CC) $(CFLAGS) $(INCDIR) -c -o	command.o	command.c	
+
+io.o:	  io.c
+	$(CC) $(CFLAGS) $(INCDIR) -c -o	io.o	  io.c	
+
+sgt.o:		sgt.c
+	$(CC) $(CFLAGS) $(INCDIR) -c -o sgt.o		sgt.c		
+
+grid.o:		grid.c
+	$(CC) $(CFLAGS) $(INCDIR) -c -o grid.o		grid.c		
+
+source.o:	source.c
+	$(CC) $(CFLAGS) $(INCDIR) -c -o source.o	source.c	
+
+mesh.o:		mesh.c
+	$(CC) $(CFLAGS) $(INCDIR) -c -o mesh.o		mesh.c		
+
+cerjan.o:	cerjan.c
+	$(CC) $(CFLAGS) $(INCDIR) -c -o cerjan.o	cerjan.c
+
+swap.o:		swap.c
+	$(CC) $(CFLAGS) $(INCDIR) -c -o swap.o		swap.c
+
+kernel.o:	kernel.cu
+	$(GFLAGS) $(INCDIR) -c -o	kernel.o	kernel.cu	
+
+clean:	
+	rm *.o
