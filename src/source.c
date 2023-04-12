@@ -306,7 +306,7 @@ void addsrc(int i,      float DH,   float DT,   int NST,    int npsrc,  int READ
   {
      idx = psrc[j*dim]   + 1 + 4*loop;
      idy = psrc[j*dim+1] + 1 + 4*loop;
-     idz = psrc[j*dim+2] + align - 1;
+     idz = psrc[j*dim+2] + awp_align - 1;
      xx[idx][idy][idz] = xx[idx][idy][idz] - vtst*axx[j*READ_STEP+i];
      yy[idx][idy][idz] = yy[idx][idy][idz] - vtst*ayy[j*READ_STEP+i];
      zz[idx][idy][idz] = zz[idx][idy][idz] - vtst*azz[j*READ_STEP+i];

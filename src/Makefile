@@ -1,6 +1,6 @@
 CUDA_HOME = $(which hipcc)
 MPI_HOME=$(which mpicc)
-
+OMPI_MPICXX=hipcc
 # export OMPI_CXX=amdclang
 CC      = mpic++
 LD      = mpic++

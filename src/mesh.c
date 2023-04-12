@@ -309,13 +309,13 @@ void inimesh(int MEDIASTART, Grid3D d1, Grid3D mu, Grid3D lam, Grid3D qp, Grid3D
         d1[nxt+2+4*loop][j][awp_align-1]       = d1[nxt+1+4*loop][j][awp_align];
         lam[1+4*loop][j][nzt+awp_align]        = lam[2+4*loop][j][nzt+awp_align-1];
         mu[1+4*loop][j][nzt+awp_align]         = mu[2+4*loop][j][nzt+awp_align-1];
-        d1[1+4*loop][j][nzt+align]         = d1[2+4*loop][j][nzt+align-1];
-        lam[nxt+2+4*loop][j][nzt+align]    = lam[nxt+1+4*loop][j][nzt+align-1];
-        mu[nxt+2+4*loop][j][nzt+align]     = mu[nxt+1+4*loop][j][nzt+align-1];
-        d1[nxt+2+4*loop][j][nzt+align]     = d1[nxt+1+4*loop][j][nzt+align-1];
+        d1[1+4*loop][j][nzt+awp_align]         = d1[2+4*loop][j][nzt+awp_align-1];
+        lam[nxt+2+4*loop][j][nzt+awp_align]    = lam[nxt+1+4*loop][j][nzt+awp_align-1];
+        mu[nxt+2+4*loop][j][nzt+awp_align]     = mu[nxt+1+4*loop][j][nzt+awp_align-1];
+        d1[nxt+2+4*loop][j][nzt+awp_align]     = d1[nxt+1+4*loop][j][nzt+awp_align-1];
       }
 
-      for(k=align;k<nzt+align;k++){
+      for(k=awp_align;k<nzt+awp_align;k++){
         lam[1+4*loop][1+4*loop][k]         = lam[2+4*loop][2+4*loop][k];
         mu[1+4*loop][1+4*loop][k]          = mu[2+4*loop][2+4*loop][k];
         d1[1+4*loop][1+4*loop][k]          = d1[2+4*loop][2+4*loop][k];
@@ -331,32 +331,32 @@ void inimesh(int MEDIASTART, Grid3D d1, Grid3D mu, Grid3D lam, Grid3D qp, Grid3D
       }
 
       //8 Corners
-      lam[1+4*loop][1+4*loop][align-1]           = lam[2+4*loop][2+4*loop][align];
-      mu[1+4*loop][1+4*loop][align-1]            = mu[2+4*loop][2+4*loop][align];
-      d1[1+4*loop][1+4*loop][align-1]            = d1[2+4*loop][2+4*loop][align];
-      lam[nxt+2+4*loop][1+4*loop][align-1]       = lam[nxt+1+4*loop][2+4*loop][align];
-      mu[nxt+2+4*loop][1+4*loop][align-1]        = mu[nxt+1+4*loop][2+4*loop][align];
-      d1[nxt+2+4*loop][1+4*loop][align-1]        = d1[nxt+1+4*loop][2+4*loop][align];
-      lam[1+4*loop][nyt+2+4*loop][align-1]       = lam[2+4*loop][nyt+1+4*loop][align];
-      mu[1+4*loop][nyt+2+4*loop][align-1]        = mu[2+4*loop][nyt+1+4*loop][align];
-      d1[1+4*loop][nyt+2+4*loop][align-1]        = d1[2+4*loop][nyt+1+4*loop][align];
-      lam[1+4*loop][1+4*loop][nzt+align]         = lam[2+4*loop][2+4*loop][nzt+align-1];
-      mu[1+4*loop][1+4*loop][nzt+align]          = mu[2+4*loop][2+4*loop][nzt+align-1];
-      d1[1+4*loop][1+4*loop][nzt+align]          = d1[2+4*loop][2+4*loop][nzt+align-1];
-      lam[nxt+2+4*loop][1+4*loop][nzt+align]     = lam[nxt+1+4*loop][2+4*loop][nzt+align-1];
-      mu[nxt+2+4*loop][1+4*loop][nzt+align]      = mu[nxt+1+4*loop][2+4*loop][nzt+align-1];
-      d1[nxt+2+4*loop][1+4*loop][nzt+align]      = d1[nxt+1+4*loop][2+4*loop][nzt+align-1];
-      lam[nxt+2+4*loop][nyt+2+4*loop][align-1]   = lam[nxt+1+4*loop][nyt+1+4*loop][align];
-      mu[nxt+2+4*loop][nyt+2+4*loop][align-1]    = mu[nxt+1+4*loop][nyt+1+4*loop][align];
-      d1[nxt+2+4*loop][nyt+2+4*loop][align-1]    = d1[nxt+1+4*loop][nyt+1+4*loop][align];
-      lam[1+4*loop][nyt+2+4*loop][nzt+align]     = lam[2+4*loop][nyt+1+4*loop][nzt+align-1];
-      mu[1+4*loop][nyt+2+4*loop][nzt+align]      = mu[2+4*loop][nyt+1+4*loop][nzt+align-1];
-      d1[1+4*loop][nyt+2+4*loop][nzt+align]      = d1[2+4*loop][nyt+1+4*loop][nzt+align-1];
-      lam[nxt+2+4*loop][nyt+2+4*loop][nzt+align] = lam[nxt+1+4*loop][nyt+1+4*loop][nzt+align-1];
-      mu[nxt+2+4*loop][nyt+2+4*loop][nzt+align]  = mu[nxt+1+4*loop][nyt+1+4*loop][nzt+align-1];
-      d1[nxt+2+4*loop][nyt+2+4*loop][nzt+align]  = d1[nxt+1+4*loop][nyt+1+4*loop][nzt+align-1];
+      lam[1+4*loop][1+4*loop][awp_align-1]           = lam[2+4*loop][2+4*loop][awp_align];
+      mu[1+4*loop][1+4*loop][awp_align-1]            = mu[2+4*loop][2+4*loop][awp_align];
+      d1[1+4*loop][1+4*loop][awp_align-1]            = d1[2+4*loop][2+4*loop][awp_align];
+      lam[nxt+2+4*loop][1+4*loop][awp_align-1]       = lam[nxt+1+4*loop][2+4*loop][awp_align];
+      mu[nxt+2+4*loop][1+4*loop][awp_align-1]        = mu[nxt+1+4*loop][2+4*loop][awp_align];
+      d1[nxt+2+4*loop][1+4*loop][awp_align-1]        = d1[nxt+1+4*loop][2+4*loop][awp_align];
+      lam[1+4*loop][nyt+2+4*loop][awp_align-1]       = lam[2+4*loop][nyt+1+4*loop][awp_align];
+      mu[1+4*loop][nyt+2+4*loop][awp_align-1]        = mu[2+4*loop][nyt+1+4*loop][awp_align];
+      d1[1+4*loop][nyt+2+4*loop][awp_align-1]        = d1[2+4*loop][nyt+1+4*loop][awp_align];
+      lam[1+4*loop][1+4*loop][nzt+awp_align]         = lam[2+4*loop][2+4*loop][nzt+awp_align-1];
+      mu[1+4*loop][1+4*loop][nzt+awp_align]          = mu[2+4*loop][2+4*loop][nzt+awp_align-1];
+      d1[1+4*loop][1+4*loop][nzt+awp_align]          = d1[2+4*loop][2+4*loop][nzt+awp_align-1];
+      lam[nxt+2+4*loop][1+4*loop][nzt+awp_align]     = lam[nxt+1+4*loop][2+4*loop][nzt+awp_align-1];
+      mu[nxt+2+4*loop][1+4*loop][nzt+awp_align]      = mu[nxt+1+4*loop][2+4*loop][nzt+awp_align-1];
+      d1[nxt+2+4*loop][1+4*loop][nzt+awp_align]      = d1[nxt+1+4*loop][2+4*loop][nzt+awp_align-1];
+      lam[nxt+2+4*loop][nyt+2+4*loop][awp_align-1]   = lam[nxt+1+4*loop][nyt+1+4*loop][awp_align];
+      mu[nxt+2+4*loop][nyt+2+4*loop][awp_align-1]    = mu[nxt+1+4*loop][nyt+1+4*loop][awp_align];
+      d1[nxt+2+4*loop][nyt+2+4*loop][awp_align-1]    = d1[nxt+1+4*loop][nyt+1+4*loop][awp_align];
+      lam[1+4*loop][nyt+2+4*loop][nzt+awp_align]     = lam[2+4*loop][nyt+1+4*loop][nzt+awp_align-1];
+      mu[1+4*loop][nyt+2+4*loop][nzt+awp_align]      = mu[2+4*loop][nyt+1+4*loop][nzt+awp_align-1];
+      d1[1+4*loop][nyt+2+4*loop][nzt+awp_align]      = d1[2+4*loop][nyt+1+4*loop][nzt+awp_align-1];
+      lam[nxt+2+4*loop][nyt+2+4*loop][nzt+awp_align] = lam[nxt+1+4*loop][nyt+1+4*loop][nzt+awp_align-1];
+      mu[nxt+2+4*loop][nyt+2+4*loop][nzt+awp_align]  = mu[nxt+1+4*loop][nyt+1+4*loop][nzt+awp_align-1];
+      d1[nxt+2+4*loop][nyt+2+4*loop][nzt+awp_align]  = d1[nxt+1+4*loop][nyt+1+4*loop][nzt+awp_align-1];
 
-      k = nzt+align;
+      k = nzt+awp_align;
       for(i=2+4*loop;i<nxt+2+4*loop;i++)
         for(j=2+4*loop;j<nyt+2+4*loop;j++){
            d1[i][j][k]   = d1[i][j][k-1];
@@ -428,7 +428,7 @@ void init_texture(int nxt,  int nyt,  int nzt,  Grid3D tau1,  Grid3D tau2,  Grid
        for(j=yls;j<=yre;j++)
        {
           ity = 1 - ity;
-          for(k=align;k<nzt+align;k++)
+          for(k=awp_align;k<nzt+awp_align;k++)
           {
                 itz           = 1 - itz;
                 vx1[i][j][k]  = tau1[itx][ity][itz];
