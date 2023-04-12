@@ -1,7 +1,7 @@
 CUDA_HOME = $(which hipcc)
 MPI_HOME=$(which mpicc)
-OMPI_MPICXX=hipcc
-# export OMPI_CXX=amdclang
+export OMPI_CXX=hipcc
+
 CC      = mpic++
 LD      = mpic++
 LDFLAGS = -O3 -g -D__HIP
@@ -9,7 +9,7 @@ CFLAGS = -O3 -g -D__HIP -x hip
 GFLAGS = hipcc -D__HIP
 
 INCDIR  = -I$(MPI_HOME)/include
-OBJECTS = command.o pmcl3d.o grid.o source.o mesh.o cerjan.o swap.o io.o sgt.o kernel.o
+OBJECTS = command.o pmcl3d.o grid.o source.o mesh.o cerjan.o swap.o io.o kernel.o
 LIB     = -L$(MPI_HOME)/lib
 
 pmcl3d:	$(OBJECTS)
@@ -25,9 +25,6 @@ command.o:	command.c
 
 io.o:	  io.c
 	$(CC) $(CFLAGS) $(INCDIR) -c -o	io.o	  io.c	
-
-sgt.o:		sgt.c
-	$(CC) $(CFLAGS) $(INCDIR) -c -o sgt.o		sgt.c		
 
 grid.o:		grid.c
 	$(CC) $(CFLAGS) $(INCDIR) -c -o grid.o		grid.c		
