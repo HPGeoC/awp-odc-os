@@ -50,11 +50,11 @@ void mediaswap(Grid3D d1, Grid3D mu,     Grid3D lam,    Grid3D qp,     Grid3D qs
 		{
 	        	for(i=1+4*loop;i<nxt+3+4*loop;i++)
         	  	  for(j=2+4*loop;j<2+8*loop;j++)
-            	    	    for(k=align-1;k<nzt+align+1;k++)
+            	    	    for(k=awp_align-1;k<nzt+awp_align+1;k++)
 			    {
             			idx = i-1-4*loop;
             			idy = (j-2-4*loop)*5;
-	            		idz = k-align+1;
+	            		idz = k-awp_align+1;
         	    		mediaF_S[idx*5*(4*loop)*(nzt+2)+idy*(nzt+2)+idz] = d1[i][j][k];
             			idy++;
             			mediaF_S[idx*5*(4*loop)*(nzt+2)+idy*(nzt+2)+idz] = mu[i][j][k];
@@ -71,11 +71,11 @@ void mediaswap(Grid3D d1, Grid3D mu,     Grid3D lam,    Grid3D qp,     Grid3D qs
 		{
         		for(i=1+4*loop;i<nxt+3+4*loop;i++)
           	  	  for(j=nyt+2;j<nyt+2+4*loop;j++)
-            	    	    for(k=align-1;k<nzt+align+1;k++)
+            	    	    for(k=awp_align-1;k<nzt+awp_align+1;k++)
 			    {
                 		idx = i-1-4*loop;
 	                	idy = (j-nyt-2)*5;
-        	        	idz = k-align+1;
+        	        	idz = k-awp_align+1;
                 		mediaB_S[idx*5*(4*loop)*(nzt+2)+idy*(nzt+2)+idz] = d1[i][j][k];
                 		idy++;
                 		mediaB_S[idx*5*(4*loop)*(nzt+2)+idy*(nzt+2)+idz] = mu[i][j][k];
@@ -95,11 +95,11 @@ void mediaswap(Grid3D d1, Grid3D mu,     Grid3D lam,    Grid3D qp,     Grid3D qs
 		{
                 	for(i=1+4*loop;i<nxt+3+4*loop;i++)
                   	  for(j=2;j<2+4*loop;j++)
-                    	    for(k=align-1;k<nzt+align+1;k++)
+                    	    for(k=awp_align-1;k<nzt+awp_align+1;k++)
 		    	    {
                         	idx = i-1-4*loop;
                         	idy = (j-2)*5;
-                        	idz = k-align+1;
+                        	idz = k-awp_align+1;
                         	d1[i][j][k]  = mediaF_R[idx*5*(4*loop)*(nzt+2)+idy*(nzt+2)+idz];
                         	idy++;
                         	mu[i][j][k]  = mediaF_R[idx*5*(4*loop)*(nzt+2)+idy*(nzt+2)+idz];

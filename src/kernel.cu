@@ -158,7 +158,7 @@ void dstrqc_H(float* xx,       float* yy,     float* zz,    float* xy,    float*
     cudaFuncSetCacheConfig(dstrqc, cudaFuncCachePreferL1);
     dstrqc<<<grid, block, 0, St>>>(xx,    yy,    zz,  xy,  xz, yz, r1, r2,    r3,    r4,    r5,     r6,
                                    u1,    v1,    w1,  lam, mu, qp, qs, dcrjx, dcrjy, dcrjz, lam_mu, NX,
-                                   rankx, ranky, s_i, e_i, s_j, p_vx1, p_vx2);
+                                   rankx, ranky, s_i, e_i, s_j, e_j, p_vx1, p_vx2);
     return;
 }
 

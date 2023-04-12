@@ -67,7 +67,7 @@ void inicrj(float ARBC, int *coords, int nxt, int nyt, int nzt, int NX, int NY, 
      for(k=0;k<ND;k++)
      {
         nzp            = k + 1;
-        dcrjz[k+align] = dcrjz[k+align]*(exp(-((alpha*(ND-nzp+1))*((alpha*(ND-nzp+1))))));
+        dcrjz[k+awp_align] = dcrjz[k+awp_align]*(exp(-((alpha*(ND-nzp+1))*((alpha*(ND-nzp+1))))));
      }
   }
   return;
