@@ -232,6 +232,25 @@ int main(int argc,char **argv)
     err       = MPI_Cart_shift(MC1, 1,  1,  &y_rank_F, &y_rank_B );
     err       = MPI_Cart_coords(MC1, rank, 2, coord);
     err       = MPI_Barrier(MCW);
+
+    // If any neighboring rank is out of bounds, then MPI_Cart_shift sets the
+    // destination argument to a negative number. We use the convention that -1 
+    // denotes ranks out of bounds.
+    if (x_rank_L < 0) {
+            x_rank_L = -1;
+    }
+
+    if (x_rank_R < 0 ) {
+            x_rank_R = -1;
+    }
+
+    if (y_rank_F < 0) {
+            y_rank_F = -1;
+    }
+
+    if (y_rank_B < 0) {
+            y_rank_B = -1;
+    }
     // Below line is only for HPGPU4 machine!
 //    rank_gpu = rank%4;
     // Below line is for 1 GPU/node systems

@@ -217,12 +217,13 @@ int inisource(int      rank,    int     IFAULT, int     NSRC,   int     READ_STE
          fclose(file);
       }
       MPI_Bcast(tpsrc, NSRC*maxdim,    MPI_INT,  master, MCW);
-      MPI_Bcast(taxx,  NSRC*READ_STEP, MPI_REAL, master, MCW);
-      MPI_Bcast(tayy,  NSRC*READ_STEP, MPI_REAL, master, MCW);
-      MPI_Bcast(tazz,  NSRC*READ_STEP, MPI_REAL, master, MCW);
-      MPI_Bcast(taxz,  NSRC*READ_STEP, MPI_REAL, master, MCW);
-      MPI_Bcast(tayz,  NSRC*READ_STEP, MPI_REAL, master, MCW);
-      MPI_Bcast(taxy,  NSRC*READ_STEP, MPI_REAL, master, MCW);
+      // below 6 MPI_Bcast calls changed from MPI_REAL to MPI_FLOAT, 8/26/2023
+      MPI_Bcast(taxx,  NSRC*READ_STEP, MPI_FLOAT, master, MCW);
+      MPI_Bcast(tayy,  NSRC*READ_STEP, MPI_FLOAT, master, MCW);
+      MPI_Bcast(tazz,  NSRC*READ_STEP, MPI_FLOAT, master, MCW);
+      MPI_Bcast(taxz,  NSRC*READ_STEP, MPI_FLOAT, master, MCW);
+      MPI_Bcast(tayz,  NSRC*READ_STEP, MPI_FLOAT, master, MCW);
+      MPI_Bcast(taxy,  NSRC*READ_STEP, MPI_FLOAT, master, MCW);
       for(i=0;i<NSRC;i++)
       {
           if( tpsrc[i*maxdim]   >= nbx && tpsrc[i*maxdim]   <= nex && tpsrc[i*maxdim+1] >= nby
