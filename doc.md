@@ -25,15 +25,8 @@ awp-odc-os is licensed under [BSD-2](https://github.com/HPGeoC/awp-odc-os/tree/m
 To install awp-odc-os, perform the following steps:
 
 1. Code access: [https://github.com/HPGeoC/awp-odc-os](https://github.com/HPGeoC/awp-odc-os). The master-branch (default) contains the latest published and tested version of awp-odc-os.
-2. Prepare a directory for the setup and unpack awp-odc-os-master.zip
 
-   ```
-   unzip awp-odc-os-master.zip
-   ```
-
-   (```run/``` and ```input/``` see [Running awp-odc-os section](#running-awp-odc-os))
-
-3. Compile code
+2. Compile code
 
    ```
    cd awp-odc-os-v1.0
@@ -53,22 +46,20 @@ To install awp-odc-os, perform the following steps:
    (```[MACHINE]``` represents machine name, e.g. ```titan```, ```bluewaters```)
    (```[COMPILER]``` represents compiler name, e.g. ```gnu```, ```pgi```, ```cray```)
 
-4. Executable ```pmcl3d``` located in ```src/```
+3. Executable ```pmcl3d``` located in ```src/```
 
 # Running awp-odc-os
 
-1. Sample file access: http://hpgeoc.sdsc.edu/downloads/awp-odc-os-v1.0-example.tar.gz
-
-2. Copy the zip file into awp-odc-os home directory and unpack. Two folders ```run/``` and ```input/``` will be extracted into the home directory.
+1. Unzip awp-odc-os-v1.0-example.tar.xz 
    ```
    cd awp-odc-os-v1.0
-   tar -zxvf ./awp-odc-os-v1.0-examples.tar.gz
+   tar -xf awp-odc-os-v1.0-example.tar.xz
    ```
 
-3. Run the environment setting script. This script will prepare required folders and link executable and input files into ```run/``` folder.
+2. Run the environment setting script. This script will prepare required folders and link executable and input files into ```run/``` folder.
 
    ```
-   cd run
+   cd awp-odc-os-v1.0-example/run/
    ```
 
    (depends on the system, e.g. on Blue Waters)
@@ -85,7 +76,7 @@ To install awp-odc-os, perform the following steps:
    * ```output_sfc/```  - output folder striping might be needed for lustre system
 
 
-4. Submit pbs job from ```run/``` directory. Like the run script, the job submission process is platform dependent.
+3. Submit pbs job from ```run/``` directory. Like the run script, the job submission process is platform dependent.
    On Blue Waters, for instance, the ```run.bluewaters.pbs``` script can be found in ```run/``` and submitted via (modify your pbs script - account, email address):
 
    ```
