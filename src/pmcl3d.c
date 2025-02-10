@@ -24,8 +24,6 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 const double   micro = 1.0e-6;
 
 void SetDeviceConstValue(float DH, float DT, int nxt, int nyt, int nzt);
-void BindArrayToTexture(float* vx1, float* vx2, int memsize);
-void UnBindArrayFromTexture();
 void dvelcx_H(float* u1,    float* v1,    float* w1,    float* xx,  float* yy, float* zz, float* xy,       float* xz, float* yz,
               float* dcrjx, float* dcrjy, float* dcrjz, float* d_1, int nyt,   int nzt,   cudaStream_t St, int s_i,   int e_i);
 void dvelcy_H(float* u1,       float* v1,    float* w1,    float* xx,  float* yy, float* zz, float* xy,   float* xz,   float* yz,
@@ -36,7 +34,7 @@ void dstrqc_H(float* xx,       float* yy,     float* zz,    float* xy,    float*
               float* u1,       float* v1,     float* w1,    float* lam,   float* mu, float* qp,
               float* qs,       float* dcrjx,  float* dcrjy, float* dcrjz, int nyt,   int nzt,
               cudaStream_t St, float* lam_mu, int NX,       int rankx,    int ranky, int s_i,
-              int e_i,         int s_j,       int e_j);
+              int e_i,         int s_j,       int e_j, float* vx1, float* vx2);
 void addsrc_H(int i,      int READ_STEP, int dim,    int* psrc,  int npsrc,  cudaStream_t St,
               float* axx, float* ayy,    float* azz, float* axz, float* ayz, float* axy,
               float* xx,  float* yy,     float* zz,  float* xy,  float* yz,  float* xz);
@@ -226,7 +224,7 @@ int main(int argc,char **argv)
     dim[1]    = PY;
     period[0] = 0;
     period[1] = 0;
-    reorder   = 1;
+    reorder   = 0;
     err       = MPI_Cart_create(MCW, 2, dim, period, reorder, &MC1);
     err       = MPI_Cart_shift(MC1, 0,  1,  &x_rank_L, &x_rank_R );
     err       = MPI_Cart_shift(MC1, 1,  1,  &y_rank_F, &y_rank_B );
@@ -239,22 +237,20 @@ int main(int argc,char **argv)
     if (x_rank_L < 0) {
             x_rank_L = -1;
     }
-
     if (x_rank_R < 0 ) {
             x_rank_R = -1;
     }
-
     if (y_rank_F < 0) {
             y_rank_F = -1;
     }
-
     if (y_rank_B < 0) {
             y_rank_B = -1;
     }
+
     // Below line is only for HPGPU4 machine!
-//    rank_gpu = rank%4;
+    rank_gpu = rank%3;
     // Below line is for 1 GPU/node systems
-    rank_gpu = 0;
+    //rank_gpu = 0;
     cudaSetDevice(rank_gpu);
 
 printf("\n\nrank=%d) RS=%d, RSG=%d, NST=%d, IF=%d\n\n\n",
@@ -495,7 +491,6 @@ rank, READ_STEP, READ_STEP_GPU, NST, IFAULT);
     cudaMemcpy(d_vx1,&vx1[0][0][0],num_bytes,cudaMemcpyHostToDevice);
     cudaMalloc((void**)&d_vx2, num_bytes);
     cudaMemcpy(d_vx2,&vx2[0][0][0],num_bytes,cudaMemcpyHostToDevice);
-    BindArrayToTexture(d_vx1, d_vx2, num_bytes);
     if(NPC==0)
     {
     	num_bytes = sizeof(float)*(nxt+4+8*loop);
@@ -646,7 +641,7 @@ rank, READ_STEP, READ_STEP_GPU, NST, IFAULT);
 	 //stress computation whole 3D Grid (nxt+4, nyt+4, nzt)
          dstrqc_H(d_xx, d_yy, d_zz, d_xy,    d_xz,    d_yz,    d_r1, d_r2, d_r3,     d_r4,     d_r5, d_r6,     d_u1, d_v1, d_w1, d_lam,
                   d_mu, d_qp, d_qs, d_dcrjx, d_dcrjy, d_dcrjz, nyt,  nzt,  stream_i, d_lam_mu, NX,   coord[0], coord[1],   xls,  xre,
-                  yls,  yre);
+                  yls,  yre, d_vx1, d_vx2);
          //update source input
          if(rank==srcproc && cur_step<NST)
          {
@@ -878,7 +873,6 @@ rank, READ_STEP, READ_STEP_GPU, NST, IFAULT);
 //  Main Loop Ends
 
 //  program ends, free all memories
-    UnBindArrayFromTexture();
     Delloc3D(u1);
     Delloc3D(v1);
     Delloc3D(w1);
