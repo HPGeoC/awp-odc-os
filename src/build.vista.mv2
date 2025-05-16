@@ -1,0 +1,14 @@
+#!/bin/bash
+
+# Need to run on GPU Node
+
+module reset
+ml gcc/13.2.0
+ml cuda/12.5
+module unload openmpi
+module load mvapich-plus/4.0.0
+module list
+
+
+make clean -f Makefile.vista.mv2
+make -f Makefile.vista.mv2
