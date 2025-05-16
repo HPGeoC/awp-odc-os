@@ -368,9 +368,9 @@ void Cpy2Host_VX(float* u1, float* v1, float* w1, float* h_m, int nxt, int nyt, 
 
         h_offset = (4*loop)*(nyt+4+8*loop)*(nzt+2*align);
         msg_size = sizeof(float)*(4*loop)*(nyt+4+8*loop)*(nzt+2*align);
-        cudaMemcpyAsync(h_m,            u1+d_offset, msg_size, cudaMemcpyDeviceToHost, St);
-        cudaMemcpyAsync(h_m+h_offset,   v1+d_offset, msg_size, cudaMemcpyDeviceToHost, St);
-        cudaMemcpyAsync(h_m+h_offset*2, w1+d_offset, msg_size, cudaMemcpyDeviceToHost, St);
+        cudaMemcpyAsync(h_m,            u1+d_offset, msg_size, cudaMemcpyDeviceToDevice, St);
+        cudaMemcpyAsync(h_m+h_offset,   v1+d_offset, msg_size, cudaMemcpyDeviceToDevice, St);
+        cudaMemcpyAsync(h_m+h_offset*2, w1+d_offset, msg_size, cudaMemcpyDeviceToDevice, St);
 	return;
 }
 
@@ -382,9 +382,9 @@ void Cpy2Host_VY(float* s_u1, float* s_v1, float* s_w1, float* h_m, int nxt, int
 
         h_offset = (4*loop)*(nxt+4+8*loop)*(nzt+2*align);
         msg_size = sizeof(float)*(4*loop)*(nxt+4+8*loop)*(nzt+2*align);
-        cudaMemcpyAsync(h_m,            s_u1, msg_size, cudaMemcpyDeviceToHost, St);
-        cudaMemcpyAsync(h_m+h_offset,   s_v1, msg_size, cudaMemcpyDeviceToHost, St);
-        cudaMemcpyAsync(h_m+h_offset*2, s_w1, msg_size, cudaMemcpyDeviceToHost, St);
+        cudaMemcpyAsync(h_m,            s_u1, msg_size, cudaMemcpyDeviceToDevice, St);
+        cudaMemcpyAsync(h_m+h_offset,   s_v1, msg_size, cudaMemcpyDeviceToDevice, St);
+        cudaMemcpyAsync(h_m+h_offset*2, s_w1, msg_size, cudaMemcpyDeviceToDevice, St);
         return;
 }
 
@@ -398,16 +398,16 @@ void Cpy2Device_VX(float* u1, float* v1, float* w1,        float* L_m,       flo
 
         if(rank_L>=0){
 		d_offset = 2*(nyt+4+8*loop)*(nzt+2*align);
-                cudaMemcpyAsync(u1+d_offset, L_m,            msg_size, cudaMemcpyHostToDevice, St1);
-                cudaMemcpyAsync(v1+d_offset, L_m+h_offset,   msg_size, cudaMemcpyHostToDevice, St1);
-                cudaMemcpyAsync(w1+d_offset, L_m+h_offset*2, msg_size, cudaMemcpyHostToDevice, St1);
+                cudaMemcpyAsync(u1+d_offset, L_m,            msg_size, cudaMemcpyDeviceToDevice, St1);
+                cudaMemcpyAsync(v1+d_offset, L_m+h_offset,   msg_size, cudaMemcpyDeviceToDevice, St1);
+                cudaMemcpyAsync(w1+d_offset, L_m+h_offset*2, msg_size, cudaMemcpyDeviceToDevice, St1);
 	}
 
         if(rank_R>=0){
 		d_offset = (nxt+4*loop+2)*(nyt+4+8*loop)*(nzt+2*align);
-        	cudaMemcpyAsync(u1+d_offset, R_m,            msg_size, cudaMemcpyHostToDevice, St2);
-        	cudaMemcpyAsync(v1+d_offset, R_m+h_offset,   msg_size, cudaMemcpyHostToDevice, St2);
-        	cudaMemcpyAsync(w1+d_offset, R_m+h_offset*2, msg_size, cudaMemcpyHostToDevice, St2);
+        	cudaMemcpyAsync(u1+d_offset, R_m,            msg_size, cudaMemcpyDeviceToDevice, St2);
+        	cudaMemcpyAsync(v1+d_offset, R_m+h_offset,   msg_size, cudaMemcpyDeviceToDevice, St2);
+        	cudaMemcpyAsync(w1+d_offset, R_m+h_offset*2, msg_size, cudaMemcpyDeviceToDevice, St2);
 	}
         return;
 }
@@ -421,15 +421,15 @@ void Cpy2Device_VY(float* u1,   float *v1,  float *w1,  float* f_u1, float* f_v1
         h_offset = (4*loop)*(nxt+4+8*loop)*(nzt+2*align);
         msg_size = sizeof(float)*(4*loop)*(nxt+4+8*loop)*(nzt+2*align);
         if(rank_F>=0){
-                cudaMemcpyAsync(f_u1, F_m,            msg_size, cudaMemcpyHostToDevice, St1);
-                cudaMemcpyAsync(f_v1, F_m+h_offset,   msg_size, cudaMemcpyHostToDevice, St1);
-                cudaMemcpyAsync(f_w1, F_m+h_offset*2, msg_size, cudaMemcpyHostToDevice, St1);
+                cudaMemcpyAsync(f_u1, F_m,            msg_size, cudaMemcpyDeviceToDevice, St1);
+                cudaMemcpyAsync(f_v1, F_m+h_offset,   msg_size, cudaMemcpyDeviceToDevice, St1);
+                cudaMemcpyAsync(f_w1, F_m+h_offset*2, msg_size, cudaMemcpyDeviceToDevice, St1);
         }
 
         if(rank_B>=0){
-                cudaMemcpyAsync(b_u1, B_m,            msg_size, cudaMemcpyHostToDevice, St2);
-                cudaMemcpyAsync(b_v1, B_m+h_offset,   msg_size, cudaMemcpyHostToDevice, St2);
-                cudaMemcpyAsync(b_w1, B_m+h_offset*2, msg_size, cudaMemcpyHostToDevice, St2);
+                cudaMemcpyAsync(b_u1, B_m,            msg_size, cudaMemcpyDeviceToDevice, St2);
+                cudaMemcpyAsync(b_v1, B_m+h_offset,   msg_size, cudaMemcpyDeviceToDevice, St2);
+                cudaMemcpyAsync(b_w1, B_m+h_offset*2, msg_size, cudaMemcpyDeviceToDevice, St2);
         }
 
         update_bound_y_H(u1, v1, w1, f_u1, f_v1, f_w1, b_u1, b_v1, b_w1, nxt, nzt, St1, St2, rank_F, rank_B);
