@@ -1,11 +1,12 @@
 #!/bin/bash
 
-# Need to run on GPU Node
+# Need to run on GPU Node (idev -p gh)
 
 module reset
-ml gcc/13.2.0
-ml cuda/12.5
+module unload cmake
 module unload openmpi
+module load gcc/13.2.0
+module load cuda/12.5
 module load mvapich-plus/4.0.0
 module list
 
