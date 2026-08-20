@@ -622,7 +622,7 @@ rank, READ_STEP, READ_STEP_GPU, NST, IFAULT);
                   d_d1, nxt,  nzt,  d_b_u1, d_b_v1, d_b_w1, stream_i,   ybs,  ybe, y_rank_B);
          Cpy2Host_VY(d_f_u1, d_f_v1, d_f_w1,  SF_vel, nxt, nzt, stream_i, y_rank_F);
          Cpy2Host_VY(d_b_u1, d_b_v1, d_b_w1,  SB_vel, nxt, nzt, stream_i, y_rank_B);
-         cudaThreadSynchronize();
+         cudaDeviceSynchronize();
          //velocity communication in y direction
          PostSendMsg_Y(SF_vel, SB_vel, MCW, request_y, &count_y, msg_v_size_y, y_rank_F, y_rank_B, rank, Both);
          MPI_Waitall(count_y, request_y, status_y);
@@ -633,7 +633,7 @@ rank, READ_STEP, READ_STEP_GPU, NST, IFAULT);
                   d_d1, nyt,  nzt,  stream_i,   xvs,  xve);
          Cpy2Host_VX(d_u1, d_v1, d_w1, SL_vel, nxt, nyt, nzt, stream_i, x_rank_L, Left);
          Cpy2Host_VX(d_u1, d_v1, d_w1, SR_vel, nxt, nyt, nzt, stream_i, x_rank_R, Right);
-	 cudaThreadSynchronize();
+	 cudaDeviceSynchronize();
          //velocity communication in x direction
 	 PostSendMsg_X(SL_vel, SR_vel, MCW, request_x, &count_x, msg_v_size_x, x_rank_L, x_rank_R, rank, Both);
 	 MPI_Waitall(count_x, request_x, status_x);
@@ -649,7 +649,7 @@ rank, READ_STEP, READ_STEP_GPU, NST, IFAULT);
             addsrc_H(source_step, READ_STEP_GPU, maxdim, d_tpsrc, npsrc, stream_i, d_taxx, d_tayy, d_tazz, d_taxz, d_tayz, d_taxy,
                      d_xx,       d_yy,      d_zz,   d_xy,    d_yz,  d_xz);
          }
-         cudaThreadSynchronize();
+         cudaDeviceSynchronize();
 
          if(cur_step%NTISKP == 0){
           num_bytes = sizeof(float)*(nxt+4+8*loop)*(nyt+4+8*loop)*(nzt+2*align);
@@ -676,7 +676,7 @@ rank, READ_STEP, READ_STEP_GPU, NST, IFAULT);
                 tmpInd++;
               }
           if((cur_step/NTISKP)%WRITE_STEP == 0){
-            cudaThreadSynchronize();
+            cudaDeviceSynchronize();
             sprintf(filename, "%s%07ld", filenamebasex, cur_step);
             err = MPI_File_open(MCW,filename,MPI_MODE_CREATE|MPI_MODE_WRONLY,MPI_INFO_NULL,&fh);
             err = MPI_File_set_view(fh, displacement, MPI_FLOAT, filetype, "native", MPI_INFO_NULL);
@@ -694,7 +694,7 @@ rank, READ_STEP, READ_STEP_GPU, NST, IFAULT);
             err = MPI_File_close(&fh);
           }
           //else
-            //cudaThreadSynchronize();
+            //cudaDeviceSynchronize();
           // write-statistics to chk file:
           if(rank==0){
             i = ND+2+4*loop;
@@ -705,7 +705,7 @@ rank, READ_STEP, READ_STEP_GPU, NST, IFAULT);
           }
          }
          //else
-          //cudaThreadSynchronize();
+          //cudaDeviceSynchronize();
 
           if((cur_step<NST-1) && (IFAULT == 2) && ((cur_step+1)%READ_STEP_GPU == 0) && (rank==srcproc)){
             printf("%d) Read new source from CPU.\n",rank);
@@ -762,7 +762,7 @@ rank, READ_STEP, READ_STEP_GPU, NST, IFAULT);
          MPI_Waitall(count_y, request_y, status_y);
          Cpy2Device_VY(d_u1,     d_v1,     d_w1,     d_f_u1, d_f_v1, d_f_w1, d_b_u1, d_b_v1, d_b_w1, RF_vel, RB_vel, nxt, nyt, nzt,
                        stream_1, stream_2, y_rank_F, y_rank_B);
-         cudaThreadSynchronize();
+         cudaDeviceSynchronize();
          //start stress computation in insider part
          dstrqc_H(d_xx, d_yy, d_zz, d_xy,    d_xz,    d_yz,    d_r1, d_r2, d_r3,     d_r4,     d_r5, d_r6,     d_u1, d_v1, d_w1, d_lam,
                   d_mu, d_qp, d_qs, d_dcrjx, d_dcrjy, d_dcrjz, nyt,  nzt,  stream_i, d_lam_mu, NX,   coord[0], coord[1],   xss2, xse2,
@@ -783,7 +783,7 @@ rank, READ_STEP, READ_STEP_GPU, NST, IFAULT);
          dstrqc_H(d_xx, d_yy, d_zz, d_xy,    d_xz,    d_yz,    d_r1, d_r2, d_r3,     d_r4,     d_r5, d_r6,     d_u1, d_v1, d_w1, d_lam,
                   d_mu, d_qp, d_qs, d_dcrjx, d_dcrjy, d_dcrjz, nyt,  nzt,  stream_2, d_lam_mu, NX,   coord[0], coord[1],   xss3, xse3,
                   yls,  yre);
-         //cudaThreadSynchronize();
+         //cudaDeviceSynchronize();
 
          if(cur_step%NTISKP == 0){
           num_bytes = sizeof(float)*(nxt+4+8*loop)*(nyt+4+8*loop)*(nzt+2*align);
@@ -808,7 +808,7 @@ rank, READ_STEP, READ_STEP_GPU, NST, IFAULT);
                 tmpInd++;
               }
           if((cur_step/NTISKP)%WRITE_STEP == 0){
-            cudaThreadSynchronize();
+            cudaDeviceSynchronize();
             //printf("I'm %d, my disp=%ld\n", rank, displacement);
             sprintf(filename, "%s%07ld", filenamebasex, cur_step);
             err = MPI_File_open(MCW,filename,MPI_MODE_CREATE|MPI_MODE_WRONLY,MPI_INFO_NULL,&fh);
@@ -827,7 +827,7 @@ rank, READ_STEP, READ_STEP_GPU, NST, IFAULT);
             err = MPI_File_close(&fh);
           }
           else
-            cudaThreadSynchronize();
+            cudaDeviceSynchronize();
           if(rank==0){
             i = ND+2+4*loop;
             j = i;
@@ -837,7 +837,7 @@ rank, READ_STEP, READ_STEP_GPU, NST, IFAULT);
           }
          }
          else
-           cudaThreadSynchronize();
+           cudaDeviceSynchronize();
 
        }
 */
